@@ -63,7 +63,7 @@ google-sheets-demo.html
 ```
 
 1. **Nastavte Google Sheets** (viz GOOGLE_SHEETS_QUICKSTART.md)
-2. **Vložte Deployment URL** do demo
+2. **Vložte Deployment URL:** `https://script.google.com/macros/s/AKfycbz3jO8_9Glxvc1dXV36OJIQqGwP0CVamqn0TvKwI-PvTLtS6NyC0b-C80TcJZRWF2iy/exec`
 3. **Test Connection** → mělo by být ✅
 4. **Push to Sheets** → nahraje ukázková data
 5. **Pull from Sheets** → stáhne data zpět

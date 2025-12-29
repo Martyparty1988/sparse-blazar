@@ -14,6 +14,7 @@ const Workers = React.lazy(() => import('./components/Workers'));
 const Projects = React.lazy(() => import('./components/Projects'));
 const Settings = React.lazy(() => import('./components/Settings'));
 const Statistics = React.lazy(() => import('./components/Statistics'));
+const StatsPage = React.lazy(() => import('./components/StatsPage'));
 const TimeRecords = React.lazy(() => import('./components/TimeRecords'));
 const Reports = React.lazy(() => import('./components/Reports'));
 const Attendance = React.lazy(() => import('./components/Attendance'));
@@ -51,6 +52,7 @@ const App: React.FC = () => {
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/field-plans" element={<FieldPlans />} />
                 <Route path="/statistics" element={<Statistics />} />
+                <Route path="/stats" element={<StatsPage />} />
                 <Route path="/records" element={<TimeRecords />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/attendance" element={<Attendance />} />

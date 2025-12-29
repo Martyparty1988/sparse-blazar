@@ -15,14 +15,14 @@ import PlusIcon from './icons/PlusIcon';
 import BrainIcon from './icons/BrainIcon';
 import ChartBarIcon from './icons/ChartBarIcon';
 
-const ActionTile: React.FC<{ 
-  icon: React.ReactNode; 
-  label: string; 
-  onClick: () => void; 
+const ActionTile: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
   color: string;
   desc?: string;
 }> = ({ icon, label, onClick, color, desc }) => (
-  <button 
+  <button
     onClick={onClick}
     className={`flex flex-col items-start p-6 rounded-[2.5rem] glass-card transition-all group hover:scale-[1.02] active:scale-95 border-l-8 ${color} shadow-2xl relative overflow-hidden h-full min-h-[160px]`}
   >
@@ -68,33 +68,40 @@ const Dashboard: React.FC = () => {
 
       {/* Main Grid Actions */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-2">
-        <ActionTile 
-          icon={<ClockIcon className="w-7 h-7" />} 
-          label={t('log_work')} 
+        <ActionTile
+          icon={<ClockIcon className="w-7 h-7" />}
+          label={t('log_work')}
           desc="Zapsat hotové stoly a čas"
-          onClick={() => setIsLoggingWork(true)} 
+          onClick={() => setIsLoggingWork(true)}
           color="border-indigo-500"
         />
-        <ActionTile 
-          icon={<MapIcon className="w-7 h-7" />} 
-          label={t('plan')} 
+        <ActionTile
+          icon={<MapIcon className="w-7 h-7" />}
+          label={t('plan')}
           desc="Interaktivní mapy a markery"
-          onClick={() => navigate('/plan')} 
+          onClick={() => navigate('/plan')}
           color="border-cyan-500"
         />
-        <ActionTile 
-          icon={<CalendarIcon className="w-7 h-7" />} 
-          label={t('attendance')} 
+        <ActionTile
+          icon={<CalendarIcon className="w-7 h-7" />}
+          label={t('attendance')}
           desc="Check-in / Check-out"
-          onClick={() => navigate('/attendance')} 
+          onClick={() => navigate('/attendance')}
           color="border-amber-500"
         />
-        <ActionTile 
-          icon={<ProjectsIcon className="w-7 h-7" />} 
-          label={t('projects')} 
+        <ActionTile
+          icon={<ProjectsIcon className="w-7 h-7" />}
+          label={t('projects')}
           desc="Správa výstavby polí"
-          onClick={() => navigate('/projects')} 
+          onClick={() => navigate('/projects')}
           color="border-emerald-500"
+        />
+        <ActionTile
+          icon={<ChartBarIcon className="w-7 h-7" />}
+          label="Statistiky"
+          desc="Grafy, KPI a analýzy"
+          onClick={() => navigate('/stats')}
+          color="border-purple-500"
         />
       </section>
 
@@ -108,7 +115,7 @@ const Dashboard: React.FC = () => {
             <ChartBarIcon className="w-6 h-6 text-[var(--color-accent)]" />
             Aktuální Stav
           </h2>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
             <div className="space-y-1">
               <p className="text-5xl font-black text-white">{activeProjectsCount}</p>
@@ -118,15 +125,15 @@ const Dashboard: React.FC = () => {
               <p className="text-5xl font-black text-[var(--color-accent)]">{workersCount}</p>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tým Pracovníků</p>
             </div>
-             <div className="space-y-1">
+            <div className="space-y-1">
               <div className="flex items-center gap-3">
-                  <p className="text-5xl font-black text-indigo-400">{activeSessionsCount}</p>
-                  {activeSessionsCount > 0 && (
-                    <span className="flex h-3 w-3 relative mt-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
-                    </span>
-                  )}
+                <p className="text-5xl font-black text-indigo-400">{activeSessionsCount}</p>
+                {activeSessionsCount > 0 && (
+                  <span className="flex h-3 w-3 relative mt-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                  </span>
+                )}
               </div>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Právě na směně</p>
             </div>

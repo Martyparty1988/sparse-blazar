@@ -1,3 +1,4 @@
+
 # ✅ Google Sheets jako Backend - KOMPLETNĚ HOTOVO!
 
 Gratulujeme! 🎉 Máte plně funkční **Google Sheets jako backend** pro vaši MST aplikaci.

@@ -24,16 +24,16 @@ const ActionTile: React.FC<{
 }> = ({ icon, label, onClick, color, desc }) => (
   <button
     onClick={onClick}
-    className={`flex flex-col items-start p-6 rounded-[2.5rem] glass-card transition-all group hover:scale-[1.02] active:scale-95 border-l-8 ${color} shadow-2xl relative overflow-hidden h-full min-h-[160px]`}
+    className={`flex flex-col items-start p-7 md:p-6 rounded-[2.5rem] glass-card transition-all group hover:scale-[1.02] active:scale-95 border-l-8 ${color} shadow-2xl relative overflow-hidden h-full min-h-[180px] md:min-h-[160px] touch-manipulation`}
   >
-    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+    <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
       {icon}
     </div>
-    <div className="mb-4 p-3 rounded-2xl bg-white/5 text-white group-hover:bg-white group-hover:text-black transition-all">
+    <div className="mb-4 p-4 md:p-3 rounded-2xl bg-white/5 text-white group-hover:bg-white group-hover:text-black transition-all">
       {icon}
     </div>
-    <h3 className="text-xl font-black uppercase italic tracking-tighter text-white mb-1">{label}</h3>
-    {desc && <p className="text-xs text-slate-400 font-bold tracking-tight text-left">{desc}</p>}
+    <h3 className="text-xl md:text-lg font-black uppercase italic tracking-tighter text-white mb-2">{label}</h3>
+    {desc && <p className="text-sm md:text-xs text-slate-400 font-bold tracking-tight text-left leading-relaxed">{desc}</p>}
   </button>
 );
 
@@ -50,54 +50,54 @@ const Dashboard: React.FC = () => {
   const activeSessionsCount = activeSessions?.length || 0;
 
   return (
-    <div className="space-y-10 pb-32 animate-fade-in">
-      <header className="relative pt-8 px-2">
-        <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter italic leading-none mb-3">
+    <div className="space-y-8 md:space-y-10 pb-32 animate-fade-in">
+      <header className="relative pt-6 md:pt-8 px-2">
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white tracking-tighter italic leading-none mb-4 md:mb-3">
           MST<span className="text-[var(--color-accent)]">.</span>LAUNCHER
         </h1>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 rounded-full border border-green-500/30">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-green-400">ONLINE</span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 px-4 py-2 md:px-3 md:py-1 bg-green-500/20 rounded-full border border-green-500/30">
+            <span className="w-2.5 h-2.5 md:w-2 md:h-2 rounded-full bg-green-500 animate-pulse"></span>
+            <span className="text-xs md:text-[10px] font-black uppercase tracking-widest text-green-400">ONLINE</span>
           </div>
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs md:text-[10px]">
             {user?.username} • Admin Panel Ready
           </p>
         </div>
       </header>
 
-      {/* Main Grid Actions */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-2">
+      {/* Main Grid Actions - Mobile First: 1 column, MD+: 2 columns, LG: 4 columns */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 px-2">
         <ActionTile
-          icon={<ClockIcon className="w-7 h-7" />}
+          icon={<ClockIcon className="w-8 h-8 md:w-7 md:h-7" />}
           label={t('log_work')}
           desc="Zapsat hotové stoly a čas"
           onClick={() => setIsLoggingWork(true)}
           color="border-indigo-500"
         />
         <ActionTile
-          icon={<MapIcon className="w-7 h-7" />}
+          icon={<MapIcon className="w-8 h-8 md:w-7 md:h-7" />}
           label={t('plan')}
           desc="Interaktivní mapy a markery"
           onClick={() => navigate('/plan')}
           color="border-cyan-500"
         />
         <ActionTile
-          icon={<CalendarIcon className="w-7 h-7" />}
+          icon={<CalendarIcon className="w-8 h-8 md:w-7 md:h-7" />}
           label={t('attendance')}
           desc="Check-in / Check-out"
           onClick={() => navigate('/attendance')}
           color="border-amber-500"
         />
         <ActionTile
-          icon={<ProjectsIcon className="w-7 h-7" />}
+          icon={<ProjectsIcon className="w-8 h-8 md:w-7 md:h-7" />}
           label={t('projects')}
           desc="Správa výstavby polí"
           onClick={() => navigate('/projects')}
           color="border-emerald-500"
         />
         <ActionTile
-          icon={<ChartBarIcon className="w-7 h-7" />}
+          icon={<ChartBarIcon className="w-8 h-8 md:w-7 md:h-7" />}
           label="Statistiky"
           desc="Grafy, KPI a analýzy"
           onClick={() => navigate('/stats')}

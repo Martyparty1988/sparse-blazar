@@ -9,7 +9,6 @@ import { googleSheetsService } from '../services/googleSheetsService';
 import type { Project, SolarTable, ProjectTask } from '../types';
 import ProjectForm from './ProjectForm';
 import ChartBarIcon from './icons/ChartBarIcon';
-import PlanViewerModal from './PlanViewerModal';
 import ProjectTasksModal from './ProjectTasksModal';
 import ConfirmationModal from './ConfirmationModal';
 import MapIcon from './icons/MapIcon';
@@ -22,7 +21,7 @@ import WorkersIcon from './icons/WorkersIcon';
 import ShareIcon from './icons/ShareIcon';
 
 const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m6 9 6 6 6-6"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m6 9 6 6 6-6" /></svg>
 );
 
 const TaskProgressRing: React.FC<{ percentage: number }> = ({ percentage }) => {
@@ -73,13 +72,12 @@ const ProjectCard: React.FC<{
     isAdmin: boolean;
     onEdit: (p: Project) => void;
     onDelete: (p: Project) => void;
-    onViewPlan: (p: Project) => void;
     onManageTasks: (p: Project) => void;
     onSync: (p: Project) => void;
-}> = ({ project, index, isAdmin, onEdit, onDelete, onViewPlan, onManageTasks, onSync }) => {
+}> = ({ project, index, isAdmin, onEdit, onDelete, onManageTasks, onSync }) => {
     const { t, language } = useI18n();
     const [isExpanded, setIsExpanded] = useState(false);
-    
+
     // Live Queries for statistics
     const tables = useLiveQuery(() => db.solarTables.where('projectId').equals(project.id!).toArray(), [project.id]);
     const tasks = useLiveQuery(() => db.projectTasks.where('projectId').equals(project.id!).toArray(), [project.id]);
@@ -113,14 +111,14 @@ const ProjectCard: React.FC<{
     };
 
     return (
-        <div 
+        <div
             className={`group relative flex flex-col overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl transition-all duration-500 animate-list-item ${isExpanded ? 'ring-2 ring-[var(--color-accent)]/50 bg-slate-900/60' : 'hover:-translate-y-2 hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.6)]'}`}
             style={{ animationDelay: `${index * 0.07}s` }}
         >
             {/* Glossy Overlay Background */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none"></div>
             <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[var(--color-primary)] opacity-[0.07] blur-[100px] transition-all duration-700 group-hover:opacity-15 group-hover:scale-125"></div>
-            
+
             <div className="relative z-10 flex flex-col h-full p-6 md:p-8">
                 {/* Header: Status, Progress Ring & Admin Tools */}
                 <div className="flex items-center justify-between mb-6">
@@ -131,25 +129,25 @@ const ProjectCard: React.FC<{
                         </div>
                         <TaskProgressRing percentage={stats.taskProgress} />
                     </div>
-                    
+
                     {isAdmin && (
                         <div className="flex gap-2">
-                            <button 
-                                onClick={(e) => {e.stopPropagation(); onSync(project)}} 
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onSync(project) }}
                                 className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-emerald-400 hover:bg-emerald-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
                                 title={t('sync_to_sheets')}
                             >
                                 <ShareIcon className="h-4 w-4" />
                             </button>
-                            <button 
-                                onClick={(e) => {e.stopPropagation(); onEdit(project)}} 
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onEdit(project) }}
                                 className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-blue-300 hover:bg-blue-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
                                 title={t('edit_project')}
                             >
                                 <PencilIcon className="h-4 w-4" />
                             </button>
-                            <button 
-                                onClick={(e) => {e.stopPropagation(); onDelete(project)}} 
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onDelete(project) }}
                                 className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-rose-400 hover:bg-rose-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
                                 title={t('delete_project')}
                             >
@@ -165,7 +163,7 @@ const ProjectCard: React.FC<{
                         <h3 className="text-2xl md:text-3xl font-black tracking-tight text-white group-hover:text-[var(--color-accent)] transition-colors line-clamp-1 italic uppercase">{project.name}</h3>
                         <ChevronDownIcon className={`w-5 h-5 text-slate-500 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-[var(--color-accent)]' : ''}`} />
                     </div>
-                    
+
                     <p className={`text-sm font-medium leading-relaxed text-slate-400 transition-all duration-300 ${isExpanded ? '' : 'line-clamp-2 min-h-[3em]'}`}>
                         {project.description || t('no_data')}
                     </p>
@@ -219,15 +217,15 @@ const ProjectCard: React.FC<{
                             </span>
                         </div>
                         <div className="relative h-3 w-full overflow-hidden rounded-full bg-black/40 border border-white/5 shadow-inner">
-                            <div 
-                                className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-cyan-600 to-blue-500 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(6,182,212,0.4)]" 
+                            <div
+                                className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-cyan-600 to-blue-500 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(6,182,212,0.4)]"
                                 style={{ width: `${stats.tableProgress}%` }}
                             >
                                 <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.2)_50%,transparent_100%)] animate-[shimmer_2s_infinite]"></div>
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Tasks Progress Bar */}
                     <div className="space-y-2">
                         <div className="flex items-end justify-between px-1">
@@ -242,8 +240,8 @@ const ProjectCard: React.FC<{
                             </div>
                         </div>
                         <div className="relative h-4 w-full overflow-hidden rounded-full bg-black/40 border border-white/5 shadow-inner group-hover:border-white/10 transition-colors">
-                            <div 
-                                className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(167,139,250,0.5)]" 
+                            <div
+                                className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(167,139,250,0.5)]"
                                 style={{ width: `${stats.taskProgress}%` }}
                             >
                                 <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.2)_50%,transparent_100%)] animate-[shimmer_2s_infinite]"></div>
@@ -258,30 +256,19 @@ const ProjectCard: React.FC<{
                 </div>
 
                 {/* Footer Actions: Glass Buttons */}
-                <div className="mt-auto grid grid-cols-2 gap-4">
-                    <button 
+                <div className="mt-auto">
+                    <button
                         onClick={() => onManageTasks(project)}
-                        className="group/btn relative flex flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white/5 py-4 backdrop-blur-md transition-all hover:bg-white/10 active:scale-95 border border-white/5 shadow-xl"
+                        className="group/btn relative flex flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white/5 py-4 backdrop-blur-md transition-all hover:bg-white/10 active:scale-95 border border-white/5 shadow-xl w-full"
                         title={t('tasks')}
                     >
                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
                         <ClockIcon className="h-6 w-6 text-indigo-400 transition-transform duration-300 group-hover/btn:scale-110 group-hover/btn:text-white" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover/btn:text-white">{t('tasks')}</span>
                     </button>
-
-                    <button 
-                        onClick={() => project.planFile ? onViewPlan(project) : null}
-                        disabled={!project.planFile}
-                        className={`group/btn relative flex flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl py-4 backdrop-blur-md transition-all border border-white/5 shadow-xl ${project.planFile ? 'bg-cyan-500/10 hover:bg-cyan-500/20 active:scale-95' : 'bg-black/20 opacity-30 cursor-not-allowed grayscale'}`}
-                        title={t('plan')}
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
-                        <MapIcon className={`h-6 w-6 transition-transform duration-300 ${project.planFile ? 'text-cyan-400 group-hover/btn:scale-110 group-hover/btn:text-white' : 'text-slate-500'}`} />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover/btn:text-white">{t('plan')}</span>
-                    </button>
                 </div>
             </div>
-            
+
             {/* Bottom Accent Bar */}
             <div className={`h-1.5 w-full bg-gradient-to-r ${getStatusColor(project.status)} opacity-30`}></div>
         </div>
@@ -289,230 +276,226 @@ const ProjectCard: React.FC<{
 };
 
 const Projects: React.FC = () => {
-  const { t } = useI18n();
-  const { user } = useAuth();
-  const { showToast } = useToast();
-  const [showForm, setShowForm] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | undefined>(undefined);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'on_hold'>('all');
-  const [workerFilter, setWorkerFilter] = useState<number | 'all'>('all');
-  const [viewingProjectPlan, setViewingProjectPlan] = useState<Project | null>(null);
-  const [managingTasksFor, setManagingTasksFor] = useState<Project | null>(null);
-  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
-  const [syncing, setSyncing] = useState(false);
+    const { t } = useI18n();
+    const { user } = useAuth();
+    const { showToast } = useToast();
+    const [showForm, setShowForm] = useState(false);
+    const [selectedProject, setSelectedProject] = useState<Project | undefined>(undefined);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'on_hold'>('all');
+    const [workerFilter, setWorkerFilter] = useState<number | 'all'>('all');
+    const [managingTasksFor, setManagingTasksFor] = useState<Project | null>(null);
+    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+    const [syncing, setSyncing] = useState(false);
 
-  const projects = useLiveQuery(() => db.projects.toArray(), []);
-  const workers = useLiveQuery(() => db.workers.toArray(), []);
-  const allTasks = useLiveQuery(() => db.projectTasks.toArray(), []);
-  const allAssignments = useLiveQuery(() => db.tableAssignments.toArray(), []);
-  const allTables = useLiveQuery(() => db.solarTables.toArray(), []);
+    const projects = useLiveQuery(() => db.projects.toArray(), []);
+    const workers = useLiveQuery(() => db.workers.toArray(), []);
+    const allTasks = useLiveQuery(() => db.projectTasks.toArray(), []);
+    const allAssignments = useLiveQuery(() => db.tableAssignments.toArray(), []);
+    const allTables = useLiveQuery(() => db.solarTables.toArray(), []);
 
-  const projectsWithWorker = useMemo(() => {
-      if (workerFilter === 'all' || !allTasks || !allAssignments || !allTables) return null;
-      const projectIds = new Set<number>();
-      allTasks.forEach(task => { if (task.assignedWorkerId === workerFilter) projectIds.add(task.projectId); });
-      const tableProjectMap = new Map<number, number>();
-      allTables.forEach(t => tableProjectMap.set(t.id!, t.projectId));
-      allAssignments.forEach(assignment => {
-          const projectId = tableProjectMap.get(assignment.tableId);
-          if (assignment.workerId === workerFilter && projectId) projectIds.add(projectId);
-      });
-      return projectIds;
-  }, [workerFilter, allTasks, allAssignments, allTables]);
+    const projectsWithWorker = useMemo(() => {
+        if (workerFilter === 'all' || !allTasks || !allAssignments || !allTables) return null;
+        const projectIds = new Set<number>();
+        allTasks.forEach(task => { if (task.assignedWorkerId === workerFilter) projectIds.add(task.projectId); });
+        const tableProjectMap = new Map<number, number>();
+        allTables.forEach(t => tableProjectMap.set(t.id!, t.projectId));
+        allAssignments.forEach(assignment => {
+            const projectId = tableProjectMap.get(assignment.tableId);
+            if (assignment.workerId === workerFilter && projectId) projectIds.add(projectId);
+        });
+        return projectIds;
+    }, [workerFilter, allTasks, allAssignments, allTables]);
 
-  const filteredProjects = useMemo(() => {
-    if (!projects) return [];
-    return projects
-      .filter(project => statusFilter === 'all' ? true : project.status === statusFilter)
-      .filter(project => !searchTerm ? true : project.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .filter(project => workerFilter === 'all' ? true : projectsWithWorker?.has(project.id!))
-      .sort((a, b) => {
-          if (a.status === 'active' && b.status !== 'active') return -1;
-          if (a.status !== 'active' && b.status === 'active') return 1;
-          return (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0);
-      });
-  }, [projects, searchTerm, statusFilter, workerFilter, projectsWithWorker]);
+    const filteredProjects = useMemo(() => {
+        if (!projects) return [];
+        return projects
+            .filter(project => statusFilter === 'all' ? true : project.status === statusFilter)
+            .filter(project => !searchTerm ? true : project.name.toLowerCase().includes(searchTerm.toLowerCase()))
+            .filter(project => workerFilter === 'all' ? true : projectsWithWorker?.has(project.id!))
+            .sort((a, b) => {
+                if (a.status === 'active' && b.status !== 'active') return -1;
+                if (a.status !== 'active' && b.status === 'active') return 1;
+                return (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0);
+            });
+    }, [projects, searchTerm, statusFilter, workerFilter, projectsWithWorker]);
 
-  const handleAdd = () => { setSelectedProject(undefined); setShowForm(true); };
-  const handleEdit = (project: Project) => { setSelectedProject(project); setShowForm(true); };
-  const confirmDelete = (project: Project) => { setProjectToDelete(project); };
+    const handleAdd = () => { setSelectedProject(undefined); setShowForm(true); };
+    const handleEdit = (project: Project) => { setSelectedProject(project); setShowForm(true); };
+    const confirmDelete = (project: Project) => { setProjectToDelete(project); };
 
-  const handleDelete = async () => {
-    if (projectToDelete?.id) {
-      await db.transaction('rw', [db.projects, db.projectTasks, db.solarTables, db.tableAssignments, db.tableStatusHistory], async () => {
-        await db.projectTasks.where('projectId').equals(projectToDelete.id!).delete();
-        await db.solarTables.where('projectId').equals(projectToDelete.id!).delete();
-        await db.projects.delete(projectToDelete.id!);
-      });
-      setProjectToDelete(null);
-    }
-  };
+    const handleDelete = async () => {
+        if (projectToDelete?.id) {
+            await db.transaction('rw', [db.projects, db.projectTasks, db.solarTables, db.tableAssignments, db.tableStatusHistory], async () => {
+                await db.projectTasks.where('projectId').equals(projectToDelete.id!).delete();
+                await db.solarTables.where('projectId').equals(projectToDelete.id!).delete();
+                await db.projects.delete(projectToDelete.id!);
+            });
+            setProjectToDelete(null);
+        }
+    };
 
-  const handleSync = async (project: Project) => {
-      setSyncing(true);
-      showToast('Connecting to Google Sheets...', 'info');
-      
-      try {
-          await googleSheetsService.init();
-          if (!googleSheetsService.isLoggedIn) {
-              await googleSheetsService.signIn();
-          }
+    const handleSync = async (project: Project) => {
+        setSyncing(true);
+        showToast('Connecting to Google Sheets...', 'info');
 
-          let spreadsheetId = project.googleSpreadsheetId;
-          
-          if (!spreadsheetId) {
-              spreadsheetId = await googleSheetsService.createSpreadsheet(`MST - ${project.name}`);
-              await db.projects.update(project.id!, { googleSpreadsheetId: spreadsheetId });
-          }
+        try {
+            await googleSheetsService.init();
+            if (!googleSheetsService.isLoggedIn) {
+                await googleSheetsService.signIn();
+            }
 
-          const pTables = await db.solarTables.where('projectId').equals(project.id!).toArray();
-          const pTasks = await db.projectTasks.where('projectId').equals(project.id!).toArray();
-          const pRecords = await db.records.where('projectId').equals(project.id!).toArray();
-          const pWorkers = await db.workers.toArray();
+            let spreadsheetId = project.googleSpreadsheetId;
 
-          const dataPayload = { project, tables: pTables, tasks: pTasks, records: pRecords, workers: pWorkers };
-          await googleSheetsService.syncProjectData(spreadsheetId, dataPayload);
-          
-          const syncTimestamp = new Date();
-          await db.projects.update(project.id!, { lastSync: syncTimestamp });
-          showToast('Project synced successfully!', 'success');
-          window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}`, '_blank');
-      } catch (e) {
-          console.error(e);
-          showToast('Sync failed. Check console or API Key.', 'error');
-      } finally {
-          setSyncing(false);
-      }
-  };
+            if (!spreadsheetId) {
+                spreadsheetId = await googleSheetsService.createSpreadsheet(`MST - ${project.name}`);
+                await db.projects.update(project.id!, { googleSpreadsheetId: spreadsheetId });
+            }
 
-  const filterOptions: ('all' | 'active' | 'completed' | 'on_hold')[] = ['all', 'active', 'completed', 'on_hold'];
+            const pTables = await db.solarTables.where('projectId').equals(project.id!).toArray();
+            const pTasks = await db.projectTasks.where('projectId').equals(project.id!).toArray();
+            const pRecords = await db.records.where('projectId').equals(project.id!).toArray();
+            const pWorkers = await db.workers.toArray();
 
-  return (
-    <div className="space-y-8 md:space-y-12 pb-32">
-      {syncing && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-              <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-white/20 flex flex-col items-center gap-4 shadow-2xl">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-accent)]"></div>
-                  <p className="text-white font-black uppercase tracking-widest animate-pulse">Synchronizing with Google Sheets...</p>
-              </div>
-          </div>
-      )}
+            const dataPayload = { project, tables: pTables, tasks: pTasks, records: pRecords, workers: pWorkers };
+            await googleSheetsService.syncProjectData(spreadsheetId, dataPayload);
 
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
-          <div className="space-y-3">
-            <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8] drop-shadow-2xl">
-               {t('projects')}<span className="text-[var(--color-accent)]">.</span>
-            </h1>
-            <p className="text-sm md:text-xl text-slate-400 font-bold tracking-tight max-w-2xl border-l-4 border-[var(--color-accent)] pl-4 py-1">
-              Komplexní přehled výstavby a technologického postupu solárních polí.
-            </p>
-          </div>
-          <div className="flex gap-3 w-full lg:w-auto">
-             {user?.role === 'admin' && (
-                 <Link to="/statistics" className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-slate-900/50 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all border border-white/10 backdrop-blur-md active:scale-95 shadow-lg text-xs" title={t('statistics')}>
-                    <ChartBarIcon className="w-5 h-5 text-[var(--color-accent)]" />
-                    {t('statistics')}
-                 </Link>
-             )}
-             {user?.role === 'admin' && (
-                 <button onClick={handleAdd} className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-[var(--color-accent)] hover:text-white transition-all shadow-[0_15px_40px_rgba(255,255,255,0.15)] active:scale-95 group text-xs" title={t('add_project')}>
-                    <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                    {t('add_project')}
-                 </button>
-             )}
-          </div>
-      </header>
-      
-      {/* Search and Filter Section */}
-      <div className="flex flex-col xl:flex-row gap-4 p-4 bg-white/[0.03] rounded-[2.5rem] border border-white/10 backdrop-blur-3xl shadow-2xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full xl:w-auto xl:flex-1">
-            <div className="relative group">
-                <input
-                    type="text"
-                    placeholder={`${t('search')}...`}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-black/30 text-white placeholder-slate-500 border-none rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] transition-all font-bold"
-                />
-                <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-[var(--color-accent)] transition-colors" />
-            </div>
+            const syncTimestamp = new Date();
+            await db.projects.update(project.id!, { lastSync: syncTimestamp });
+            showToast('Project synced successfully!', 'success');
+            window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}`, '_blank');
+        } catch (e) {
+            console.error(e);
+            showToast('Sync failed. Check console or API Key.', 'error');
+        } finally {
+            setSyncing(false);
+        }
+    };
 
-            <div className="relative group">
-                <select
-                    value={workerFilter}
-                    onChange={(e) => setWorkerFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                    className="w-full pl-12 pr-10 py-4 bg-black/30 text-white border-none rounded-2xl appearance-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all font-bold cursor-pointer [&>option]:bg-slate-900"
-                    title={t('filter_by_worker')}
-                >
-                    <option value="all">{t('all_workers')}</option>
-                    {workers?.map(w => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
+    const filterOptions: ('all' | 'active' | 'completed' | 'on_hold')[] = ['all', 'active', 'completed', 'on_hold'];
+
+    return (
+        <div className="space-y-8 md:space-y-12 pb-32">
+            {syncing && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                    <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-white/20 flex flex-col items-center gap-4 shadow-2xl">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-accent)]"></div>
+                        <p className="text-white font-black uppercase tracking-widest animate-pulse">Synchronizing with Google Sheets...</p>
+                    </div>
+                </div>
+            )}
+
+            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+                <div className="space-y-3">
+                    <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8] drop-shadow-2xl">
+                        {t('projects')}<span className="text-[var(--color-accent)]">.</span>
+                    </h1>
+                    <p className="text-sm md:text-xl text-slate-400 font-bold tracking-tight max-w-2xl border-l-4 border-[var(--color-accent)] pl-4 py-1">
+                        Komplexní přehled výstavby a technologického postupu solárních polí.
+                    </p>
+                </div>
+                <div className="flex gap-3 w-full lg:w-auto">
+                    {user?.role === 'admin' && (
+                        <Link to="/statistics" className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-slate-900/50 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all border border-white/10 backdrop-blur-md active:scale-95 shadow-lg text-xs" title={t('statistics')}>
+                            <ChartBarIcon className="w-5 h-5 text-[var(--color-accent)]" />
+                            {t('statistics')}
+                        </Link>
+                    )}
+                    {user?.role === 'admin' && (
+                        <button onClick={handleAdd} className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-[var(--color-accent)] hover:text-white transition-all shadow-[0_15px_40px_rgba(255,255,255,0.15)] active:scale-95 group text-xs" title={t('add_project')}>
+                            <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                            {t('add_project')}
+                        </button>
+                    )}
+                </div>
+            </header>
+
+            {/* Search and Filter Section */}
+            <div className="flex flex-col xl:flex-row gap-4 p-4 bg-white/[0.03] rounded-[2.5rem] border border-white/10 backdrop-blur-3xl shadow-2xl">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full xl:w-auto xl:flex-1">
+                    <div className="relative group">
+                        <input
+                            type="text"
+                            placeholder={`${t('search')}...`}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-12 pr-4 py-4 bg-black/30 text-white placeholder-slate-500 border-none rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] transition-all font-bold"
+                        />
+                        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-[var(--color-accent)] transition-colors" />
+                    </div>
+
+                    <div className="relative group">
+                        <select
+                            value={workerFilter}
+                            onChange={(e) => setWorkerFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                            className="w-full pl-12 pr-10 py-4 bg-black/30 text-white border-none rounded-2xl appearance-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all font-bold cursor-pointer [&>option]:bg-slate-900"
+                            title={t('filter_by_worker')}
+                        >
+                            <option value="all">{t('all_workers')}</option>
+                            {workers?.map(w => (
+                                <option key={w.id} value={w.id}>{w.name}</option>
+                            ))}
+                        </select>
+                        <WorkersIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none group-focus-within:text-[var(--color-accent)] transition-colors" />
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide px-1">
+                    {filterOptions.map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => setStatusFilter(status)}
+                            className={`px-6 py-4 rounded-2xl font-black text-[10px] transition-all border uppercase tracking-widest whitespace-nowrap ${statusFilter === status
+                                ? 'bg-white text-black border-white shadow-[0_0_25px_rgba(255,255,255,0.3)] scale-105'
+                                : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white'
+                                }`}
+                            title={t(status === 'all' ? 'all_statuses' : (status as any))}
+                        >
+                            {t(status === 'all' ? 'all_statuses' : (status as any))}
+                        </button>
                     ))}
-                </select>
-                <WorkersIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none group-focus-within:text-[var(--color-accent)] transition-colors" />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
             </div>
-        </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide px-1">
-            {filterOptions.map((status) => (
-                <button
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    className={`px-6 py-4 rounded-2xl font-black text-[10px] transition-all border uppercase tracking-widest whitespace-nowrap ${
-                        statusFilter === status
-                        ? 'bg-white text-black border-white shadow-[0_0_25px_rgba(255,255,255,0.3)] scale-105'
-                        : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white'
-                    }`}
-                    title={t(status === 'all' ? 'all_statuses' : (status as any))}
-                >
-                    {t(status === 'all' ? 'all_statuses' : (status as any))}
-                </button>
-            ))}
-        </div>
-      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
+                {filteredProjects.map((project, idx) => (
+                    <ProjectCard
+                        key={project.id}
+                        project={project}
+                        index={idx}
+                        isAdmin={user?.role === 'admin'}
+                        onEdit={handleEdit}
+                        onDelete={confirmDelete}
+                        onManageTasks={setManagingTasksFor}
+                        onSync={handleSync}
+                    />
+                ))}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
-        {filteredProjects.map((project, idx) => (
-          <ProjectCard 
-            key={project.id} 
-            project={project} 
-            index={idx}
-            isAdmin={user?.role === 'admin'}
-            onEdit={handleEdit}
-            onDelete={confirmDelete}
-            onViewPlan={setViewingProjectPlan}
-            onManageTasks={setManagingTasksFor}
-            onSync={handleSync}
-          />
-        ))}
-        
-        {filteredProjects.length === 0 && (
-          <div className="col-span-full py-40 text-center opacity-40">
-            <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
-                <SearchIcon className="w-10 h-10 text-slate-500" />
+                {filteredProjects.length === 0 && (
+                    <div className="col-span-full py-40 text-center opacity-40">
+                        <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
+                            <SearchIcon className="w-10 h-10 text-slate-500" />
+                        </div>
+                        <p className="text-slate-400 text-2xl font-black uppercase tracking-widest italic">{t('no_data')}</p>
+                    </div>
+                )}
             </div>
-            <p className="text-slate-400 text-2xl font-black uppercase tracking-widest italic">{t('no_data')}</p>
-          </div>
-        )}
-      </div>
-      
-      {showForm && <ProjectForm project={selectedProject} onClose={() => setShowForm(false)} />}
-      {viewingProjectPlan && <PlanViewerModal project={viewingProjectPlan} onClose={() => setViewingProjectPlan(null)} />}
-      {managingTasksFor && <ProjectTasksModal project={managingTasksFor} onClose={() => setManagingTasksFor(null)} />}
-      {projectToDelete && (
-        <ConfirmationModal
-          title={t('delete_project')}
-          message={`Systém trvale odstraní projekt "${projectToDelete.name}" včetně všech dat o stolech a úkolech. Potvrdit?`}
-          onConfirm={handleDelete}
-          onCancel={() => setProjectToDelete(null)}
-        />
-      )}
-    </div>
-  );
+
+            {showForm && <ProjectForm project={selectedProject} onClose={() => setShowForm(false)} />}
+            {managingTasksFor && <ProjectTasksModal project={managingTasksFor} onClose={() => setManagingTasksFor(null)} />}
+            {projectToDelete && (
+                <ConfirmationModal
+                    title={t('delete_project')}
+                    message={`Systém trvale odstraní projekt "${projectToDelete.name}" včetně všech dat o stolech a úkolech. Potvrdit?`}
+                    onConfirm={handleDelete}
+                    onCancel={() => setProjectToDelete(null)}
+                />
+            )}
+        </div>
+    );
 };
 
 export default Projects;

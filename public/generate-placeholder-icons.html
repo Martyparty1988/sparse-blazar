@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MST Icon Generator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 50%, #020617 100%);
+            color: white;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+        }
+
+        h1 {
+            background: linear-gradient(to right, #3b82f6, #a855f7, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        button {
+            background: linear-gradient(to right, #3b82f6, #a855f7);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .preview-item {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .preview-item canvas {
+            border-radius: 20%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .preview-item p {
+            margin-top: 10px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .info {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .success {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 4px solid #22c55e;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📱 MST Icon Generator</h1>
+
+        <div class="info">
+            <strong>ℹ️ Instrukce:</strong><br>
+            1. Klikněte na "Generovat všechny ikony"<br>
+            2. Ikony se zobrazí níže<br>
+            3. Klikněte na "Stáhnout všechny" pro download<br>
+            4. Zkopírujte soubory do složky projektu
+        </div>
+
+        <button onclick="generateAllIcons()">🎨 Generovat všechny ikony</button>
+        <button onclick="downloadAll()" id="downloadBtn" style="display:none;">💾 Stáhnout všechny</button>
+
+        <div id="preview" class="preview"></div>
+
+        <div id="success" class="success" style="display:none;">
+            ✅ Všechny ikony byly vygenerovány! Klikněte na "Stáhnout všechny" pro download.
+        </div>
+    </div>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        const canvases = {};
+
+        function createIcon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Background gradient
+            const bgGradient = ctx.createLinearGradient(0, 0, size, size);
+            bgGradient.addColorStop(0, '#020617');
+            bgGradient.addColorStop(0.5, '#1e1b4b');
+            bgGradient.addColorStop(1, '#4c1d95');
+
+            // Rounded rectangle background
+            const radius = size * 0.225; // 22.5% radius for rounded corners
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.fillStyle = bgGradient;
+            ctx.fill();
+
+            // Icon gradient
+            const iconGradient = ctx.createLinearGradient(0, 0, size, size);
+            iconGradient.addColorStop(0, '#3b82f6');
+            iconGradient.addColorStop(0.5, '#a855f7');
+            iconGradient.addColorStop(1, '#06b6d4');
+
+            const scale = size / 512;
+            const centerX = size / 2;
+            const centerY = size / 2;
+
+            // Sun rays (8 points)
+            const rayPositions = [
+                [0, -80], [56, -56], [80, 0], [56, 56],
+                [0, 80], [-56, 56], [-80, 0], [-56, -56]
+            ];
+            const rayRadii = [8, 6, 8, 6, 8, 6, 8, 6];
+
+            rayPositions.forEach(([x, y], i) => {
+                ctx.beginPath();
+                ctx.arc(
+                    centerX + x * scale,
+                    centerY + y * scale,
+                    rayRadii[i] * scale,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fillStyle = iconGradient;
+                ctx.globalAlpha = i % 2 === 0 ? 0.8 : 0.6;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+
+            // Solar panel (rotated -15 degrees)
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(-15 * Math.PI / 180);
+
+            // Panel background
+            ctx.fillStyle = iconGradient;
+            ctx.globalAlpha = 0.2;
+            ctx.fillRect(-60 * scale, -40 * scale, 120 * scale, 80 * scale);
+            ctx.globalAlpha = 1;
+
+            // Panel grid (3x2)
+            ctx.strokeStyle = iconGradient;
+            ctx.lineWidth = 3 * scale;
+            for (let row = 0; row < 2; row++) {
+                for (let col = 0; col < 3; col++) {
+                    const x = (-55 + col * 40) * scale;
+                    const y = (-35 + row * 40) * scale;
+                    ctx.strokeRect(x, y, 35 * scale, 35 * scale);
+
+                    // Highlight
+                    ctx.fillStyle = 'rgba(255, 255, 255, ' + (0.1 + col * 0.05) + ')';
+                    ctx.fillRect(x, y, 35 * scale, 35 * scale);
+                }
+            }
+
+            ctx.restore();
+
+            // Center sun
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 20 * scale, 0, Math.PI * 2);
+            ctx.fillStyle = iconGradient;
+            ctx.globalAlpha = 0.3;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 15 * scale, 0, Math.PI * 2);
+            ctx.fillStyle = iconGradient;
+            ctx.fill();
+
+            // Highlight on sun
+            ctx.beginPath();
+            ctx.arc(centerX - 3 * scale, centerY - 3 * scale, 5 * scale, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.fill();
+
+            // Glassmorphism overlay
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            return canvas;
+        }
+
+        function generateAllIcons() {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+
+            sizes.forEach(size => {
+                const canvas = createIcon(size);
+                canvases[size] = canvas;
+
+                const item = document.createElement('div');
+                item.className = 'preview-item';
+
+                const displayCanvas = canvas.cloneNode(true);
+                displayCanvas.style.width = '100px';
+                displayCanvas.style.height = '100px';
+
+                const label = document.createElement('p');
+                label.textContent = `${size}x${size}px`;
+
+                item.appendChild(displayCanvas);
+                item.appendChild(label);
+                preview.appendChild(item);
+            });
+
+            document.getElementById('downloadBtn').style.display = 'inline-block';
+            document.getElementById('success').style.display = 'block';
+        }
+
+        function downloadAll() {
+            sizes.forEach(size => {
+                const canvas = canvases[size];
+                const link = document.createElement('a');
+                link.download = `icon-${size}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+
+            // Also create maskable versions (with padding)
+            [192, 512].forEach(size => {
+                const canvas = createMaskableIcon(size);
+                const link = document.createElement('a');
+                link.download = `icon-maskable-${size}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+
+            alert('✅ Všechny ikony byly staženy!\n\nStaženo:\n' +
+                sizes.map(s => `- icon-${s}.png`).join('\n') +
+                '\n- icon-maskable-192.png\n- icon-maskable-512.png');
+        }
+
+        function createMaskableIcon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Full background (no rounded corners for maskable)
+            const bgGradient = ctx.createLinearGradient(0, 0, size, size);
+            bgGradient.addColorStop(0, '#020617');
+            bgGradient.addColorStop(0.5, '#1e1b4b');
+            bgGradient.addColorStop(1, '#4c1d95');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, size, size);
+
+            // Draw icon in safe zone (80% = 0.8, so 10% padding on each side)
+            const safeZoneScale = 0.8;
+            const padding = size * (1 - safeZoneScale) / 2;
+
+            ctx.save();
+            ctx.translate(padding, padding);
+            ctx.scale(safeZoneScale, safeZoneScale);
+
+            // Draw the same icon but scaled down
+            const iconCanvas = createIcon(size);
+            ctx.drawImage(iconCanvas, 0, 0);
+
+            ctx.restore();
+
+            return canvas;
+        }
+
+        // Auto-generate on load
+        window.addEventListener('load', () => {
+            setTimeout(generateAllIcons, 500);
+        });
+    </script>
+</body>
+
+</html>

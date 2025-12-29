@@ -5,6 +5,7 @@ export interface Worker {
   hourlyRate: number;
   username?: string; // New: Login username
   password?: string; // New: Simple password/pin
+  color?: string; // NEW: Barva zaměstnance (hex, např. "#3b82f6")
   createdAt: Date;
 }
 
@@ -13,6 +14,7 @@ export interface Project {
   name: string;
   description?: string;
   status: 'active' | 'completed' | 'on_hold';
+  tables?: string[]; // NEW: Seznam ID stolů (např. ["28", "28.1", "149.1"])
   planFile?: File;
   googleSpreadsheetId?: string; // ID of the connected Google Sheet
   lastSync?: Date; // Timestamp of last sync
@@ -35,6 +37,19 @@ export interface User {
   workerId?: number; // New: Links the logged-in user to a specific worker record
 }
 
+// NEW: Stůl v plánovém poli (zjednodušený model)
+export interface FieldTable {
+  id?: number;
+  projectId: number;
+  tableId: string; // ID stolu (např. "28", "28.1", "149.1")
+  tableType: 'small' | 'medium' | 'large';
+  status: 'pending' | 'completed';
+  assignedWorkers?: number[]; // ID přiřazených pracovníků (max 2)
+  completedAt?: Date;
+  completedBy?: number; // ID pracovníka, který dokončil
+}
+
+// DEPRECATED: Starý model (ponecháno pro zpětnou kompatibilitu)
 export interface SolarTable {
   id?: number;
   projectId: number;
@@ -82,14 +97,14 @@ export interface ProjectTask {
   projectId: number;
   taskType: 'panels' | 'construction' | 'cables';
   description: string;
-  
+
   // Fields for panels
   panelCount?: number;
   pricePerPanel?: number;
-  
+
   // Fields for cables
   tableSize?: 'small' | 'medium' | 'large';
-  
+
   // General fields
   price: number; // This will be the total price for the task
   assignedWorkerId?: number;

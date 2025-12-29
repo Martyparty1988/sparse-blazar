@@ -1,86 +1,166 @@
 <!DOCTYPE html>
 <html lang="cs">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="https://image.pollinations.ai/prompt/modern%203d%20glassmorphism%20app%20icon%20solar%20panel%20technology%20sun%20energy%20neon%20blue%20purple%20gradient%20dark%20background%20minimalist%20vector?width=64&height=64&nologo=true" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#000000" />
-    <title>MST - Martyho Solar Tracker</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="manifest" href="/manifest.json" />
-    <style>
-      :root {
-        --bg-gradient: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 40%, #020617 100%);
-        --color-primary: #6366f1;
-        --color-accent: #38bdf8;
-        --glass-bg: rgba(15, 23, 42, 0.7);
-        --glass-border: rgba(255, 255, 255, 0.1);
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/icon-192.svg" />
+  <link rel="apple-touch-icon" href="/icon-192.svg" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/icon-152.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icon-192.svg" />
+  <link rel="apple-touch-icon" sizes="167x167" href="/icon-192.svg" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MST">
+  <meta name="theme-color" content="#6366f1" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#6366f1" media="(prefers-color-scheme: light)" />
+  <meta name="description"
+    content="Profesionální PWA nástroj pro správu solárních montáží, docházky a projektů. Funguje offline s AI asistentem.">
+  <title>MST - Martyho Solar Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="/manifest.json" />
+  <style>
+    :root {
+      --bg-gradient: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 40%, #020617 100%);
+      --color-primary: #6366f1;
+      --color-accent: #38bdf8;
+      --glass-bg: rgba(15, 23, 42, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    [data-theme="stellar"] {
+      --bg-gradient: radial-gradient(circle at 50% 0%, #4c1d95 0%, #2e1065 40%, #020617 100%);
+      --color-primary: #a855f7;
+      --color-accent: #e879f9;
+    }
+
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      background-attachment: fixed;
+      color: #f8fafc;
+      font-family: 'Inter', -apple-system, sans-serif;
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      /* Prevent pull-to-refresh on mobile */
+      overscroll-behavior-y: contain;
+    }
+
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+    }
+
+    button:active,
+    .interactive-card:active {
+      transform: scale(0.96);
+      filter: brightness(1.2);
+    }
+
+    /* Hover Tooltip via CSS Selector: svg */
+    svg {
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    [title]:hover svg {
+      transform: scale(1.15);
+    }
+
+    /* Custom Tooltip Styles for elements with titles */
+    abbr[title],
+    [title] {
+      text-decoration: none;
+      cursor: help;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+
+    @keyframes fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
       }
 
-      [data-theme="stellar"] {
-        --bg-gradient: radial-gradient(circle at 50% 0%, #4c1d95 0%, #2e1065 40%, #020617 100%);
-        --color-primary: #a855f7;
-        --color-accent: #e879f9;
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-fade-in {
+      animation: fade-in 0.4s ease-out forwards;
+    }
+
+    @keyframes slide-up {
+      from {
+        opacity: 0;
+        transform: translateY(100%);
       }
 
-      * {
-        -webkit-tap-highlight-color: transparent;
-        box-sizing: border-box;
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-slide-up {
+      animation: slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes pulse-glow {
+
+      0%,
+      100% {
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
       }
 
-      body {
-        background: var(--bg-gradient);
-        background-attachment: fixed;
-        color: #f8fafc;
-        font-family: 'Inter', -apple-system, sans-serif;
-        margin: 0;
-        height: 100vh;
-        overflow: hidden;
+      50% {
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
       }
+    }
 
-      .glass-card {
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-      }
+    .pulse-glow {
+      animation: pulse-glow 2s infinite;
+    }
 
-      button:active, .interactive-card:active {
-        transform: scale(0.96);
-        filter: brightness(1.2);
-      }
+    /* Touch-friendly improvements */
+    @media (hover: none) and (pointer: coarse) {
 
-      /* Hover Tooltip via CSS Selector: svg */
-      svg {
-        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      button,
+      a,
+      .interactive-card {
+        min-height: 44px;
+        min-width: 44px;
       }
-      
-      [title]:hover svg {
-        transform: scale(1.15);
-      }
+    }
 
-      /* Custom Tooltip Styles for elements with titles */
-      abbr[title], [title] {
-        text-decoration: none;
-        cursor: help;
-      }
+    /* Prevent zoom on input focus on iOS */
+    @media screen and (max-width: 768px) {
 
-      .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-
-      @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-      .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
-      
-      @keyframes pulse-glow {
-        0%, 100% { box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
-        50% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); }
+      input,
+      select,
+      textarea {
+        font-size: 16px !important;
       }
-      .pulse-glow { animation: pulse-glow 2s infinite; }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script type="importmap">
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@19.0.0",
@@ -99,9 +179,11 @@
   }
 }
 </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
 </html>

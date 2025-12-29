@@ -1,0 +1,66 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#020617;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1e1b4b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4c1d95;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="icon-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#a855f7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="115" fill="url(#bg-gradient)"/>
+  
+  <!-- Solar panel icon -->
+  <g transform="translate(256, 256)" filter="url(#glow)">
+    <!-- Sun rays -->
+    <circle cx="0" cy="-80" r="8" fill="url(#icon-gradient)" opacity="0.8"/>
+    <circle cx="56" cy="-56" r="6" fill="url(#icon-gradient)" opacity="0.6"/>
+    <circle cx="80" cy="0" r="8" fill="url(#icon-gradient)" opacity="0.8"/>
+    <circle cx="56" cy="56" r="6" fill="url(#icon-gradient)" opacity="0.6"/>
+    <circle cx="0" cy="80" r="8" fill="url(#icon-gradient)" opacity="0.8"/>
+    <circle cx="-56" cy="56" r="6" fill="url(#icon-gradient)" opacity="0.6"/>
+    <circle cx="-80" cy="0" r="8" fill="url(#icon-gradient)" opacity="0.8"/>
+    <circle cx="-56" cy="-56" r="6" fill="url(#icon-gradient)" opacity="0.6"/>
+    
+    <!-- Solar panel grid -->
+    <g transform="rotate(-15)">
+      <!-- Panel background -->
+      <rect x="-60" y="-40" width="120" height="80" rx="8" fill="url(#icon-gradient)" opacity="0.2"/>
+      
+      <!-- Panel grid -->
+      <rect x="-55" y="-35" width="35" height="35" rx="4" fill="none" stroke="url(#icon-gradient)" stroke-width="3"/>
+      <rect x="-15" y="-35" width="35" height="35" rx="4" fill="none" stroke="url(#icon-gradient)" stroke-width="3"/>
+      <rect x="25" y="-35" width="35" height="35" rx="4" fill="none" stroke="url(#icon-gradient)" stroke-width="3"/>
+      
+      <rect x="-55" y="5" width="35" height="35" rx="4" fill="none" stroke="url(#icon-gradient)" stroke-width="3"/>
+      <rect x="-15" y="5" width="35" height="35" rx="4" fill="none" stroke="url(#icon-gradient)" stroke-width="3"/>
+      <rect x="25" y="5" width="35" height="35" rx="4" fill="none" stroke="url(#icon-gradient)" stroke-width="3"/>
+      
+      <!-- Highlight effect -->
+      <rect x="-55" y="-35" width="35" height="35" rx="4" fill="white" opacity="0.1"/>
+      <rect x="-15" y="-35" width="35" height="35" rx="4" fill="white" opacity="0.15"/>
+      <rect x="25" y="-35" width="35" height="35" rx="4" fill="white" opacity="0.2"/>
+    </g>
+    
+    <!-- Center sun -->
+    <circle cx="0" cy="0" r="20" fill="url(#icon-gradient)" opacity="0.3"/>
+    <circle cx="0" cy="0" r="15" fill="url(#icon-gradient)"/>
+    <circle cx="-3" cy="-3" r="5" fill="white" opacity="0.6"/>
+  </g>
+  
+  <!-- Glassmorphism overlay -->
+  <rect width="512" height="512" rx="115" fill="white" opacity="0.05"/>
+</svg>

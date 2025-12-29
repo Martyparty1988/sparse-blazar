@@ -19,6 +19,7 @@ const Plan = React.lazy(() => import('./components/Plan'));
 const Reports = React.lazy(() => import('./components/Reports'));
 const Attendance = React.lazy(() => import('./components/Attendance'));
 const DataImporter = React.lazy(() => import('./components/DataImporter'));
+const FieldPlans = React.lazy(() => import('./components/FieldPlans'));
 
 // Loading Fallback Component
 const PageLoader = () => (
@@ -33,7 +34,7 @@ const PageLoader = () => (
 
 const App: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  
+
   if (!isAuthenticated) {
     // Replaced SplashScreen with direct Login or Splash that redirects to login
     return <Login />;
@@ -42,25 +43,26 @@ const App: React.FC = () => {
   return (
     <ToastProvider>
       <BackupProvider>
-          <HashRouter>
+        <HashRouter>
           <Layout>
-              <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<PageLoader />}>
               <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/workers" element={<Workers />} />
-                  <Route path="/projects" element={<Projects />} />
-                  <Route path="/statistics" element={<Statistics />} />
-                  <Route path="/records" element={<TimeRecords />} />
-                  <Route path="/plan" element={<Plan />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/attendance" element={<Attendance />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/import" element={<DataImporter />} />
-                  <Route path="*" element={<Navigate to="/" />} />
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/workers" element={<Workers />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/field-plans" element={<FieldPlans />} />
+                <Route path="/statistics" element={<Statistics />} />
+                <Route path="/records" element={<TimeRecords />} />
+                <Route path="/plan" element={<Plan />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/attendance" element={<Attendance />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/import" element={<DataImporter />} />
+                <Route path="*" element={<Navigate to="/" />} />
               </Routes>
-              </Suspense>
+            </Suspense>
           </Layout>
-          </HashRouter>
+        </HashRouter>
       </BackupProvider>
     </ToastProvider>
   );

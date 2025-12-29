@@ -14,17 +14,18 @@ import TrashIcon from './icons/TrashIcon';
 import ColorSwatchIcon from './icons/ColorSwatchIcon';
 import ConfirmationModal from './ConfirmationModal';
 import MapIcon from './icons/MapIcon';
+import { useTouchGestures } from '../hooks/useTouchGestures';
 
 declare const pdfjsLib: any;
 
 // Helper to get a consistent color for a worker
 const getWorkerColor = (workerId: number) => {
-  const colors = [
-    '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', 
-    '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', 
-    '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'
-  ];
-  return colors[workerId % colors.length];
+    const colors = [
+        '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e',
+        '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6',
+        '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'
+    ];
+    return colors[workerId % colors.length];
 };
 
 // --- Table Management Modal ---
@@ -46,7 +47,7 @@ const TableManagementModal: React.FC<TableManagementModalProps> = ({ table, coor
     const workers: Worker[] | undefined = useLiveQuery(() => db.workers.toArray());
     const assignments = useLiveQuery(() => table ? db.tableAssignments.where('tableId').equals(table.id!).toArray() : [], [table]);
     const workerMap = useMemo(() => new Map(workers?.map(w => [w.id!, w]) || []), [workers]);
-    
+
     useEffect(() => {
         if (table) {
             setTableCode(table.tableCode);
@@ -57,7 +58,7 @@ const TableManagementModal: React.FC<TableManagementModalProps> = ({ table, coor
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         const getTableTypeFromCode = (code: string): 'small' | 'medium' | 'large' => {
             const c = code.toLowerCase();
             if (c.startsWith('it28')) return 'small';
@@ -67,10 +68,10 @@ const TableManagementModal: React.FC<TableManagementModalProps> = ({ table, coor
         };
 
         if (table?.id) {
-            await db.solarTables.update(table.id, { 
-                tableCode, 
+            await db.solarTables.update(table.id, {
+                tableCode,
                 tableType: getTableTypeFromCode(tableCode),
-                status 
+                status
             });
         } else if (coords) {
             const tableData: Omit<SolarTable, 'id'> = {
@@ -85,7 +86,7 @@ const TableManagementModal: React.FC<TableManagementModalProps> = ({ table, coor
         }
         onClose();
     };
-    
+
     const handleDelete = async () => {
         if (table?.id) {
             await db.transaction('rw', db.solarTables, db.tableAssignments, db.tableStatusHistory, async () => {
@@ -96,17 +97,17 @@ const TableManagementModal: React.FC<TableManagementModalProps> = ({ table, coor
             onClose();
         }
     };
-    
+
     const handleAssignWorker = async () => {
         if (!table || !workerToAssign) return;
         const assignment = { tableId: table.id!, workerId: Number(workerToAssign) };
         const existing = await db.tableAssignments.where(assignment).first();
-        if(!existing) {
-             await db.tableAssignments.add(assignment);
+        if (!existing) {
+            await db.tableAssignments.add(assignment);
         }
         setWorkerToAssign('');
     };
-    
+
     const handleUnassignWorker = async (assignmentId: number) => {
         await db.tableAssignments.delete(assignmentId);
     };
@@ -174,9 +175,9 @@ const TableManagementModal: React.FC<TableManagementModalProps> = ({ table, coor
                                         <p className="text-sm text-gray-500 mb-4 italic">{t('unassigned')}</p>
                                     )}
                                     <div className="flex gap-2">
-                                        <select 
-                                            value={workerToAssign} 
-                                            onChange={e => setWorkerToAssign(Number(e.target.value))} 
+                                        <select
+                                            value={workerToAssign}
+                                            onChange={e => setWorkerToAssign(Number(e.target.value))}
                                             className="flex-grow p-3 bg-black/20 text-white border border-white/20 rounded-xl [&>option]:bg-gray-800"
                                         >
                                             <option value="" disabled>{t('select_worker')}</option>
@@ -213,17 +214,18 @@ const Plan: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const annotationCanvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    
+
     const [selectedProjectId, setSelectedProjectId] = useState<number | ''>('');
     const [pageNum, setPageNum] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const [zoom, setZoom] = useState(1.0);
     const [pdfDoc, setPdfDoc] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);
-    
+    const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+
     const [modalCoords, setModalCoords] = useState<{ x: number; y: number } | null>(null);
     const [editingTable, setEditingTable] = useState<SolarTable | undefined>(undefined);
-    
+
     const [drawingMode, setDrawingMode] = useState<'pencil' | 'eraser' | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [paths, setPaths] = useState<AnnotationPath[]>([]);
@@ -231,16 +233,37 @@ const Plan: React.FC = () => {
     const [strokeWidth, setStrokeWidth] = useState(2);
     const [strokeColor, setStrokeColor] = useState('#ff0000');
 
+    // Touch gestures for mobile
+    const { touchHandlers, resetGestures } = useTouchGestures({
+        onPinch: (newScale) => {
+            setZoom(Math.max(0.5, Math.min(3, newScale)));
+        },
+        onPan: (deltaX, deltaY) => {
+            if (!drawingMode) {
+                setPanOffset(prev => ({
+                    x: prev.x + deltaX,
+                    y: prev.y + deltaY
+                }));
+            }
+        },
+        onDoubleTap: () => {
+            setZoom(1.0);
+            setPanOffset({ x: 0, y: 0 });
+        },
+        minScale: 0.5,
+        maxScale: 3
+    });
+
     // Ref to track what project/page the local paths/redoStack belong to
-    const lastLoadedViewRef = useRef<{projectId: number | '', pageNum: number}>({ projectId: '', pageNum: 1 });
+    const lastLoadedViewRef = useRef<{ projectId: number | '', pageNum: number }>({ projectId: '', pageNum: 1 });
 
     const projects = useLiveQuery(() => db.projects.toArray());
     const selectedProject = useMemo(() => projects?.find(p => p.id === selectedProjectId), [projects, selectedProjectId]);
     const tables = useLiveQuery(() => selectedProjectId ? db.solarTables.where('projectId').equals(selectedProjectId).toArray() : [], [selectedProjectId]);
-    
+
     // Live query for existing annotations
     const annotations = useLiveQuery(
-        () => (selectedProjectId && pageNum) ? db.planAnnotations.where({ projectId: selectedProjectId, page: pageNum }).first() : null, 
+        () => (selectedProjectId && pageNum) ? db.planAnnotations.where({ projectId: selectedProjectId, page: pageNum }).first() : null,
         [selectedProjectId, pageNum]
     );
 
@@ -314,7 +337,7 @@ const Plan: React.FC = () => {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
+
         paths.forEach(path => {
             ctx.beginPath();
             ctx.strokeStyle = path.tool === 'eraser' ? '#ffffff00' : path.color;
@@ -322,7 +345,7 @@ const Plan: React.FC = () => {
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.globalCompositeOperation = path.tool === 'eraser' ? 'destination-out' : 'source-over';
-            
+
             if (path.points.length > 0) {
                 ctx.moveTo(path.points[0].x * canvas.width / 100, path.points[0].y * canvas.height / 100);
                 path.points.forEach(p => ctx.lineTo(p.x * canvas.width / 100, p.y * canvas.height / 100));
@@ -421,7 +444,7 @@ const Plan: React.FC = () => {
                             <button onClick={undo} className="p-2 text-gray-400 hover:bg-white/10 rounded-lg"><UndoIcon className="w-5 h-5" /></button>
                             <button onClick={redo} className="p-2 text-gray-400 hover:bg-white/10 rounded-lg"><RedoIcon className="w-5 h-5" /></button>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 bg-black/30 rounded-xl p-1 border border-white/10">
                             <button onClick={() => setPageNum(p => Math.max(1, p - 1))} disabled={pageNum === 1} className="px-3 py-1 text-white disabled:opacity-30">‹</button>
                             <span className="text-sm font-mono text-white">{pageNum}/{totalPages}</span>
@@ -437,35 +460,55 @@ const Plan: React.FC = () => {
                 )}
             </div>
 
-            <div className="relative flex justify-center bg-gray-950 p-8 rounded-3xl border border-white/5 overflow-auto min-h-[60vh] custom-scrollbar shadow-inner">
+            <div className="relative flex justify-center bg-gray-950 p-4 md:p-8 rounded-3xl border border-white/5 overflow-hidden min-h-[60vh] shadow-inner">
                 {isLoading && <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}
-                
+
                 {pdfDoc ? (
-                    <div ref={containerRef} className="relative shadow-2xl" onClick={handleCanvasClick}>
-                        <canvas ref={canvasRef} className="rounded-lg shadow-lg" />
-                        <canvas 
-                            ref={annotationCanvasRef} 
-                            className="absolute inset-0 z-2 pointer-events-auto cursor-crosshair"
-                            onMouseDown={startDrawing}
-                            onMouseMove={draw}
-                            onMouseUp={stopDrawing}
-                            onMouseLeave={stopDrawing}
-                            style={{ pointerEvents: drawingMode ? 'auto' : 'none' }}
-                        />
-                        {tables?.map(t => (
-                            <div 
-                                key={t.id}
-                                onClick={(e) => { e.stopPropagation(); setEditingTable(t); setModalCoords(null); }}
-                                className={`absolute w-4 h-4 rounded-full border border-white shadow-md cursor-pointer transition-transform hover:scale-150 z-10 ${t.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500'}`}
-                                style={{ left: `${t.x}%`, top: `${t.y}%`, transform: 'translate(-50%, -50%)' }}
-                                title={t.tableCode}
+                    <div
+                        className="relative overflow-auto custom-scrollbar w-full h-full flex items-center justify-center"
+                        {...touchHandlers}
+                    >
+                        <div
+                            ref={containerRef}
+                            className="relative shadow-2xl transition-transform duration-100"
+                            onClick={handleCanvasClick}
+                            style={{
+                                transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
+                                transformOrigin: 'center center'
+                            }}
+                        >
+                            <canvas ref={canvasRef} className="rounded-lg shadow-lg" />
+                            <canvas
+                                ref={annotationCanvasRef}
+                                className="absolute inset-0 z-2 pointer-events-auto cursor-crosshair touch-none"
+                                onMouseDown={startDrawing}
+                                onMouseMove={draw}
+                                onMouseUp={stopDrawing}
+                                onMouseLeave={stopDrawing}
+                                style={{ pointerEvents: drawingMode ? 'auto' : 'none' }}
                             />
-                        ))}
+                            {tables?.map(t => (
+                                <div
+                                    key={t.id}
+                                    onClick={(e) => { e.stopPropagation(); setEditingTable(t); setModalCoords(null); }}
+                                    className={`absolute w-6 h-6 md:w-4 md:h-4 rounded-full border-2 border-white shadow-lg cursor-pointer transition-all hover:scale-150 active:scale-125 z-10 ${t.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500'}`}
+                                    style={{ left: `${t.x}%`, top: `${t.y}%`, transform: 'translate(-50%, -50%)' }}
+                                    title={t.tableCode}
+                                />
+                            ))}
+                        </div>
                     </div>
                 ) : (
                     <div className="text-gray-500 text-xl font-bold flex flex-col items-center justify-center h-full space-y-4">
                         <MapIcon className="w-16 h-16 opacity-20" />
-                        <p>{selectedProjectId ? t('no_plan_available') : t('select_project_to_view_plan')}</p>
+                        <p className="text-center px-4">{selectedProjectId ? t('no_plan_available') : t('select_project_to_view_plan')}</p>
+                    </div>
+                )}
+
+                {/* Mobile zoom hint */}
+                {pdfDoc && (
+                    <div className="md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-3 py-2 rounded-full backdrop-blur-sm">
+                        👆 Pinch to zoom • Double tap to reset
                     </div>
                 )}
             </div>

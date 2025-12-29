@@ -48,12 +48,15 @@ const Settings: React.FC = () => {
             }).catch(console.error);
         }
 
-        // Google Sheets API initialization
-        const storedApiKey = localStorage.getItem('google_sheets_api_key');
-        if (storedApiKey) {
-            setSheetsApiKey(storedApiKey);
-            googleSheetsService.init(storedApiKey).then(() => {
-                setIsSheetsConnected(true);
+        // Google Sheets initialization (Apps Script)
+        const storedDeploymentUrl = localStorage.getItem('google_sheets_deployment_url');
+        if (storedDeploymentUrl) {
+            setSheetsApiKey(storedDeploymentUrl);
+            googleSheetsService.init({
+                deploymentUrl: storedDeploymentUrl,
+                autoSync: false
+            }).then(() => {
+                setIsSheetsConnected(googleSheetsService.isReady);
             }).catch(console.error);
         }
     }, []);
@@ -139,25 +142,102 @@ const Settings: React.FC = () => {
 
     const handleConnectSheets = async () => {
         if (!sheetsApiKey) {
-            showToast('Please enter a Google Sheets API Key', 'error');
+            showToast('Please enter Google Apps Script Deployment URL', 'error');
             return;
         }
         try {
-            await googleSheetsService.init(sheetsApiKey);
-            localStorage.setItem('google_sheets_api_key', sheetsApiKey);
+            await googleSheetsService.init({
+                deploymentUrl: sheetsApiKey,
+                autoSync: false
+            });
+            localStorage.setItem('google_sheets_deployment_url', sheetsApiKey);
             setIsSheetsConnected(true);
-            showToast('Google Sheets API connected!', 'success');
+            showToast('Google Sheets connected!', 'success');
         } catch (error) {
             console.error(error);
-            showToast('Failed to connect. Check API key.', 'error');
+            showToast('Failed to connect. Check deployment URL.', 'error');
         }
     };
 
     const handleDisconnectSheets = () => {
-        googleSheetsService.signOut();
+        googleSheetsService.disconnect();
         setIsSheetsConnected(false);
         setSheetsApiKey('');
         showToast('Google Sheets disconnected', 'info');
+    };
+
+    const handleSyncToSheets = async () => {
+        try {
+            showToast('⏳ Uploading to Google Sheets...', 'info');
+
+            // Get all data from database
+            const [workers, projects, fieldTables, timeRecords, dailyLogs] = await Promise.all([
+                db.workers.toArray(),
+                db.projects.toArray(),
+                db.fieldTables.toArray(),
+                db.timeRecords.toArray(),
+                db.dailyLogs.toArray()
+            ]);
+
+            const result = await googleSheetsService.pushAllData({
+                workers,
+                projects,
+                fieldTables,
+                timeRecords,
+                dailyLogs
+            });
+
+            if (result.success) {
+                showToast(`✅ Synced! Updated: ${result.updated || 0}, Inserted: ${result.inserted || 0}`, 'success');
+            } else {
+                showToast(`❌ Sync failed: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Failed to sync!', 'error');
+        }
+    };
+
+    const handlePullFromSheets = async () => {
+        if (!window.confirm('Pull data from Google Sheets? This will merge with local data.')) return;
+
+        try {
+            showToast('⏳ Downloading from Google Sheets...', 'info');
+            const data = await googleSheetsService.pullAllData();
+
+            // Merge data into database
+            let totalUpdated = 0;
+
+            if (data.workers && data.workers.length > 0) {
+                await db.workers.bulkPut(data.workers);
+                totalUpdated += data.workers.length;
+            }
+
+            if (data.projects && data.projects.length > 0) {
+                await db.projects.bulkPut(data.projects);
+                totalUpdated += data.projects.length;
+            }
+
+            if (data.fieldTables && data.fieldTables.length > 0) {
+                await db.fieldTables.bulkPut(data.fieldTables);
+                totalUpdated += data.fieldTables.length;
+            }
+
+            if (data.timeRecords && data.timeRecords.length > 0) {
+                await db.timeRecords.bulkPut(data.timeRecords);
+                totalUpdated += data.timeRecords.length;
+            }
+
+            if (data.dailyLogs && data.dailyLogs.length > 0) {
+                await db.dailyLogs.bulkPut(data.dailyLogs);
+                totalUpdated += data.dailyLogs.length;
+            }
+
+            showToast(`✅ Downloaded ${totalUpdated} records!`, 'success');
+        } catch (error) {
+            console.error(error);
+            showToast('Failed to pull data!', 'error');
+        }
     };
 
     return (
@@ -176,27 +256,35 @@ const Settings: React.FC = () => {
                             <ShareIcon className="w-32 h-32" />
                         </div>
                         <h2 className="text-3xl font-black mb-8 text-white uppercase tracking-widest flex items-center gap-3">
-                            Google Sheets API <span className="text-sm font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">Simple</span>
+                            📊 Google Sheets Backend <span className="text-sm font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">Apps Script</span>
                         </h2>
 
                         {!isSheetsConnected ? (
                             <div className="space-y-6 max-w-lg">
                                 <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl">
                                     <p className="text-emerald-200 text-sm font-medium">
-                                        Pro synchronizaci s Google Sheets potřebujete <strong>API Key</strong>.
-                                        Vytvořte si klíč v <a href="https://console.cloud.google.com/apis/credentials" target="_blank" className="underline text-white">Google Cloud Console</a>,
-                                        povolte <strong>Google Sheets API</strong>.
+                                        🚀 Pro synchronizaci s Google Sheets potřebujete <strong>Google Apps Script Deployment URL</strong>.
+                                        <br /><br />
+                                        📖 <a href="GOOGLE_SHEETS_SETUP.md" target="_blank" className="underline text-white font-bold">Přečtěte si kompletního průvodce</a>
+                                        <br /><br />
+                                        Zkrácený postup:
+                                        <ol className="list-decimal ml-4 mt-2 space-y-1">
+                                            <li>Vytvořte Google Sheets</li>
+                                            <li>Extensions → Apps Script</li>
+                                            <li>Zkopírujte kód z <code className="bg-black/40 px-1 rounded">google-apps-script.js</code></li>
+                                            <li>Deploy → Web app → Zkopírujte URL</li>
+                                        </ol>
                                     </p>
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-2">API Key</label>
+                                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-2">Deployment URL</label>
                                     <input
                                         type="text"
                                         value={sheetsApiKey}
                                         onChange={e => setSheetsApiKey(e.target.value)}
                                         className="w-full p-4 bg-black/40 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-emerald-500 font-mono text-sm shadow-inner"
-                                        placeholder="AIzaSy..."
+                                        placeholder="https://script.google.com/macros/s/..."
                                     />
                                 </div>
                                 <button
@@ -204,7 +292,7 @@ const Settings: React.FC = () => {
                                     disabled={!sheetsApiKey}
                                     className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Connect Google Sheets
+                                    🔗 Connect Google Sheets
                                 </button>
                             </div>
                         ) : (
@@ -212,12 +300,28 @@ const Settings: React.FC = () => {
                                 <div className="flex items-center justify-between p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
                                     <span className="flex items-center gap-2 text-emerald-400 font-bold">
                                         <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></div>
-                                        Google Sheets API Connected
+                                        ✅ Google Sheets Connected
                                     </span>
                                     <button onClick={handleDisconnectSheets} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/30 text-red-400 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">Disconnect</button>
                                 </div>
-                                <p className="text-sm text-gray-400">
-                                    ✅ Synchronizace je aktivní. Použijte tlačítko "Sync" u projektů pro nahrání dat do Google Sheets.
+
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={handleSyncToSheets}
+                                        className="flex-1 px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
+                                    >
+                                        ⬆️ Push to Sheets
+                                    </button>
+                                    <button
+                                        onClick={handlePullFromSheets}
+                                        className="flex-1 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
+                                    >
+                                        ⬇️ Pull from Sheets
+                                    </button>
+                                </div>
+
+                                <p className="text-sm text-gray-400 text-center">
+                                    💡 Můžete také editovat data přímo v Google Sheets!
                                 </p>
                             </div>
                         )}

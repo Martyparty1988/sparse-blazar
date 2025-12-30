@@ -151,14 +151,14 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                             console.warn('Sync issues:', { projRes, tableRes });
                             // showToast('Cloud sync had warnings', 'warning'); // Optional: don't annoy user if it works mostly
                         }
-                    }).catch(err => {
+                    }).catch((err: any) => {
                         console.error('Auto-sync failed:', err);
                         showToast('Cloud sync failed', 'error');
                     });
                 }
 
                 onClose();
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to save project:", error);
                 alert(t('save_failed') || "Failed to save project.");
             }

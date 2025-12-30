@@ -447,13 +447,13 @@ const Projects: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide px-1">
+                <div className="flex flex-wrap gap-2 w-full xl:w-auto">
                     {filterOptions.map((status) => (
                         <button
                             key={status}
                             onClick={() => setStatusFilter(status)}
-                            className={`px-6 py-4 rounded-2xl font-black text-[10px] transition-all border uppercase tracking-widest whitespace-nowrap ${statusFilter === status
-                                ? 'bg-white text-black border-white shadow-[0_0_25px_rgba(255,255,255,0.3)] scale-105'
+                            className={`flex-grow md:flex-grow-0 px-3 py-3 md:px-6 md:py-4 rounded-2xl font-black text-[10px] transition-all border uppercase tracking-widest whitespace-nowrap ${statusFilter === status
+                                ? 'bg-white text-black border-white shadow-[0_0_25px_rgba(255,255,255,0.3)] scale-105 z-10'
                                 : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white'
                                 }`}
                             title={t(status === 'all' ? 'all_statuses' : (status as any))}

@@ -7,30 +7,12 @@ import { db } from '../services/db';
 import type { ChatMessage } from '../types';
 import BackButton from './BackButton';
 
-// Notification Helper
-const playNotificationSound = () => {
-    try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        oscillator.type = 'sine';
-        oscillator.frequency.value = 500;
-        gainNode.gain.value = 0.1;
-
-        oscillator.start();
-        setTimeout(() => oscillator.stop(), 200);
-    } catch (e) {
-        console.error("Audio play failed", e);
-    }
-};
+import { soundService } from '../services/soundService';
 
 const notifyUser = (message: ChatMessage) => {
     // Sound
-    playNotificationSound();
+    // Sound
+    soundService.playMessageReceived();
 
     // Vibration
     if (navigator.vibrate) {
@@ -112,7 +94,7 @@ const Chat: React.FC = () => {
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!inputText.trim()) return;
-
+        soundService.playClick();
         setIsSending(true);
         const newMessage: ChatMessage = {
             id: Date.now().toString() + Math.random().toString(36).substr(2, 9),

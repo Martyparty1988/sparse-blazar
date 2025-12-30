@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
+import { soundService } from '../services/soundService';
 import type { FieldTable, Worker } from '../types';
 import { getWorkerColor, getInitials } from '../utils/workerColors';
 import { useI18n } from '../contexts/I18nContext';
@@ -35,8 +36,7 @@ const TableItem: React.FC<{
 
     const handleClick = () => {
         // PC click or Mobile Single Tap
-        // We can debate if single tap should open details or separate "select" mode.
-        // For now, simple click = open details.
+        soundService.playClick();
         onClick?.(table);
     }
 

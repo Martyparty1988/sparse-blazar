@@ -47,28 +47,55 @@
 
 ### ✅ Layout.tsx
 - [x] Bottom nav má dobré velikosti
-- [ ] **TODO:** Větší ikony (w-6 h-6 → w-7 h-7)
-- [ ] **TODO:** Více padding v nav items (p-5 → p-6)
+- [x] **DONE:** Větší ikony (w-6 h-6 → w-7 h-7)
+- [x] **DONE:** Více padding v nav items (p-5 → p-6)
 
-### Dashboard.tsx
-- [ ] **TODO:** Grid 1 column na mobilu
-- [ ] **TODO:** ActionTile větší min-height (160px → 180px)
-- [ ] **TODO:** Větší fonty pro hlavní čísla
+### ✅ Dashboard.tsx
+- [x] **DONE:** Grid 1 column na mobilu
+- [x] **DONE:** ActionTile větší min-height (160px → 180px)
+- [x] **DONE:** Větší fonty pro hlavní čísla
 
-### Projects.tsx
-- [ ] **TODO:** ProjectCard full-width na mobilu
+### ✅ Projects.tsx
+- [x] **DONE:** ProjectCard full-width na mobilu
 - [ ] **TODO:** Swipe actions pro edit/delete
-- [ ] **TODO:** Lepší spacing mezi kartami
+- [x] **DONE:** Lepší spacing mezi kartami
+- [x] **DONE:** Větší touch targety pro admin tlačítka
 
-### TimeRecordForm.tsx
-- [ ] **TODO:** Full-screen modal na mobilu
-- [ ] **TODO:** Větší input fieldsfields
-- [ ] **TODO:** Sticky footer s tlačítky
+### ✅ TimeRecordForm.tsx
+- [x] **DONE:** Full-screen modal na mobilu
+- [x] **DONE:** Větší input fields
+- [x] **DONE:** Sticky footer s tlačítky
 
-### Settings.tsx
-- [ ] **TODO:** Sections skládací (accordion)
-- [ ] **TODO:** Větší toggle switches
-- [ ] **TODO:** Full-width buttons
+### ✅ Settings.tsx
+- [x] **DONE:** Sections skládací (accordion) - implemented using <details>
+- [x] **DONE:** Větší toggle switches / buttons
+- [x] **DONE:** Full-width buttons on mobile
+
+## 3. Component Updates (Detail)
+
+### ✅ Layout.tsx
+- **Bottom Navigation:**
+  - Icons increased to `w-7 h-7`.
+  - Padding increased to `p-6` for larger touch targets.
+
+### ✅ Dashboard.tsx
+- **Grid:** Forces `grid-cols-1` on screens smaller than `md`.
+- **Action Tiles:** `min-height` increased to `180px` (was 160px).
+- **Typography:** Larger/bolder fonts for main numbers.
+
+### ✅ Projects.tsx
+- **Card Layout:** `grid-cols-1` on mobile.
+- **Interactions:** Larger admin buttons (44px target).
+- **Spacing:** Improved gaps between cards.
+
+### ✅ TimeRecordForm.tsx
+- **Modal:** Changed from centered box to full-screen cover on mobile (`inset-0`, `p-0`).
+- **Footer:** Added sticky footer for Save/Cancel buttons so they are always accessible.
+- **Inputs:** `p-4` padding assures large touch area.
+
+### ✅ Settings.tsx
+- **Accordion:** Implemented `SettingsSection` component using `<details>`/`<summary>` for collapsible sections on mobile.
+- **Typography:** Increased summary text size for touch.
 
 ---
 

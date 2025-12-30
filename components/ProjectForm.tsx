@@ -143,9 +143,9 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
     }
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-0 md:p-4 animate-fade-in">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={onClose}></div>
-            <div className="relative w-full max-w-3xl bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl border border-white/20 max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="relative w-full h-full md:h-auto md:max-h-[90vh] md:max-w-3xl bg-slate-900/90 backdrop-blur-2xl md:rounded-[3rem] shadow-2xl border-none md:border border-white/20 flex flex-col overflow-hidden">
                 {/* Header */}
                 <div className="p-8 border-b border-white/10 flex justify-between items-center shrink-0">
                     <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">{project ? t('edit_project') : t('add_project')}</h2>

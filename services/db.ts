@@ -1,6 +1,6 @@
 
 import Dexie, { type Table } from 'dexie';
-import type { Worker, Project, TimeRecord, PlanMarker, SolarTable, TableAssignment, AttendanceSession, DailyLog, ProjectTask, ProjectComponent, PlanAnnotation, TableStatusHistory, Backup, FieldTable } from '../types';
+import type { Worker, Project, TimeRecord, PlanMarker, SolarTable, TableAssignment, AttendanceSession, DailyLog, ProjectTask, ProjectComponent, PlanAnnotation, TableStatusHistory, Backup, FieldTable, Tool, DailyReport } from '../types';
 
 export class MSTDatabase extends Dexie {
   workers!: Table<Worker>;
@@ -17,6 +17,8 @@ export class MSTDatabase extends Dexie {
   tableStatusHistory!: Table<TableStatusHistory>;
   backups!: Table<Backup>;
   fieldTables!: Table<FieldTable>; // NEW: Tabulka pro plánové pole
+  tools!: Table<Tool>; // NEW: Správa nářadí
+  dailyReports!: Table<DailyReport>; // NEW: Denní reporty
 
   constructor() {
     super('MSTDatabase');
@@ -158,6 +160,16 @@ export class MSTDatabase extends Dexie {
           });
         }
       }
+    });
+
+    // Version 22: Add tools table
+    dbInstance.version(22).stores({
+      tools: '++id, name, type, status, assignedWorkerId',
+    });
+
+    // Version 23: Add daily reports table
+    dbInstance.version(23).stores({
+      dailyReports: '++id, date, projectId, [projectId+date]',
     });
   }
 }

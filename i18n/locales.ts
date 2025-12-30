@@ -345,7 +345,19 @@ export const locales = {
     enable_voice_output: 'Enable voice response',
     sync_to_sheets: 'Sync to Sheets',
     last_sync: 'Last Sync',
-    never: 'Never'
+    never: 'Never',
+
+    // Daily Reports
+    daily_report: 'Daily Report',
+    date: 'Date',
+    completed_strings: 'Completed Strings',
+    issues: 'Issues',
+    share_copy_report: 'Share / Copy Report',
+    report_copied_clipboard: 'Report copied! Paste into WhatsApp.',
+    report_copy_failed: 'Failed to copy report.',
+    save_success: 'Saved',
+    save_error: 'Error saving.',
+    project_required_error: 'Please select a project.'
   },
   cs: {
     login: 'Přihlásit se',
@@ -691,6 +703,18 @@ export const locales = {
     enable_voice_output: 'Povolit hlasovou odpověď',
     sync_to_sheets: 'Synchronizovat do Tabulek',
     last_sync: 'Poslední synchronizace',
-    never: 'Nikdy'
+    never: 'Nikdy',
+
+    // Daily Reports
+    daily_report: 'Denní Report',
+    date: 'Datum',
+    completed_strings: 'Hotové Stringy',
+    issues: 'Problémy',
+    share_copy_report: 'Sdílet / Kopírovat Report',
+    report_copied_clipboard: 'Report zkopírován! Vložte do WhatsAppu.',
+    report_copy_failed: 'Nepodařilo se zkopírovat report.',
+    save_success: 'Uloženo',
+    save_error: 'Chyba při ukládání.',
+    project_required_error: 'Vyberte prosím projekt.'
   },
 };

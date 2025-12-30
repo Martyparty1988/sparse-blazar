@@ -240,6 +240,18 @@ const Settings: React.FC = () => {
         }
     };
 
+    const SettingsSection: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen = false }) => (
+        <details className="group p-6 md:p-8 bg-slate-900/40 backdrop-blur-3xl rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden" open={defaultOpen}>
+            <summary className="text-2xl md:text-3xl font-black text-white uppercase tracking-widest cursor-pointer list-none flex items-center justify-between outline-none [&::-webkit-details-marker]:hidden">
+                <span className="flex items-center gap-3">{title}</span>
+                <svg className="w-8 h-8 transform group-open:rotate-180 transition-transform duration-300 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
+            </summary>
+            <div className="mt-8 animate-fade-in">
+                {children}
+            </div>
+        </details>
+    );
+
     return (
         <div className="pb-12">
             <h1 className="text-6xl font-black mb-12 text-white [text-shadow:0_4px_12px_rgba(0,0,0,0.5)] italic uppercase tracking-tighter underline decoration-[var(--color-accent)] decoration-8">
@@ -251,14 +263,7 @@ const Settings: React.FC = () => {
 
                 {/* Google Sheets API Section - Admin Only */}
                 {user?.role === 'admin' && (
-                    <section className="p-8 bg-slate-900/40 backdrop-blur-3xl rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                            <ShareIcon className="w-32 h-32" />
-                        </div>
-                        <h2 className="text-3xl font-black mb-8 text-white uppercase tracking-widest flex items-center gap-3">
-                            📊 Google Sheets Backend <span className="text-sm font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">Apps Script</span>
-                        </h2>
-
+                    <SettingsSection title="Google Sheets" defaultOpen={true}>
                         {!isSheetsConnected ? (
                             <div className="space-y-6 max-w-lg">
                                 <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl">
@@ -305,7 +310,7 @@ const Settings: React.FC = () => {
                                     <button onClick={handleDisconnectSheets} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/30 text-red-400 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">Disconnect</button>
                                 </div>
 
-                                <div className="flex gap-4">
+                                <div className="flex flex-col md:flex-row gap-4">
                                     <button
                                         onClick={handleSyncToSheets}
                                         className="flex-1 px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
@@ -325,18 +330,15 @@ const Settings: React.FC = () => {
                                 </p>
                             </div>
                         )}
-                    </section>
+                    </SettingsSection>
                 )}
 
                 {/* Cloud Sync Section - Only visible to Admin */}
                 {user?.role === 'admin' && (
-                    <section className="p-8 bg-slate-900/40 backdrop-blur-3xl rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <SettingsSection title={t('cloud_sync')}>
+                        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                             <ShareIcon className="w-32 h-32" />
                         </div>
-                        <h2 className="text-3xl font-black mb-8 text-white uppercase tracking-widest flex items-center gap-3">
-                            {t('cloud_sync')} <span className="text-sm font-bold text-gray-500 bg-black/30 px-2 py-1 rounded">Beta</span>
-                        </h2>
 
                         {!isDriveConnected ? (
                             <div className="space-y-6 max-w-lg">
@@ -376,7 +378,7 @@ const Settings: React.FC = () => {
                                     <button onClick={handleDisconnectDrive} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/30 text-red-400 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">{t('disconnect_drive')}</button>
                                 </div>
 
-                                <div className="flex gap-4">
+                                <div className="flex flex-col md:flex-row gap-4">
                                     <button
                                         onClick={handleUploadToCloud}
                                         disabled={loadingDrive}
@@ -416,19 +418,17 @@ const Settings: React.FC = () => {
                                 </div>
                             </div>
                         )}
-                    </section>
+                    </SettingsSection>
                 )}
 
                 {/* Local Backup Section */}
                 {user?.role === 'admin' && (
-                    <section className="p-8 bg-slate-900/40 backdrop-blur-3xl rounded-3xl border border-white/10 shadow-2xl">
-                        <h2 className="text-3xl font-black mb-8 text-white uppercase tracking-widest">{t('backup_restore')}</h2>
+                    <SettingsSection title={t('backup_restore')}>
                         <BackupManager />
-                    </section>
+                    </SettingsSection>
                 )}
 
-                <section className="p-8 bg-slate-900/40 backdrop-blur-3xl rounded-3xl border border-white/10 shadow-2xl">
-                    <h2 className="text-3xl font-black mb-8 text-white uppercase tracking-widest">{t('app_theme')}</h2>
+                <SettingsSection title={t('app_theme')}>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                         {themesData.map(themeOption => (
                             <button
@@ -456,10 +456,9 @@ const Settings: React.FC = () => {
                             {colorTheme === 'light' ? t('switch_to_dark') : t('switch_to_light')}
                         </button>
                     </div>
-                </section>
+                </SettingsSection>
 
-                <section className="p-8 bg-slate-900/40 backdrop-blur-3xl rounded-3xl border border-white/10 shadow-2xl">
-                    <h2 className="text-3xl font-black mb-8 text-white uppercase tracking-widest">{t('language')}</h2>
+                <SettingsSection title={t('language')}>
                     <div className="grid grid-cols-2 gap-4">
                         {(['cs', 'en'] as const).map(lang => (
                             <button
@@ -471,12 +470,11 @@ const Settings: React.FC = () => {
                             </button>
                         ))}
                     </div>
-                </section>
+                </SettingsSection>
 
                 {/* Data Management - Admin Only */}
                 {user?.role === 'admin' && (
-                    <section className="p-8 bg-slate-900/40 backdrop-blur-3xl rounded-3xl border border-white/10 shadow-2xl">
-                        <h2 className="text-3xl font-black mb-8 text-white uppercase tracking-widest">{t('data_management')}</h2>
+                    <SettingsSection title={t('data_management')}>
                         <div className="flex flex-wrap gap-4">
                             <button
                                 onClick={() => setIsResetting(true)}
@@ -486,7 +484,7 @@ const Settings: React.FC = () => {
                                 {t('reset_app_title')}
                             </button>
                         </div>
-                    </section>
+                    </SettingsSection>
                 )}
             </div>
 

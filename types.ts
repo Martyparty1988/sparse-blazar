@@ -109,6 +109,8 @@ export interface ProjectTask {
   price: number; // This will be the total price for the task
   assignedWorkerId?: number;
   completionDate?: Date;
+  startTime?: Date; // For efficiency tracking
+  endTime?: Date;   // For efficiency tracking
 }
 
 
@@ -182,4 +184,30 @@ export interface CloudBackupFile {
   name: string;
   createdTime: string;
   size: string;
+}
+
+export type ToolStatus = 'available' | 'borrowed' | 'broken' | 'service' | 'lost';
+
+export interface Tool {
+  id?: number;
+  name: string;
+  type: string; // e.g., "Drill", "Ladder", "Car"
+  brand?: string;
+  serialNumber?: string;
+  status: ToolStatus;
+  assignedWorkerId?: number; // Who has it currently
+  purchaseDate?: Date;
+  notes?: string;
+  lastInspection?: Date;
+}
+
+export interface DailyReport {
+  id?: number;
+  date: string; // YYYY-MM-DD
+  projectId: number;
+  stringsCompleted: number; // Počet hotových stringů
+  notes: string; // Obecné poznámky (CZ)
+  issues: string; // Problémy (CZ)
+  managerEmail?: string; // Email site managera
+  sentAt?: Date; // Kdy byl report odeslán
 }

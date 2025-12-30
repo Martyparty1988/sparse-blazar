@@ -14,6 +14,8 @@ import CalendarIcon from './icons/CalendarIcon';
 import PlusIcon from './icons/PlusIcon';
 import BrainIcon from './icons/BrainIcon';
 import ChartBarIcon from './icons/ChartBarIcon';
+import WrenchIcon from './icons/WrenchIcon';
+import DocumentTextIcon from './icons/DocumentTextIcon';
 
 const ActionTile: React.FC<{
   icon: React.ReactNode;
@@ -97,11 +99,25 @@ const Dashboard: React.FC = () => {
           color="border-emerald-500"
         />
         <ActionTile
+          icon={<WrenchIcon className="w-8 h-8 md:w-7 md:h-7" />}
+          label="Nářadí"
+          desc="Sklad a evidence nářadí"
+          onClick={() => navigate('/tools')}
+          color="border-slate-500"
+        />
+        <ActionTile
           icon={<ChartBarIcon className="w-8 h-8 md:w-7 md:h-7" />}
           label="Statistiky"
           desc="Grafy, KPI a analýzy"
           onClick={() => navigate('/stats')}
           color="border-purple-500"
+        />
+        <ActionTile
+          icon={<DocumentTextIcon className="w-8 h-8 md:w-7 md:h-7" />}
+          label="Denní Report"
+          desc="Reporty pro manažery"
+          onClick={() => navigate('/daily-reports')}
+          color="border-orange-500"
         />
       </section>
 

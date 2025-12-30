@@ -134,24 +134,24 @@ const ProjectCard: React.FC<{
                         <div className="flex gap-2">
                             <button
                                 onClick={(e) => { e.stopPropagation(); onSync(project) }}
-                                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-emerald-400 hover:bg-emerald-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
+                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-emerald-400 hover:bg-emerald-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
                                 title={t('sync_to_sheets')}
                             >
-                                <ShareIcon className="h-4 w-4" />
+                                <ShareIcon className="h-5 w-5" />
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); onEdit(project) }}
-                                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-blue-300 hover:bg-blue-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
+                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-blue-300 hover:bg-blue-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
                                 title={t('edit_project')}
                             >
-                                <PencilIcon className="h-4 w-4" />
+                                <PencilIcon className="h-5 w-5" />
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); onDelete(project) }}
-                                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-rose-400 hover:bg-rose-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
+                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-rose-400 hover:bg-rose-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
                                 title={t('delete_project')}
                             >
-                                <TrashIcon className="h-4 w-4" />
+                                <TrashIcon className="h-5 w-5" />
                             </button>
                         </div>
                     )}

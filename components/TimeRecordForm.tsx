@@ -11,12 +11,18 @@ interface WorkLogFormProps {
 
 const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
     const { t } = useI18n();
-    const [workType, setWorkType] = useState<'hourly' | 'task'>('hourly');
+
+    // Load defaults from localStorage
+    const savedWorkType = localStorage.getItem('last_work_type') as 'hourly' | 'task' | null;
+    const savedProjectId = localStorage.getItem('last_project_id');
+    const savedWorkerId = localStorage.getItem('last_worker_id');
+
+    const [workType, setWorkType] = useState<'hourly' | 'task'>(savedWorkType || 'hourly');
     const [taskType, setTaskType] = useState<'panels' | 'construction' | 'cables'>('cables');
 
     // Common fields
-    const [projectId, setProjectId] = useState<number | ''>('');
-    const [workerId, setWorkerId] = useState<number | ''>('');
+    const [projectId, setProjectId] = useState<number | ''>(savedProjectId ? Number(savedProjectId) : '');
+    const [workerId, setWorkerId] = useState<number | ''>(savedWorkerId ? Number(savedWorkerId) : '');
     const [description, setDescription] = useState('');
 
     // Hourly fields
@@ -37,15 +43,38 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
 
     useEffect(() => {
         const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        setStartTime(now.toISOString().slice(0, 16));
-        setEndTime(now.toISOString().slice(0, 16));
+        const end = new Date(now);
+        end.setMinutes(end.getMinutes() - end.getTimezoneOffset());
+
+        // Default Start Time: 07:00 AM today
+        const start = new Date(now);
+        start.setHours(7, 0, 0, 0); // 07:00:00
+        start.setMinutes(start.getMinutes() - start.getTimezoneOffset());
+
+        setStartTime(start.toISOString().slice(0, 16));
+        setEndTime(end.toISOString().slice(0, 16));
     }, []);
 
-    const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setProjectId(Number(e.target.value));
-        setTableId(''); // Reset table selection when project changes
+    // Save choices to localStorage
+    const handleWorkTypeChange = (type: 'hourly' | 'task') => {
+        setWorkType(type);
+        localStorage.setItem('last_work_type', type);
     };
+
+    const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const val = Number(e.target.value);
+        setProjectId(val);
+        setTableId(''); // Reset table selection when project changes
+        localStorage.setItem('last_project_id', String(val));
+    };
+
+    const handleWorkerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const val = Number(e.target.value);
+        setWorkerId(val);
+        localStorage.setItem('last_worker_id', String(val));
+    };
+
+    // ... (rest of logic)
 
     const calculatedTaskPrice = useMemo(() => {
         if (taskType === 'panels') {
@@ -107,6 +136,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                             projectId: Number(projectId), taskType: 'panels', assignedWorkerId: Number(workerId),
                             description: t('panels_task_desc', { count }), panelCount: count, pricePerPanel: perPanel,
                             price: count * perPanel, completionDate: new Date(),
+                            startTime: new Date(startTime), endTime: new Date(endTime) // Add time tracking
                         };
                         await db.projectTasks.add(taskData as ProjectTask);
                         break;
@@ -119,6 +149,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                         taskData = {
                             projectId: Number(projectId), taskType: 'construction', assignedWorkerId: Number(workerId),
                             description: description.trim(), price: price, completionDate: new Date(),
+                            startTime: new Date(startTime), endTime: new Date(endTime) // Add time tracking
                         };
                         await db.projectTasks.add(taskData as ProjectTask);
                         break;
@@ -210,8 +241,8 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
 
 
     return (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/30 backdrop-blur-lg p-4">
-            <div className="w-full max-w-lg p-8 bg-black/20 backdrop-blur-2xl rounded-3xl shadow-xl border border-white/10 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/30 backdrop-blur-lg p-0 md:p-4">
+            <div className="w-full h-full md:h-auto md:max-h-[90vh] md:max-w-lg p-6 md:p-8 bg-black/80 md:bg-black/20 backdrop-blur-2xl md:rounded-3xl shadow-xl border-none md:border border-white/10 overflow-y-auto">
                 <h2 className="text-3xl font-bold mb-6 text-white">{t('log_work')}</h2>
                 <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -219,8 +250,8 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                     <div>
                         <label className="block text-lg font-medium text-gray-300 mb-2">{t('work_type')}</label>
                         <div className="inline-flex rounded-lg bg-black/20 border border-white/10 p-1 w-full">
-                            <button type="button" onClick={() => setWorkType('hourly')} className={`px-4 py-2 text-sm font-bold rounded-md w-1/2 transition-colors ${workType === 'hourly' ? 'bg-[var(--color-primary)]' : 'hover:bg-white/10'}`}>{t('hourly_rate_work')}</button>
-                            <button type="button" onClick={() => setWorkType('task')} className={`px-4 py-2 text-sm font-bold rounded-md w-1/2 transition-colors ${workType === 'task' ? 'bg-[var(--color-primary)]' : 'hover:bg-white/10'}`}>{t('task_based_work')}</button>
+                            <button type="button" onClick={() => handleWorkTypeChange('hourly')} className={`px-4 py-2 text-sm font-bold rounded-md w-1/2 transition-colors ${workType === 'hourly' ? 'bg-[var(--color-primary)]' : 'hover:bg-white/10'}`}>{t('hourly_rate_work')}</button>
+                            <button type="button" onClick={() => handleWorkTypeChange('task')} className={`px-4 py-2 text-sm font-bold rounded-md w-1/2 transition-colors ${workType === 'task' ? 'bg-[var(--color-primary)]' : 'hover:bg-white/10'}`}>{t('task_based_work')}</button>
                         </div>
                     </div>
 
@@ -228,7 +259,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="workerId-main" className="block text-lg font-medium text-gray-300 mb-2">{t('select_worker')}</label>
-                            <select id="workerId-main" value={workerId} onChange={e => setWorkerId(Number(e.target.value))} required className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl [&>option]:bg-gray-800">
+                            <select id="workerId-main" value={workerId} onChange={handleWorkerChange} required className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl [&>option]:bg-gray-800">
                                 <option value="" disabled>{t('select_worker')}</option>
                                 {workers?.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                             </select>
@@ -277,11 +308,26 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                                 </select>
                             </div>
                             {projectId && renderTaskFields()}
+
+                            {/* Time Fields for Efficiency Tracking */}
+                            <div className="pt-4 border-t border-white/5">
+                                <p className="text-sm text-gray-400 font-bold mb-3 uppercase tracking-wider">Čas strávený na úkolu (pro efektivitu)</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label htmlFor="startTime-task" className="block text-lg font-medium text-gray-300 mb-2">{t('start_time')}</label>
+                                        <input type="datetime-local" id="startTime-task" value={startTime} onChange={e => setStartTime(e.target.value)} required className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl" />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="endTime-task" className="block text-lg font-medium text-gray-300 mb-2">{t('end_time')}</label>
+                                        <input type="datetime-local" id="endTime-task" value={endTime} onChange={e => setEndTime(e.target.value)} required className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl" />
+                                    </div>
+                                </div>
+                            </div>
                         </>
                     )}
 
                     {/* Actions */}
-                    <div className="flex justify-end space-x-4 pt-4">
+                    <div className="flex justify-end space-x-4 pt-4 sticky bottom-0 bg-slate-900/95 md:bg-transparent backdrop-blur-xl md:backdrop-blur-none p-4 md:p-0 -mx-6 md:mx-0 border-t border-white/10 md:border-none z-10">
                         <button type="button" onClick={onClose} className="px-6 py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors text-lg">{t('cancel')}</button>
                         <button type="submit" className="px-6 py-3 bg-[var(--color-primary)] text-white font-bold rounded-xl hover:bg-[var(--color-primary-hover)] transition-all shadow-md text-lg">{t('save')}</button>
                     </div>

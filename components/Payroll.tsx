@@ -22,6 +22,7 @@ const Payroll: React.FC = () => {
     const workers = useLiveQuery(() => db.workers.toArray());
     const records = useLiveQuery(() => db.records.toArray());
     const completedTables = useLiveQuery(() => db.fieldTables.where('status').equals('completed').toArray());
+    const projectTasks = useLiveQuery(() => db.projectTasks.toArray());
 
     const isAdmin = user?.role === 'admin';
 
@@ -46,6 +47,7 @@ const Payroll: React.FC = () => {
 
         const filteredRecords = records.filter(r => new Date(r.startTime) >= startDate);
         const filteredTables = completedTables?.filter(t => t.completedAt && new Date(t.completedAt) >= startDate) || [];
+        const filteredTasks = projectTasks?.filter(t => t.completionDate && new Date(t.completionDate) >= startDate) || [];
 
         return workers.map(w => {
             const workerRecords = filteredRecords.filter(r => r.workerId === w.id);
@@ -56,17 +58,26 @@ const Payroll: React.FC = () => {
             }, 0);
 
             const hours = totalMs / (1000 * 60 * 60);
-            const earnings = hours * w.hourlyRate;
+            const hourlyEarnings = hours * w.hourlyRate;
+
+            // Earnings from project tasks
+            const workerTasks = filteredTasks.filter(t => t.assignedWorkerId === w.id);
+            const taskEarnings = workerTasks.reduce((acc, t) => acc + (t.price || 0), 0);
+
+            const totalEarnings = hourlyEarnings + taskEarnings;
             const tablesCount = filteredTables.filter(t => t.completedBy === w.id).length;
 
             return {
                 worker: w,
                 hours: hours.toFixed(1),
-                earnings: earnings.toFixed(2),
-                tables: tablesCount
+                hourlyEarnings: hourlyEarnings.toFixed(2),
+                taskEarnings: taskEarnings.toFixed(2),
+                earnings: totalEarnings.toFixed(2),
+                tables: tablesCount,
+                tasksCount: workerTasks.length
             };
         }).filter(s => isAdmin || s.worker.id === currentUser?.workerId);
-    }, [workers, records, completedTables, startDate, currentUser, isAdmin]);
+    }, [workers, records, completedTables, projectTasks, startDate, currentUser, isAdmin]);
 
     const totalEarnings = stats.reduce((acc, s) => acc + parseFloat(s.earnings), 0);
     const totalTables = stats.reduce((acc, s) => acc + s.tables, 0);
@@ -97,8 +108,8 @@ const Payroll: React.FC = () => {
                         key={range}
                         onClick={() => setDateRange(range)}
                         className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${dateRange === range
-                                ? 'bg-white/10 text-white shadow-inner border border-white/10'
-                                : 'text-gray-500 hover:text-gray-300'
+                            ? 'bg-white/10 text-white shadow-inner border border-white/10'
+                            : 'text-gray-500 hover:text-gray-300'
                             }`}
                     >
                         {t(range) || range}
@@ -145,9 +156,9 @@ const Payroll: React.FC = () => {
                         <thead>
                             <tr className="bg-black/40">
                                 <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Pracovník</th>
-                                <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Hodiny</th>
-                                <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Stoly</th>
-                                <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Odměna</th>
+                                <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Hodiny / Sazba</th>
+                                <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Úkoly / Pole</th>
+                                <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Odměna celkem</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -169,11 +180,19 @@ const Payroll: React.FC = () => {
                                     </td>
                                     <td className="px-8 py-6">
                                         <p className="text-white font-black text-lg">{s.hours} <span className="text-[10px] text-slate-500 uppercase">h</span></p>
+                                        <p className="text-[10px] font-bold text-slate-500">{s.hourlyEarnings} €</p>
                                     </td>
                                     <td className="px-8 py-6">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                                            <p className="text-white font-black text-lg">{s.tables}</p>
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
+                                                <p className="text-white font-black text-sm">{s.tasksCount} úkolů</p>
+                                                <span className="text-[10px] font-bold text-indigo-400">({s.taskEarnings} €)</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                                                <p className="text-gray-400 font-bold text-xs">{s.tables} stolů v poli</p>
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 text-right">

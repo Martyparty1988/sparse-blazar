@@ -110,10 +110,11 @@ export interface ProjectTask {
 
   // General fields
   price: number; // This will be the total price for the task
+  hoursSpent?: number; // NEW: Kolik hodin na tom strávili (pro výpočet efektivity)
   assignedWorkerId?: number;
   completionDate?: Date;
-  startTime?: Date; // For efficiency tracking
-  endTime?: Date;   // For efficiency tracking
+  startTime?: Date; // For efficiency tracking (optional)
+  endTime?: Date;   // For efficiency tracking (optional)
 }
 
 

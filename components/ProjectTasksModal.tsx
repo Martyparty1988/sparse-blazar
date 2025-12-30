@@ -26,6 +26,7 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
     const [pricePerPanel, setPricePerPanel] = useState('');
     const [tableSize, setTableSize] = useState<'small' | 'medium' | 'large'>('small');
     const [price, setPrice] = useState('');
+    const [hoursSpent, setHoursSpent] = useState('');
     const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
     const [workerFilter, setWorkerFilter] = useState<number | 'all'>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
@@ -111,6 +112,7 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
         setPricePerPanel('');
         setTableSize('small');
         setPrice('');
+        setHoursSpent('');
     }
 
     const handleToggleCompletion = async (task: ProjectTask) => {
@@ -174,6 +176,7 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                     panelCount: count,
                     pricePerPanel: perPanel,
                     price: count * perPanel,
+                    hoursSpent: hoursSpent ? Number(hoursSpent) : undefined,
                     tableSize: undefined
                 };
                 break;
@@ -185,6 +188,7 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                     description: t('cables_task_desc', { size: t(tableSize) }),
                     tableSize: tableSize,
                     price: Number(price),
+                    hoursSpent: hoursSpent ? Number(hoursSpent) : undefined,
                     panelCount: undefined,
                     pricePerPanel: undefined
                 };
@@ -197,6 +201,7 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                     taskType: 'construction',
                     description: description.trim(),
                     price: Number(price),
+                    hoursSpent: hoursSpent ? Number(hoursSpent) : undefined,
                     panelCount: undefined,
                     pricePerPanel: undefined,
                     tableSize: undefined
@@ -349,8 +354,13 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                                     </div>
 
                                     <div className="flex items-center gap-3 flex-shrink-0">
-                                        <div className="px-4 py-2 rounded-xl bg-black/20 border border-white/5">
+                                        <div className="flex flex-col items-end gap-1 px-4 py-2 rounded-xl bg-black/20 border border-white/5 min-w-[100px]">
                                             <span className="font-mono font-bold text-white text-sm">€{task.price.toFixed(2)}</span>
+                                            {task.hoursSpent && task.hoursSpent > 0 && (
+                                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-tighter">
+                                                    €{(task.price / task.hoursSpent).toFixed(2)}/h
+                                                </span>
+                                            )}
                                         </div>
 
                                         <select
@@ -435,6 +445,31 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                                     <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder={t('task_price')} min="0" step="0.01" required className="p-4 bg-black/30 text-white border border-white/10 rounded-2xl focus:ring-1 focus:ring-indigo-500 font-bold" />
                                 </div>
                             )}
+
+                            {/* Hours Spent Input - NEW */}
+                            <div className="mt-2">
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Odhadovaný/Skutečný čas (hodiny)</label>
+                                <div className="flex items-center gap-4">
+                                    <div className="relative flex-grow">
+                                        <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        <input
+                                            type="number"
+                                            value={hoursSpent}
+                                            onChange={e => setHoursSpent(e.target.value)}
+                                            placeholder="Kolik hodin to trvalo?"
+                                            min="0"
+                                            step="0.5"
+                                            className="w-full p-4 pl-12 bg-black/30 text-white border border-white/10 rounded-2xl focus:ring-1 focus:ring-indigo-500 font-bold"
+                                        />
+                                    </div>
+                                    {hoursSpent && Number(hoursSpent) > 0 && calculatedPrice > 0 && (
+                                        <div className="px-5 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex flex-col justify-center">
+                                            <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest whitespace-nowrap">Efektivita</span>
+                                            <span className="text-sm font-black text-white">€{(calculatedPrice / Number(hoursSpent)).toFixed(2)}/h</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                             <div className="flex justify-between items-center pt-2">
                                 <div className="text-xl font-black text-white tracking-tight">€{calculatedPrice.toFixed(2)}</div>
                                 <div className="flex gap-3">
@@ -454,16 +489,18 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                 </div>
             </div>
 
-            {taskToDelete !== null && (
-                <ConfirmationModal
-                    title={t('delete_task_title')}
-                    message={t('confirm_delete')}
-                    onConfirm={handleDeleteTask}
-                    onCancel={() => setTaskToDelete(null)}
-                    variant="danger"
-                />
-            )}
-        </div>
+            {
+                taskToDelete !== null && (
+                    <ConfirmationModal
+                        title={t('delete_task_title')}
+                        message={t('confirm_delete')}
+                        onConfirm={handleDeleteTask}
+                        onCancel={() => setTaskToDelete(null)}
+                        variant="danger"
+                    />
+                )
+            }
+        </div >
     );
 };
 

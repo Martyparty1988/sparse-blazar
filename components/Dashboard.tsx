@@ -165,6 +165,13 @@ const Dashboard: React.FC = () => {
           onClick={() => navigate('/settings')}
           color="border-gray-500"
         />
+        <ActionTile
+          icon={<svg className="w-8 h-8 md:w-7 md:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          label={t('payroll') || "Finance"}
+          desc={t('payroll_desc') || "Odměny a výplaty"}
+          onClick={() => navigate('/payroll')}
+          color="border-indigo-600"
+        />
       </section>
 
       {/* Analytics Summary */}
@@ -200,6 +207,18 @@ const Dashboard: React.FC = () => {
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Právě na směně</p>
             </div>
           </div>
+        </div>
+
+        <div className="glass-card rounded-[3rem] p-8 flex flex-col justify-center bg-gradient-to-br from-indigo-600/20 to-transparent border border-white/5 group cursor-pointer" onClick={() => navigate('/payroll')}>
+          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Moje Odměna (Tento týden)</p>
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-5xl font-black text-white group-hover:scale-110 transition-transform origin-left">
+              {/* This is a placeholder/mock value since calculation is complex for deep dashboard, 
+                  but we'll show something dynamic if possible or just the link */}
+              💰 Detail
+            </h3>
+          </div>
+          <p className="text-slate-500 text-xs font-bold mt-4 uppercase tracking-widest">Klikni pro přehled →</p>
         </div>
 
       </section>

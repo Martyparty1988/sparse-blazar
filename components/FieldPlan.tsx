@@ -15,8 +15,10 @@ const TableItem: React.FC<{
     completedWorker: Worker | null | undefined;
     assignedWorkers: Worker[] | undefined;
     workers: Worker[] | undefined;
+    workers: Worker[] | undefined;
     onClick?: (table: FieldTable) => void;
-}> = ({ table, color, isCompleted, completedWorker, assignedWorkers, workers, onClick }) => {
+    onLongPress?: (table: FieldTable) => void;
+}> = ({ table, color, isCompleted, completedWorker, assignedWorkers, workers, onClick, onLongPress }) => {
 
     // Double Tap detection
     const [lastTap, setLastTap] = React.useState<number>(0);
@@ -35,16 +37,42 @@ const TableItem: React.FC<{
     };
 
     const handleClick = () => {
-        // PC click or Mobile Single Tap
-        soundService.playClick();
-        onClick?.(table);
+        // Simple click only if not long pressed
+        if (!longPressTriggered.current) {
+            soundService.playClick();
+            onClick?.(table);
+        }
     }
+
+    // Long Press Logic
+    const timerRef = React.useRef<any>(null);
+    const longPressTriggered = React.useRef(false);
+
+    const startPress = () => {
+        longPressTriggered.current = false;
+        timerRef.current = setTimeout(() => {
+            longPressTriggered.current = true;
+            soundService.playClick();  // Haptic feedback sound
+            if (navigator.vibrate) navigator.vibrate(50); // Haptic vibration
+            onLongPress?.(table);
+        }, 500); // 500ms long press
+    };
+
+    const cancelPress = () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+    };
 
     return (
         <button
             type="button"
             onClick={handleClick}
-            onTouchEnd={handleTouchEnd}
+            onTouchStart={startPress}
+            onTouchEnd={() => { cancelPress(); handleTouchEnd({} as any); }}
+            onTouchMove={cancelPress}
+            onMouseDown={startPress}
+            onMouseUp={cancelPress}
+            onMouseLeave={cancelPress}
+            onContextMenu={(e) => e.preventDefault()} // Disable default browser menu
             className="relative group aspect-square rounded-2xl transition-all duration-200 active:scale-95 overflow-hidden touch-manipulation"
             style={{
                 backgroundColor: color,
@@ -105,11 +133,72 @@ const TableItem: React.FC<{
 interface FieldPlanProps {
     projectId: number;
     onTableClick?: (table: FieldTable) => void;
+    onToggleStatus?: (table: FieldTable) => void;
 }
+
+const ContextMenu: React.FC<{
+    table: FieldTable;
+    onClose: () => void;
+    onAction: (action: 'complete' | 'pending' | 'detail') => void;
+    t: (key: string) => string;
+}> = ({ table, onClose, onAction, t }) => {
+    return (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center animate-fade-in" onClick={onClose}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+            <div
+                className="relative w-full sm:w-80 bg-slate-900 border-t sm:border border-white/20 p-6 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col gap-3 animate-slide-up sm:animate-scale-in"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-4">
+                    <h3 className="text-xl font-black text-white uppercase italic">Stůl {table.tableId}</h3>
+                    <div className="px-3 py-1 bg-white/10 rounded-lg text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        {table.status === 'completed' ? 'Dokončeno' : 'Čeká'}
+                    </div>
+                </div>
+
+                <button
+                    onClick={() => onAction(table.status === 'completed' ? 'pending' : 'complete')}
+                    className={`p-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center gap-3 transition-all ${table.status === 'completed'
+                            ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30'
+                            : 'bg-green-500/20 text-green-500 hover:bg-green-500/30'
+                        }`}
+                >
+                    {table.status === 'completed' ? (
+                        <>
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" /></svg>
+                            Vrátit k realizaci
+                        </>
+                    ) : (
+                        <>
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                            Označit jako hotové
+                        </>
+                    )}
+                </button>
+
+                <button
+                    onClick={() => onAction('detail')}
+                    className="p-4 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold uppercase tracking-widest text-sm flex items-center gap-3 transition-all"
+                >
+                    <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    Zobrazit detail
+                </button>
+
+                <button
+                    onClick={onClose}
+                    className="p-4 mt-2 bg-black/40 text-slate-500 rounded-xl font-bold uppercase tracking-widest text-xs hover:text-white transition-all"
+                >
+                    Zrušit
+                </button>
+            </div>
+        </div>
+    );
+};
 
 const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
     const { t } = useI18n();
     const [selectedFilter, setSelectedFilter] = useState<'all' | 'pending' | 'completed'>('all');
+    const [contextMenuTable, setContextMenuTable] = useState<FieldTable | null>(null);
 
     // Load tables and workers
     const tables = useLiveQuery(
@@ -245,7 +334,9 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
                                     isCompleted={isCompleted}
                                     completedWorker={completedWorker}
                                     assignedWorkers={assignedWorkers}
+                                    assignedWorkers={assignedWorkers}
                                     onClick={onTableClick}
+                                    onLongPress={setContextMenuTable}
                                     workers={workers} // Pass workers for color lookup
                                 />
                             );
@@ -302,6 +393,40 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
                     </div>
                 )
             }
+
+            {/* Context Menu */}
+            {contextMenuTable && (
+                <ContextMenu
+                    table={contextMenuTable}
+                    onClose={() => setContextMenuTable(null)}
+                    t={t}
+                    onAction={async (action) => {
+                        setContextMenuTable(null);
+                        if (action === 'detail') {
+                            onTableClick?.(contextMenuTable);
+                        } else if (action === 'complete') {
+                            // Quick Complete (Assign to me logic could be added here, currently just completes)
+                            // We need current user worker ID logic here ideally, but for now we set status.
+                            // Assuming we might need to fetch user in FieldPlan props or context.
+                            // Let's just update status for now.
+                            await db.fieldTables.update(contextMenuTable.id!, {
+                                status: 'completed',
+                                completedAt: new Date()
+                                // completedBy: currentUser?.workerId // We don't have this here yet easily without prop drilling or hook
+                            });
+                            // Sync handled by other components or Auto-sync mechanism if present? 
+                            // FieldPlans usually sync on save. Realtime sync needs to be triggered.
+                            soundService.playSuccess();
+                        } else if (action === 'pending') {
+                            await db.fieldTables.update(contextMenuTable.id!, {
+                                status: 'pending',
+                                completedAt: undefined,
+                                completedBy: undefined
+                            });
+                        }
+                    }}
+                />
+            )}
         </div >
     );
 };

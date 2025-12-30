@@ -16,6 +16,7 @@ import BrainIcon from './icons/BrainIcon';
 import ChartBarIcon from './icons/ChartBarIcon';
 import WrenchIcon from './icons/WrenchIcon';
 import DocumentTextIcon from './icons/DocumentTextIcon';
+import SettingsIcon from './icons/SettingsIcon';
 
 const ActionTile: React.FC<{
   icon: React.ReactNode;
@@ -81,7 +82,7 @@ const Dashboard: React.FC = () => {
           icon={<MapIcon className="w-8 h-8 md:w-7 md:h-7" />}
           label={t('plan')}
           desc={t('plan_desc')}
-          onClick={() => navigate('/plan')}
+          onClick={() => navigate('/field-plans')}
           color="border-cyan-500"
         />
         <ActionTile
@@ -118,6 +119,13 @@ const Dashboard: React.FC = () => {
           desc={t('daily_reports_desc')}
           onClick={() => navigate('/daily-reports')}
           color="border-orange-500"
+        />
+        <ActionTile
+          icon={<SettingsIcon className="w-8 h-8 md:w-7 md:h-7" />}
+          label={t('settings')} // Ensure i18n key exists or fallback
+          desc={t('settings_desc') || 'Konfigurace aplikace'}
+          onClick={() => navigate('/settings')}
+          color="border-gray-500"
         />
       </section>
 

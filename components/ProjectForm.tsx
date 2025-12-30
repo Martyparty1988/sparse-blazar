@@ -158,6 +158,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                 }
 
                 onClose();
+                // Safe catch block
             } catch (error: any) {
                 console.error("Failed to save project:", error);
                 alert(t('save_failed') || "Failed to save project.");

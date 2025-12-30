@@ -9,7 +9,7 @@ import ClockIcon from './icons/ClockIcon';
 import BrainIcon from './icons/BrainIcon';
 import ConnectionStatusIndicator from './ConnectionStatusIndicator';
 
-const BottomNavBar: React.FC = () =& gt; {
+const BottomNavBar: React.FC = () => {
     const { t } = useI18n();
     const { user } = useAuth();
 

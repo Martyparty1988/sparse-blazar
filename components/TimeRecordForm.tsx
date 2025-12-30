@@ -22,9 +22,10 @@ function useMediaQuery(query: string) {
 
 interface WorkLogFormProps {
     onClose: () => void;
+    editRecord?: TimeRecord;
 }
 
-const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
+const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => {
     const { t } = useI18n();
     const { showToast } = useToast();
     const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -37,13 +38,13 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
     const savedProjectId = localStorage.getItem('last_project_id');
     const savedWorkerId = localStorage.getItem('last_worker_id');
 
-    const [workType, setWorkType] = useState<'hourly' | 'task'>(savedWorkType || 'hourly');
+    const [workType, setWorkType] = useState<'hourly' | 'task'>(editRecord ? 'hourly' : (savedWorkType || 'hourly'));
     const [taskType, setTaskType] = useState<'panels' | 'construction' | 'cables'>('cables');
 
     // Fields
-    const [projectId, setProjectId] = useState<number | ''>(savedProjectId ? Number(savedProjectId) : '');
-    const [workerId, setWorkerId] = useState<number | ''>(savedWorkerId ? Number(savedWorkerId) : '');
-    const [description, setDescription] = useState('');
+    const [projectId, setProjectId] = useState<number | ''>(editRecord ? editRecord.projectId : (savedProjectId ? Number(savedProjectId) : ''));
+    const [workerId, setWorkerId] = useState<number | ''>(editRecord ? editRecord.workerId : (savedWorkerId ? Number(savedWorkerId) : ''));
+    const [description, setDescription] = useState(editRecord ? editRecord.description || '' : '');
 
     // Time fields
     const [startTime, setStartTime] = useState('');
@@ -84,16 +85,25 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
 
         const startISO = start.toISOString().slice(0, 16);
 
-        setStartTime(startISO);
-        setEndTime(endISO);
+        if (editRecord) {
+            const s = new Date(editRecord.startTime);
+            const e = new Date(editRecord.endTime);
+            s.setMinutes(s.getMinutes() - s.getTimezoneOffset());
+            e.setMinutes(e.getMinutes() - e.getTimezoneOffset());
+            setStartTime(s.toISOString().slice(0, 16));
+            setEndTime(e.toISOString().slice(0, 16));
+        } else {
+            setStartTime(startISO);
+            setEndTime(endISO);
+        }
 
         // Attempt to find last record to offer "Repeat"
-        if (savedWorkerId) {
+        if (savedWorkerId && !editRecord) {
             db.records.where('workerId').equals(Number(savedWorkerId)).reverse().first().then(rec => {
                 if (rec) setLastRecord(rec);
             });
         }
-    }, [savedWorkerId]);
+    }, [savedWorkerId, editRecord]);
 
     // Update Start Time based on last "Check-out" if applicable (Smart Logic)
     useEffect(() => {
@@ -116,7 +126,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                     }
                 });
         }
-    }, [workerId, projectId]);
+    }, [workerId, projectId, editRecord]);
 
     // --- Handlers ---
 
@@ -188,12 +198,18 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                 const recordData: Omit<TimeRecord, 'id'> = {
                     workerId: Number(workerId),
                     projectId: Number(projectId),
-                    startTime: new Date(startTime),
                     endTime: new Date(endTime),
                     description,
                 };
-                const newId = await db.records.add(recordData as TimeRecord);
-                const record = { ...recordData, id: newId } as TimeRecord;
+
+                let record: TimeRecord;
+                if (editRecord?.id) {
+                    await db.records.update(editRecord.id, recordData);
+                    record = { ...recordData, id: editRecord.id } as TimeRecord;
+                } else {
+                    const newId = await db.records.add(recordData as TimeRecord);
+                    record = { ...recordData, id: newId } as TimeRecord;
+                }
 
                 await processRecordDescription(record);
 
@@ -454,7 +470,9 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                 {/* Header with Progress Steps (Mobile) */}
                 <div className="p-6 md:p-8 border-b border-white/5 bg-white/[0.02]">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-2xl font-black text-white uppercase tracking-tight">{t('log_work')}</h2>
+                        <h2 className="text-2xl font-black text-white uppercase tracking-tight">
+                            {editRecord ? t('edit_record') || 'Upravit záznam' : t('log_work')}
+                        </h2>
                         <button onClick={onClose} className="p-2 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-gray-400 hover:text-white">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
@@ -475,8 +493,8 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                         type="button"
                         onClick={() => setWorkType('hourly')}
                         className={`flex-1 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all relative z-10 ${workType === 'hourly'
-                                ? 'bg-[var(--color-primary)] text-white shadow-lg scale-[1.02]'
-                                : 'text-gray-500 hover:text-gray-300'
+                            ? 'bg-[var(--color-primary)] text-white shadow-lg scale-[1.02]'
+                            : 'text-gray-500 hover:text-gray-300'
                             }`}
                     >
                         ⏱️ {t('work_type_hourly')}
@@ -485,8 +503,8 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                         type="button"
                         onClick={() => setWorkType('task')}
                         className={`flex-1 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all relative z-10 ${workType === 'task'
-                                ? 'bg-[var(--color-accent)] text-white shadow-lg scale-[1.02]'
-                                : 'text-gray-500 hover:text-gray-300'
+                            ? 'bg-[var(--color-accent)] text-white shadow-lg scale-[1.02]'
+                            : 'text-gray-500 hover:text-gray-300'
                             }`}
                     >
                         📦 {t('work_type_task')}

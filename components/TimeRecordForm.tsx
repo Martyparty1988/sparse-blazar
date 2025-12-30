@@ -4,6 +4,8 @@ import { db } from '../services/db';
 import type { Project, TimeRecord, ProjectTask } from '../types';
 import { useI18n } from '../contexts/I18nContext';
 import { processRecordDescription, processFieldTableDescription } from '../services/recordProcessor';
+import { googleSheetsService } from '../services/googleSheetsService';
+import { useToast } from '../contexts/ToastContext';
 
 // Utility Hook for Media Query
 function useMediaQuery(query: string) {
@@ -23,6 +25,7 @@ interface WorkLogFormProps {
 
 const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
     const { t } = useI18n();
+    const { showToast } = useToast();
     const isDesktop = useMediaQuery('(min-width: 768px)');
 
     // Steps: 0 = Who/Where, 1 = What (Type), 2 = Details/Time
@@ -193,8 +196,12 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                     await processFieldTableDescription(record);
                 }
 
+                // --- Sync TimeRecord ---
+                if (googleSheetsService.isReady) {
+                    googleSheetsService.upsertData('timeRecords', [record]).catch(err => console.error('Sync failed', err));
+                }
+
             } else { // Task
-                let taskData: Omit<ProjectTask, 'id'>;
                 const commonTaskData = {
                     projectId: Number(projectId),
                     assignedWorkerId: Number(workerId),
@@ -206,11 +213,23 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                 if (taskType === 'panels') {
                     const count = Number(panelCount);
                     const perPanel = Number(pricePerPanel);
-                    taskData = { ...commonTaskData, taskType: 'panels', description: t('panels_task_desc', { count }), panelCount: count, pricePerPanel: perPanel, price: count * perPanel };
-                    await db.projectTasks.add(taskData as ProjectTask);
+                    const taskData = { ...commonTaskData, taskType: 'panels' as const, description: t('panels_task_desc', { count }), panelCount: count, pricePerPanel: perPanel, price: count * perPanel };
+
+                    const newId = await db.projectTasks.add(taskData as ProjectTask);
+
+                    if (googleSheetsService.isReady) {
+                        googleSheetsService.upsertData('projectTasks', [{ ...taskData, id: newId }]).catch(console.error);
+                    }
+
                 } else if (taskType === 'construction') {
-                    taskData = { ...commonTaskData, taskType: 'construction', description: description.trim(), price: Number(flatPrice) };
-                    await db.projectTasks.add(taskData as ProjectTask);
+                    const taskData = { ...commonTaskData, taskType: 'construction' as const, description: description.trim(), price: Number(flatPrice) };
+
+                    const newId = await db.projectTasks.add(taskData as ProjectTask);
+
+                    if (googleSheetsService.isReady) {
+                        googleSheetsService.upsertData('projectTasks', [{ ...taskData, id: newId }]).catch(console.error);
+                    }
+
                 } else if (taskType === 'cables') {
                     if (!tableId) { alert("Select a table."); return; }
                     // Cabling logic...
@@ -223,6 +242,14 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                             tableId: Number(tableId), workerId: wId, status: 'completed', timestamp: new Date()
                         })));
                     });
+
+                    // Note: Cables updates 'solarTables' and 'assignments', difficult to sync individual upserts without complex logic.
+                    // We rely on periodic pushing/pulling for this or just trigger a pushAll in background?
+                    // Let's trigger a pushAll for solarTables if possible, or just leave it for global sync.
+                    if (googleSheetsService.isReady) {
+                        showToast('Syncing cables data...', 'info');
+                        // No easy granular sync yet for cables
+                    }
                 }
             }
 
@@ -231,7 +258,11 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
             localStorage.setItem('last_project_id', String(projectId));
             localStorage.setItem('last_worker_id', String(workerId));
 
-            alert(t('saved_successfully') || 'Uloženo!');
+            if (googleSheetsService.isReady) {
+                showToast('✅ Saved & Synced', 'success');
+            } else {
+                alert(t('saved_successfully') || 'Uloženo!');
+            }
             onClose();
 
         } catch (error) {

@@ -1,16 +1,16 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getDatabase, ref, set, get, child, update, remove, Database, onValue, off } from 'firebase/database';
+import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
 
 // Hardcoded configuration for MST App
 const firebaseConfig = {
-    apiKey: "AIzaSyD5RkJAXUvuBAbuug9C1cU0PGNUMjbaGc8",
-    authDomain: "mst-ap.firebaseapp.com",
-    databaseURL: "https://mst-ap-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "mst-ap",
-    storageBucket: "mst-ap.firebasestorage.app",
-    messagingSenderId: "708181032604",
-    appId: "1:708181032604:web:4613ca54f8fd5c2805f759",
-    measurementId: "G-2W5047GKL9"
+    apiKey: "AIzaSyC0wgEBrqvx4Uge7upoSqZXFkSwXKb9hqE",
+    authDomain: "mst-marty-solar-2025.firebaseapp.com",
+    databaseURL: "https://mst-marty-solar-2025-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "mst-marty-solar-2025",
+    storageBucket: "mst-marty-solar-2025.firebasestorage.app",
+    messagingSenderId: "706935785372",
+    appId: "1:706935785372:web:0f21a739f8acbeb3e2ea59"
 };
 
 export interface SyncResult {
@@ -21,6 +21,7 @@ export interface SyncResult {
 class FirebaseService {
     private app: FirebaseApp;
     private db: Database;
+    private messaging: Messaging | null = null;
     public isInitialized = false;
     public isOnline = false;
     public pendingOps = 0;
@@ -30,8 +31,19 @@ class FirebaseService {
         try {
             this.app = initializeApp(firebaseConfig);
             this.db = getDatabase(this.app);
+
+            // Initialize Messaging only if supported (some browsers/incognito don't support it)
+            if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                try {
+                    this.messaging = getMessaging(this.app);
+                } catch (e) {
+                    console.warn('Messaging not supported in this browser');
+                }
+            }
+
             this.isInitialized = true;
             this.setupConnectivityListener();
+            this.setupForegroundMessageListener();
             console.log('🔥 Firebase initialized automatically');
         } catch (error) {
             console.error('Firebase auto-init failed:', error);
@@ -173,6 +185,47 @@ class FirebaseService {
         });
 
         return this.updateData('/', updates);
+    }
+
+    // --- Push Notifications (FCM) ---
+
+    private setupForegroundMessageListener() {
+        if (!this.messaging) return;
+        onMessage(this.messaging, (payload) => {
+            console.log('Message received in foreground: ', payload);
+            // This is handled by the browser if the app is in background/closed,
+            // but for foreground we can show a custom notification or toast.
+            if (payload.notification) {
+                const { title, body, icon } = payload.notification;
+                new Notification(title || 'MST', {
+                    body,
+                    icon: icon || '/icon-192.svg'
+                });
+            }
+        });
+    }
+
+    public async requestNotificationPermission(workerId?: number): Promise<string | null> {
+        if (!this.messaging) return null;
+
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                const token = await getToken(this.messaging, {
+                    // vapidKey: "..." // Using default VAPID key from project config
+                });
+
+                if (token && workerId) {
+                    // Save token to worker profile for backend use
+                    await this.updateData(`/workers/${workerId}/fcmToken`, token);
+                    console.log('FCM Token generated and saved:', token);
+                }
+                return token;
+            }
+        } catch (error) {
+            console.error('Error getting notification permission:', error);
+        }
+        return null;
     }
 }
 

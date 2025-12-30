@@ -18,6 +18,7 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
 
     // Fetch all incomplete tasks to calculate global workload for each worker
     const allActiveTasks = useLiveQuery(() => db.projectTasks.filter(t => !t.completionDate).toArray());
+    const projectTables = useLiveQuery(() => db.fieldTables.where('projectId').equals(project.id!).toArray(), [project.id]);
 
     const [showAddForm, setShowAddForm] = useState(false);
     const [taskType, setTaskType] = useState<'panels' | 'construction' | 'cables'>('construction');
@@ -27,6 +28,7 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
     const [tableSize, setTableSize] = useState<'small' | 'medium' | 'large'>('small');
     const [price, setPrice] = useState('');
     const [hoursSpent, setHoursSpent] = useState('');
+    const [selectedTableIds, setSelectedTableIds] = useState<string[]>([]);
     const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
     const [workerFilter, setWorkerFilter] = useState<number | 'all'>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
@@ -113,6 +115,7 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
         setTableSize('small');
         setPrice('');
         setHoursSpent('');
+        setSelectedTableIds([]);
     }
 
     const handleToggleCompletion = async (task: ProjectTask) => {
@@ -139,6 +142,7 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                 firebaseService.upsertRecords('projectTasks', [{
                     ...task,
                     assignedWorkerId: assignedId,
+                    tableIds: task.tableIds,
                     completionDate: task.completionDate ? (task.completionDate instanceof Date ? task.completionDate.toISOString() : task.completionDate) : undefined,
                     startTime: task.startTime ? (task.startTime instanceof Date ? task.startTime.toISOString() : task.startTime) : undefined,
                     endTime: task.endTime ? (task.endTime instanceof Date ? task.endTime.toISOString() : task.endTime) : undefined
@@ -202,6 +206,7 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                     description: description.trim(),
                     price: Number(price),
                     hoursSpent: hoursSpent ? Number(hoursSpent) : undefined,
+                    tableIds: selectedTableIds.length > 0 ? selectedTableIds : undefined,
                     panelCount: undefined,
                     pricePerPanel: undefined,
                     tableSize: undefined
@@ -209,10 +214,15 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                 break;
         }
 
-        const newId = await db.projectTasks.add(taskData as ProjectTask);
+        const taskDataToSave = { ...taskData };
+        if (selectedTableIds.length > 0) {
+            taskDataToSave.tableIds = selectedTableIds;
+        }
+
+        const newId = await db.projectTasks.add(taskDataToSave as ProjectTask);
 
         if (firebaseService.isReady) {
-            firebaseService.upsertRecords('projectTasks', [{ ...taskData, id: newId }])
+            firebaseService.upsertRecords('projectTasks', [{ ...taskDataToSave, id: newId }])
                 .catch(console.error);
         }
 
@@ -351,6 +361,15 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                                         <p className={`text-lg font-bold leading-tight ${task.completionDate ? 'text-gray-500 line-through' : 'text-white'}`}>
                                             {task.description}
                                         </p>
+                                        {task.tableIds && task.tableIds.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-2">
+                                                {task.tableIds.map(tid => (
+                                                    <span key={tid} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-bold text-slate-400 uppercase">
+                                                        Stůl {tid}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex items-center gap-3 flex-shrink-0">
@@ -469,6 +488,41 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                                         </div>
                                     )}
                                 </div>
+                            </div>
+
+                            {/* Table Selection for task */}
+                            <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Přiřadit ke stolům (volitelně)</label>
+                                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 custom-scrollbar">
+                                    {projectTables?.map(tbl => (
+                                        <button
+                                            key={tbl.id}
+                                            type="button"
+                                            onClick={() => {
+                                                const next = [...selectedTableIds];
+                                                const idx = next.indexOf(tbl.tableId);
+                                                if (idx >= 0) next.splice(idx, 1);
+                                                else next.push(tbl.tableId);
+                                                setSelectedTableIds(next);
+                                            }}
+                                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all border ${selectedTableIds.includes(tbl.tableId)
+                                                ? 'bg-indigo-600 border-indigo-500 text-white'
+                                                : 'bg-white/5 border-white/10 text-slate-500 hover:border-white/20'
+                                                }`}
+                                        >
+                                            {tbl.tableId}
+                                        </button>
+                                    ))}
+                                    {(!projectTables || projectTables.length === 0) && (
+                                        <p className="text-[10px] text-slate-600 font-bold italic">Žádné stoly v projektu definovány.</p>
+                                    )}
+                                </div>
+                                {selectedTableIds.length > 0 && (
+                                    <div className="mt-3 flex justify-between items-center">
+                                        <span className="text-[9px] font-black text-indigo-400 uppercase">Vybráno {selectedTableIds.length} stolů</span>
+                                        <button type="button" onClick={() => setSelectedTableIds([])} className="text-[9px] font-black text-rose-500 uppercase hover:text-rose-400 transition-colors">Zrušit výběr</button>
+                                    </div>
+                                )}
                             </div>
                             <div className="flex justify-between items-center pt-2">
                                 <div className="text-xl font-black text-white tracking-tight">€{calculatedPrice.toFixed(2)}</div>

@@ -81,11 +81,14 @@ const ProjectCard: React.FC<{
 
     // Live Queries for statistics
     const tables = useLiveQuery(() => db.solarTables.where('projectId').equals(project.id!).toArray(), [project.id]);
+    const fieldTables = useLiveQuery(() => db.fieldTables.where('projectId').equals(project.id!).toArray(), [project.id]);
     const tasks = useLiveQuery(() => db.projectTasks.where('projectId').equals(project.id!).toArray(), [project.id]);
+    const workers = useLiveQuery(() => db.workers.toArray());
 
     const stats = useMemo(() => {
-        const totalTables = tables?.length || 0;
-        const completedTables = tables?.filter(t => t.status === 'completed').length || 0;
+        const activeTables = (fieldTables && fieldTables.length > 0) ? fieldTables : (tables || []);
+        const totalTables = activeTables.length || 0;
+        const completedTables = activeTables.filter(t => t.status === 'completed').length || 0;
         const tableProgress = totalTables > 0 ? Math.round((completedTables / totalTables) * 100) : 0;
 
         const totalTasks = tasks?.length || 0;
@@ -94,13 +97,24 @@ const ProjectCard: React.FC<{
 
         // Breakdown for expansion
         const breakdown = {
-            panels: tasks?.filter(t => t.taskType === 'panels').length || 0,
-            construction: tasks?.filter(t => t.taskType === 'construction').length || 0,
-            cables: tasks?.filter(t => t.taskType === 'cables').length || 0,
+            panels: {
+                total: tasks?.filter(t => t.taskType === 'panels').length || 0,
+                completed: tasks?.filter(t => t.taskType === 'panels' && t.completionDate).length || 0
+            },
+            construction: {
+                total: tasks?.filter(t => t.taskType === 'construction').length || 0,
+                completed: tasks?.filter(t => t.taskType === 'construction' && t.completionDate).length || 0
+            },
+            cables: {
+                total: tasks?.filter(t => t.taskType === 'cables').length || 0,
+                completed: tasks?.filter(t => t.taskType === 'cables' && t.completionDate).length || 0
+            },
         };
 
-        return { totalTables, completedTables, tableProgress, totalTasks, completedTasks, taskProgress, breakdown };
-    }, [tables, tasks]);
+        const assignedWorkers = Array.from(new Set(tasks?.map(t => t.assignedWorkerId).filter(Boolean)));
+
+        return { totalTables, completedTables, tableProgress, totalTasks, completedTasks, taskProgress, breakdown, assignedWorkers };
+    }, [tables, fieldTables, tasks]);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -189,15 +203,15 @@ const ProjectCard: React.FC<{
                             <div className="grid grid-cols-3 gap-2">
                                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
                                     <div className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('panels')}</div>
-                                    <div className="text-lg font-black text-white">{stats.breakdown.panels}</div>
+                                    <div className="text-lg font-black text-white">{stats.breakdown.panels.total}</div>
                                 </div>
                                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
                                     <div className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('construction')}</div>
-                                    <div className="text-lg font-black text-white">{stats.breakdown.construction}</div>
+                                    <div className="text-lg font-black text-white">{stats.breakdown.construction.total}</div>
                                 </div>
                                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
                                     <div className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('cables')}</div>
-                                    <div className="text-lg font-black text-white">{stats.breakdown.cables}</div>
+                                    <div className="text-lg font-black text-white">{stats.breakdown.cables.total}</div>
                                 </div>
                             </div>
 
@@ -211,6 +225,53 @@ const ProjectCard: React.FC<{
                                     <span className="text-slate-400">{project.updatedAt ? new Date(project.updatedAt).toLocaleDateString(language === 'cs' ? 'cs-CZ' : 'en-US') : '-'}</span>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {!isExpanded && stats.totalTasks > 0 && (
+                        <div className="flex gap-2 mt-4 overflow-x-auto no-scrollbar pb-1">
+                            {stats.breakdown.construction.total > 0 && (
+                                <div className="px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[8px] font-black text-amber-500 uppercase flex items-center gap-1.5 shrink-0">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                    K: {stats.breakdown.construction.completed}/{stats.breakdown.construction.total}
+                                </div>
+                            )}
+                            {stats.breakdown.panels.total > 0 && (
+                                <div className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-[8px] font-black text-blue-400 uppercase flex items-center gap-1.5 shrink-0">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                    P: {stats.breakdown.panels.completed}/{stats.breakdown.panels.total}
+                                </div>
+                            )}
+                            {stats.breakdown.cables.total > 0 && (
+                                <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[8px] font-black text-emerald-400 uppercase flex items-center gap-1.5 shrink-0">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    C: {stats.breakdown.cables.completed}/{stats.breakdown.cables.total}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {!isExpanded && stats.assignedWorkers.length > 0 && (
+                        <div className="flex -space-x-2 mt-4">
+                            {stats.assignedWorkers.slice(0, 5).map(wid => {
+                                const w = workers?.find(worker => worker.id === wid);
+                                if (!w) return null;
+                                return (
+                                    <div
+                                        key={wid}
+                                        className="w-7 h-7 rounded-full border-2 border-slate-900 flex items-center justify-center text-[8px] font-black text-white shadow-lg"
+                                        style={{ backgroundColor: w.color || '#3b82f6' }}
+                                        title={w.name}
+                                    >
+                                        {w.name.substring(0, 1)}
+                                    </div>
+                                );
+                            })}
+                            {stats.assignedWorkers.length > 5 && (
+                                <div className="w-7 h-7 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[8px] font-black text-white">
+                                    +{stats.assignedWorkers.length - 5}
+                                </div>
+                            )}
                         </div>
                     )}
 

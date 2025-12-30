@@ -7,8 +7,6 @@ import ProjectsIcon from './icons/ProjectsIcon';
 import SettingsIcon from './icons/SettingsIcon';
 import ClockIcon from './icons/ClockIcon';
 import BrainIcon from './icons/BrainIcon';
-import ClockIcon from './icons/ClockIcon';
-import BrainIcon from './icons/BrainIcon';
 import ChatIcon from './icons/ChatIcon';
 import ConnectionStatusIndicator from './ConnectionStatusIndicator';
 
@@ -127,19 +125,19 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         </button>
                     </div>
                 </div>
-            </header >
+            </header>
 
             {/* Main Content Area */}
-            < main className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-12 pb-32 overscroll-contain" >
+            <main className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-12 pb-32 overscroll-contain">
                 <div key={location.pathname} className="max-w-7xl mx-auto w-full">
                     {children}
                 </div>
-            </main >
+            </main>
 
             <BottomNavBar />
 
 
-        </div >
+        </div>
     );
 };
 

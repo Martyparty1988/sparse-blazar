@@ -46,10 +46,12 @@ export interface FieldTable {
   projectId: number;
   tableId: string; // ID stolu (např. "28", "28.1", "149.1")
   tableType: 'small' | 'medium' | 'large';
-  status: 'pending' | 'completed';
+  status: 'pending' | 'completed' | 'defect'; // Added 'defect'
   assignedWorkers?: number[]; // ID přiřazených pracovníků (max 2)
   completedAt?: Date;
   completedBy?: number; // ID pracovníka, který dokončil
+  defectNotes?: string; // NEW: Poznámka k závadě
+  photos?: string[]; // NEW: Seznam URL fotek (Firebase Storage)
 }
 
 // DEPRECATED: Starý model (ponecháno pro zpětnou kompatibilitu)
@@ -112,6 +114,7 @@ export interface ProjectTask {
   price: number; // This will be the total price for the task
   hoursSpent?: number; // NEW: Kolik hodin na tom strávili (pro výpočet efektivity)
   assignedWorkerId?: number;
+  tableIds?: string[]; // NEW: Propojení s konkrétními stoly (ID/kódy stolů)
   completionDate?: Date;
   startTime?: Date; // For efficiency tracking (optional)
   endTime?: Date;   // For efficiency tracking (optional)
@@ -220,7 +223,6 @@ export interface ChatMessage {
   id: string; // Firebase Push ID or similar
   text: string;
   senderId: number; // Worker ID
-  senderName: string; // Snapshot of name
   senderName: string; // Snapshot of name
   timestamp: string; // ISO String
   channelId?: string; // NEW: Channel ID (e.g., 'general' or 'project_123')

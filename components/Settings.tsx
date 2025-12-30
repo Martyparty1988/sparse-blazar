@@ -8,6 +8,7 @@ import { useBackup } from '../contexts/BackupContext';
 import { useToast } from '../contexts/ToastContext';
 import { db } from '../services/db';
 import { googleDriveService } from '../services/googleDriveService';
+import { firebaseService } from '../services/firebaseService';
 import TrashIcon from './icons/TrashIcon';
 import ConfirmationModal from './ConfirmationModal';
 import BackupManager from './BackupManager';
@@ -169,6 +170,31 @@ const Settings: React.FC = () => {
                                 {lang.toUpperCase()}
                             </button>
                         ))}
+                    </div>
+                </SettingsSection>
+
+                <SettingsSection title="Oznámení">
+                    <div className="space-y-4">
+                        <p className="text-slate-400 text-sm font-bold uppercase tracking-wide">
+                            Stav: {Notification.permission === 'granted' ? '✅ Povoleno' : Notification.permission === 'denied' ? '❌ Zakázáno' : '⏳ Čeká na svolení'}
+                        </p>
+                        <div className="flex flex-wrap gap-4">
+                            <button
+                                onClick={async () => {
+                                    const token = await firebaseService.requestNotificationPermission(user?.workerId);
+                                    if (token) {
+                                        showToast('Oznámení povolena!', 'success');
+                                        new Notification("MST - Test", { body: "Testovací oznámení funguje!" });
+                                    } else {
+                                        showToast('Nepodařilo se povolit oznámení', 'error');
+                                    }
+                                }}
+                                className="px-8 py-4 bg-indigo-600 border-2 border-white/20 font-black rounded-2xl hover:bg-indigo-700 text-white transition-all shadow-lg text-lg uppercase tracking-tighter"
+                            >
+                                Povolit / Testovat oznámení
+                            </button>
+                        </div>
+                        <p className="text-xs text-slate-500 font-medium">Tip: Pokud vám oznámení nechodí, zkontrolujte nastavení prohlížeče nebo iOS/Android nastavení systému.</p>
                     </div>
                 </SettingsSection>
 

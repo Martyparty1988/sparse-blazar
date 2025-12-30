@@ -71,9 +71,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
         // Validace: projekt nelze uložit bez stolů (Confirmation Dialog)
         if (tableIds.length === 0) {
             const confirmed = window.confirm(t('confirm_no_tables_warning') || "VAROVÁNÍ: Projekt neobsahuje žádné stoly (Field Plan). Opravdu chcete vytvořit prázdný projekt?");
-            if (!confirmed) {
-                return;
-            }
+            if (!confirmed) return;
         }
 
         const now = new Date();
@@ -81,7 +79,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
             name,
             description,
             status,
-            tables: tableIds, // NEW: Uložit seznam ID stolů
+            tables: tableIds,
             planFile: planFile,
             createdAt: project?.createdAt || now,
             updatedAt: now,
@@ -101,12 +99,6 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                 }
 
                 // Update field tables (NEW SYSTEM)
-                // Only if table list changed significantly or user wants reset? 
-                // Currently rewriting all tables on save might lose progress if IDs match but we delete/add.
-                // Simple strategy: Sync what's in text area.
-                // NOTE: This implementation replaces tables. In production, we might want to merge.
-                // For now, we assume admin knows what they are doing when editing table list.
-
                 await db.fieldTables.where('projectId').equals(projectId).delete();
                 const fieldTables = tableIds.map(tableId => ({
                     projectId: projectId!,
@@ -140,7 +132,6 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                 if (firebaseService.isReady) {
                     showToast('Syncing to Firebase...', 'info');
 
-                    // Prepare data for sync
                     const projectPayload = {
                         ...projectData,
                         id: projectId!,
@@ -153,17 +144,16 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                     Promise.all([
                         firebaseService.upsertRecords('projects', [projectPayload]),
                         firebaseService.upsertRecords('fieldTables', tablesPayload)
-                    ]).then(([projRes, tableRes]) => {
+                    ]).then(([projRes]) => {
                         if (projRes.success) {
                             showToast('✅ Project synced to Cloud', 'success');
-                            // Play Success Sound
                             import('../services/soundService').then(({ soundService }) => soundService.playSuccess());
                         }
-                    }).catch((err: any) => {
+                    }).catch(err => {
                         console.error('Auto-sync failed:', err);
                     });
                 }
-            } // End else
+            }
 
             onClose();
         } catch (error: any) {

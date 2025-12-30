@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
@@ -6,6 +6,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
 import TimeRecordForm from './TimeRecordForm';
 import SyncStatusIndicator from './SyncStatusIndicator';
+import Leaderboard from './Leaderboard';
 
 // Icons
 import ProjectsIcon from './icons/ProjectsIcon';
@@ -28,218 +29,259 @@ const ActionTile: React.FC<{
   onClick: () => void;
   color: string;
   desc?: string;
-}> = ({ icon, label, onClick, color, desc }) => (
+  badge?: string | number;
+}> = ({ icon, label, onClick, color, desc, badge }) => (
   <button
     onClick={() => {
       soundService.playClick();
       onClick();
     }}
-    className={`flex flex-col items-start p-7 md:p-6 rounded-[2.5rem] glass-card transition-all group hover:scale-[1.02] active:scale-95 border-l-8 ${color} shadow-2xl relative overflow-hidden h-full min-h-[180px] md:min-h-[160px] touch-manipulation`}
+    className={`flex flex-col items-start p-6 rounded-[2.5rem] bg-slate-900/40 backdrop-blur-xl transition-all group hover:scale-[1.03] active:scale-95 border border-white/5 shadow-2xl relative overflow-hidden h-full min-h-[160px] touch-manipulation`}
   >
-    <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+    {/* Decorative Accent */}
+    <div className={`absolute top-0 left-0 w-full h-1.5 opacity-50 ${color}`}></div>
+
+    <div className="absolute -top-6 -right-6 p-8 opacity-5 group-hover:opacity-10 transition-opacity scale-150 rotate-12">
       {icon}
     </div>
-    <div className="mb-4 p-4 md:p-3 rounded-2xl bg-white/5 text-white group-hover:bg-white group-hover:text-black transition-all">
+
+    {badge && (
+      <div className="absolute top-4 right-4 bg-indigo-500 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg z-10 animate-bounce">
+        {badge}
+      </div>
+    )}
+
+    <div className={`mb-4 p-3 rounded-2xl bg-white/5 text-white group-hover:bg-white group-hover:text-black transition-all ring-1 ring-white/10`}>
       {icon}
     </div>
-    <h3 className="text-xl md:text-lg font-black uppercase italic tracking-tighter text-white mb-2">{label}</h3>
-    {desc && <p className="text-sm md:text-xs text-slate-400 font-bold tracking-tight text-left leading-relaxed">{desc}</p>}
+    <h3 className="text-lg font-black uppercase italic tracking-tighter text-white mb-2 leading-none">{label}</h3>
+    {desc && <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-left leading-tight group-hover:text-slate-300 transition-colors">{desc}</p>}
   </button>
 );
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, currentUser } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
   const [isLoggingWork, setIsLoggingWork] = useState(false);
 
+  // Data Queries
   const activeProjectsCount = useLiveQuery(() => db.projects.where('status').equals('active').count(), [], 0) ?? 0;
   const activeSessions = useLiveQuery(() => db.attendanceSessions.toArray(), [], []);
   const workersCount = useLiveQuery(() => db.workers.count(), [], 0) ?? 0;
+  const toolsCount = useLiveQuery(() => db.tools.count(), [], 0) ?? 0;
+  const pendingTasksCount = useLiveQuery(() => db.projectTasks.filter(t => !t.completionDate).count(), [], 0) ?? 0;
 
   const activeSessionsCount = activeSessions?.length || 0;
 
+  // AI Insights Logic
+  const aiInsight = useMemo(() => {
+    const hours = new Date().getHours();
+    let greeting = t('ai_greeting', { name: currentUser?.name || user?.username || 'Admin' }).replace('{name}', currentUser?.name || user?.username || 'Admin');
+
+    // Custom logic for summary
+    let summary = t('ai_summary_fine');
+    if (pendingTasksCount > 10) summary = t('ai_summary_issue');
+
+    return { greeting, summary };
+  }, [currentUser, user, t, pendingTasksCount]);
+
+  // Mock Weather (In real app, fetch from OpenWeatherMap)
+  const weather = {
+    temp: '22°C',
+    condition: t('condition_sunny'),
+    icon: <svg className="w-8 h-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M16.243 17.657l.707.707M7.757 7.757l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" /></svg>
+  };
+
   return (
-    <div className="space-y-8 md:space-y-10 pb-32 animate-fade-in">
-      <header className="relative pt-6 md:pt-8 px-2">
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white tracking-tighter italic leading-none mb-4 md:mb-3">
-          MST<span className="text-[var(--color-accent)]">.</span>LAUNCHER
-        </h1>
-        <div className="flex items-center gap-3 flex-wrap">
-          <SyncStatusIndicator />
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs md:text-[10px]">
-            {user?.username} • Admin Panel Ready
-          </p>
+    <div className="space-y-6 md:space-y-8 pb-32 animate-fade-in max-w-7xl mx-auto px-4">
+
+      {/* Dynamic Header & Command Strip */}
+      <header className="pt-8 md:pt-12">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+          <div className="space-y-2">
+            <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter italic leading-none flex items-baseline gap-2">
+              MST<span className="text-indigo-500">.</span>CORE
+            </h1>
+            <div className="flex items-center gap-4 flex-wrap">
+              <SyncStatusIndicator />
+              <div className="h-4 w-px bg-white/10 hidden sm:block"></div>
+              <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-[10px]">
+                {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+              </p>
+            </div>
+          </div>
+
+          {/* AI & Weather Quick Glance */}
+          <div className="flex items-center gap-4">
+            <div className="flex bg-slate-900/60 backdrop-blur-xl border border-white/5 rounded-3xl p-4 gap-6 shadow-2xl items-center">
+              <div className="flex items-center gap-4 pr-6 border-r border-white/10">
+                <div className="p-3 bg-amber-500/10 rounded-2xl animate-pulse">
+                  {weather.icon}
+                </div>
+                <div>
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{t('weather')}</p>
+                  <p className="text-xl font-black text-white italic">{weather.temp} <span className="text-[10px] text-slate-500 not-italic ml-1">{weather.condition}</span></p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 group cursor-pointer" onClick={() => navigate('/chat')}>
+                <div className="p-3 bg-indigo-500/10 rounded-2xl group-hover:bg-indigo-500 group-hover:text-white transition-all text-indigo-400">
+                  <BrainIcon className="w-8 h-8" />
+                </div>
+                <div className="max-w-[200px] hidden sm:block">
+                  <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{t('ai_mistr')}</p>
+                  <p className="text-[11px] font-bold text-slate-300 leading-tight line-clamp-2">{aiInsight.greeting}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Active Shift Banner */}
-      {activeSessions.some(s => s.workerId === user?.workerId) && (
-        <div className="mx-2 p-6 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-[2rem] shadow-xl animate-pulse-slow flex items-center justify-between group cursor-pointer" onClick={() => navigate('/attendance')}>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white">
-              <ClockIcon className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-white font-black uppercase tracking-tighter text-lg leading-tight">Máš aktivní směnu!</p>
-              <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Nezapomeň se na konci dne odhlásit.</p>
-            </div>
+      {/* Hero Analytics & Intelligence */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Main Stats Panel */}
+        <div className="lg:col-span-8 bg-gradient-to-br from-indigo-600/10 to-transparent backdrop-blur-3xl rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group">
+          <div className="absolute -bottom-20 -right-20 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity scale-150 rotate-12">
+            <ChartBarIcon className="w-96 h-96" />
           </div>
-          <div className="bg-white/10 px-4 py-2 rounded-xl text-white font-black text-[10px] uppercase tracking-widest group-hover:bg-white group-hover:text-indigo-600 transition-all">
-            Check-out →
+
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-12">
+              <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic flex items-center gap-3">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-ping"></div>
+                System Performance
+              </h2>
+              <button onClick={() => navigate('/stats')} className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-white transition-colors">
+                Detailní report →
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
+              <div className="space-y-2">
+                <p className="text-6xl font-black text-white transition-transform hover:scale-110 origin-left cursor-default">{activeProjectsCount}</p>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('active_projects')}</p>
+                  <div className="w-12 h-1 bg-indigo-500/30 rounded-full"></div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-baseline gap-2">
+                  <p className="text-6xl font-black text-indigo-400 transition-transform hover:scale-110 origin-left cursor-default">{activeSessionsCount}</p>
+                  {activeSessionsCount > 0 && <span className="w-3 h-3 bg-indigo-400 rounded-full animate-ping"></span>}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('on_shift')}</p>
+                  <div className="w-12 h-1 bg-indigo-400/30 rounded-full"></div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-6xl font-black text-emerald-400 transition-transform hover:scale-110 origin-left cursor-default">
+                  {useLiveQuery(() => db.fieldTables.where('status').equals('completed').filter(t => t.completedAt && new Date(t.completedAt).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]).count()) || 0}
+                </p>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('installed_today')}</p>
+                  <div className="w-12 h-1 bg-emerald-500/30 rounded-full"></div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-6xl font-black text-slate-200 transition-transform hover:scale-110 origin-left cursor-default">{workersCount}</p>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('team_size')}</p>
+                  <div className="w-12 h-1 bg-slate-500/30 rounded-full"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Main Grid Actions - Mobile First: 1 column, MD+: 2 columns, LG: 4 columns */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 px-2">
+        {/* Leaderboard Sidebar */}
+        <div className="lg:col-span-4">
+          <Leaderboard />
+        </div>
+      </section>
+
+      {/* Main Grid Actions */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <ActionTile
-          icon={<ClockIcon className="w-8 h-8 md:w-7 md:h-7" />}
+          icon={<ClockIcon className="w-8 h-8" />}
           label={t('log_work')}
           desc={t('work_log_desc')}
           onClick={() => setIsLoggingWork(true)}
-          color="border-indigo-500"
+          color="bg-indigo-500"
         />
         <ActionTile
-          icon={<MapIcon className="w-8 h-8 md:w-7 md:h-7" />}
-          label={t('plan')}
-          desc={t('plan_desc')}
-          onClick={() => navigate('/field-plans')}
-          color="border-cyan-500"
-        />
-        <ActionTile
-          icon={<CalendarIcon className="w-8 h-8 md:w-7 md:h-7" />}
-          label={t('attendance')}
-          desc={t('attendance_desc')}
-          onClick={() => navigate('/attendance')}
-          color="border-amber-500"
-        />
-        <ActionTile
-          icon={<ProjectsIcon className="w-8 h-8 md:w-7 md:h-7" />}
+          icon={<ProjectsIcon className="w-8 h-8" />}
           label={t('projects')}
           desc={t('projects_desc')}
           onClick={() => navigate('/projects')}
-          color="border-emerald-500"
+          color="bg-emerald-500"
+          badge={activeProjectsCount > 0 ? activeProjectsCount : undefined}
         />
         <ActionTile
-          icon={<WrenchIcon className="w-8 h-8 md:w-7 md:h-7" />}
+          icon={<MapIcon className="w-8 h-8" />}
+          label={t('plan')}
+          desc={t('plan_desc')}
+          onClick={() => navigate('/field-plans')}
+          color="bg-cyan-500"
+        />
+        <ActionTile
+          icon={<CalendarIcon className="w-8 h-8" />}
+          label={t('attendance')}
+          desc={t('attendance_desc')}
+          onClick={() => navigate('/attendance')}
+          color="bg-amber-500"
+          badge={activeSessionsCount > 0 ? activeSessionsCount : undefined}
+        />
+        <ActionTile
+          icon={<WrenchIcon className="w-8 h-8" />}
           label={t('tools')}
           desc={t('tools_desc')}
           onClick={() => navigate('/tools')}
-          color="border-slate-500"
+          color="bg-slate-500"
+          badge={toolsCount}
         />
         <ActionTile
-          icon={<ChatIcon className="w-8 h-8 md:w-7 md:h-7" />}
-          label="Team Chat"
-          desc={t('chat_desc') || "Komunikace týmu"}
-          onClick={() => navigate('/chat')}
-          color="border-indigo-500"
-        />
-        <ActionTile
-          icon={<WorkersIcon className="w-8 h-8 md:w-7 md:h-7" />}
-          label={t('workers') || "Tým"}
-          desc={t('workers_desc') || "Správa pracovníků"}
-          onClick={() => navigate('/workers')}
-          color="border-pink-500"
-        />
-        <ActionTile
-          icon={<ChartBarIcon className="w-8 h-8 md:w-7 md:h-7" />}
+          icon={<ChartBarIcon className="w-8 h-8" />}
           label={t('statistics')}
           desc={t('statistics_dashboard_desc')}
           onClick={() => navigate('/stats')}
-          color="border-purple-500"
+          color="bg-purple-500"
         />
         <ActionTile
-          icon={<DocumentTextIcon className="w-8 h-8 md:w-7 md:h-7" />}
+          icon={<DocumentTextIcon className="w-8 h-8" />}
           label={t('daily_report')}
           desc={t('daily_reports_desc')}
           onClick={() => navigate('/daily-reports')}
-          color="border-orange-500"
+          color="bg-orange-500"
         />
         <ActionTile
-          icon={<SettingsIcon className="w-8 h-8 md:w-7 md:h-7" />}
-          label={t('settings')} // Ensure i18n key exists or fallback
-          desc={t('settings_desc') || 'Konfigurace aplikace'}
+          icon={<SettingsIcon className="w-8 h-8" />}
+          label={t('settings')}
+          desc={t('settings_desc')}
           onClick={() => navigate('/settings')}
-          color="border-gray-500"
-        />
-        <ActionTile
-          icon={<svg className="w-8 h-8 md:w-7 md:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-          label={t('payroll') || "Finance"}
-          desc={t('payroll_desc') || "Odměny a výplaty"}
-          onClick={() => navigate('/payroll')}
-          color="border-indigo-600"
+          color="bg-gray-500"
         />
       </section>
 
-      {/* Analytics Summary */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-2">
-        <div className="lg:col-span-2 glass-card rounded-[3rem] p-8 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-10 transition-opacity">
-            <ChartBarIcon className="w-48 h-48" />
-          </div>
-          <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-8 italic flex items-center gap-3">
-            <ChartBarIcon className="w-6 h-6 text-[var(--color-accent)]" />
-            Aktuální Stav
-          </h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
-            <div className="space-y-1">
-              <p className="text-5xl font-black text-white">{activeProjectsCount}</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aktivní Projekty</p>
+      {/* Quick Access Floating Shift Banner (Mobile only) */}
+      {activeSessions.some(s => s.workerId === currentUser?.workerId) && (
+        <div className="fixed bottom-24 left-4 right-4 z-50 p-6 bg-gradient-to-r from-indigo-600 to-blue-700 rounded-3xl shadow-2xl flex items-center justify-between group cursor-pointer animate-fade-in-up" onClick={() => navigate('/attendance')}>
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white">
+              <ClockIcon className="w-5 h-5 animate-spin-slow" />
             </div>
-            <div className="space-y-1">
-              <p className="text-5xl font-black text-[var(--color-accent)]">{workersCount}</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tým Pracovníků</p>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-3">
-                <p className="text-5xl font-black text-indigo-400">{activeSessionsCount}</p>
-                {activeSessionsCount > 0 && (
-                  <span className="flex h-3 w-3 relative mt-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
-                  </span>
-                )}
-              </div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Právě na směně</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[3rem] p-8 flex flex-col justify-center border border-white/5 relative overflow-hidden group">
-          <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Dnešní Výkon Pole</p>
-              <h3 className="text-4xl font-black text-white mt-1 italic">
-                {useLiveQuery(() => db.fieldTables.where('status').equals('completed').filter(t => t.completedAt && new Date(t.completedAt).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]).count()) || 0}
-              </h3>
-            </div>
-            <div className="p-3 bg-emerald-500/10 rounded-2xl">
-              <MapIcon className="w-6 h-6 text-emerald-500" />
+              <p className="text-white font-black uppercase tracking-tighter text-sm">Shift is Active</p>
+              <p className="text-white/60 text-[8px] font-bold uppercase tracking-[0.2em]">Logged in as {currentUser?.name}</p>
             </div>
           </div>
-          <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden mt-2">
-            <div className="h-full bg-emerald-500 rounded-full animate-progress-glow" style={{ width: '65%' }}></div>
-          </div>
-          <p className="text-slate-500 text-[10px] font-bold mt-4 uppercase tracking-[0.1em]">
-            Trend: <span className="text-emerald-500">+12%</span> oproti včerejšku
-          </p>
+          <p className="text-white font-black text-xs">GO TO SHIFT →</p>
         </div>
-
-        <div className="glass-card rounded-[3rem] p-8 flex flex-col justify-center bg-gradient-to-br from-indigo-600/20 to-transparent border border-white/5 group cursor-pointer" onClick={() => navigate('/payroll')}>
-          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Moje Odměna (Tento týden)</p>
-          <div className="flex items-baseline gap-2">
-            <h3 className="text-5xl font-black text-white group-hover:scale-110 transition-transform origin-left">
-              {/* This is a placeholder/mock value since calculation is complex for deep dashboard, 
-                  but we'll show something dynamic if possible or just the link */}
-              💰 Detail
-            </h3>
-          </div>
-          <p className="text-slate-500 text-xs font-bold mt-4 uppercase tracking-widest">Klikni pro přehled →</p>
-        </div>
-
-      </section>
+      )}
 
       {isLoggingWork && (
         <TimeRecordForm onClose={() => setIsLoggingWork(false)} />

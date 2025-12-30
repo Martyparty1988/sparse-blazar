@@ -5,9 +5,8 @@ import type { User } from '../types';
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
-  currentUser: any; // Helper for worker data (name, id, etc.)
+  currentUser: User | null;
   login: (user: User) => void;
-  logout: () => void;
   logout: () => void;
 }
 
@@ -18,25 +17,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      const storedUser = sessionStorage.getItem('user');
+      // Use localStorage for cross-session persistence
+      const storedUser = localStorage.getItem('user');
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
     } catch (error) {
-      console.error("Failed to parse user from sessionStorage", error);
-      sessionStorage.removeItem('user');
+      console.error("Failed to parse user from localStorage", error);
+      localStorage.removeItem('user');
     }
   }, []);
 
   const login = (userData: User) => {
-    sessionStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
   };
 
-  const currentUser = user ? { workerId: user.workerId, name: user.workerId ? 'Worker' : user.username } : null;
-
   const logout = () => {
-    sessionStorage.removeItem('user');
+    localStorage.removeItem('user');
     setUser(null);
   };
 

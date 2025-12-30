@@ -7,6 +7,7 @@ import { getWorkerColor, getInitials } from '../utils/workerColors';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
 import { firebaseService } from '../services/firebaseService';
+import type { ProjectTask } from '../types';
 
 interface TableModalProps {
     table: FieldTable;
@@ -18,9 +19,22 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
     const { t } = useI18n();
     const { currentUser } = useAuth();
     const [selectedWorkers, setSelectedWorkers] = useState<number[]>(table.assignedWorkers || []);
+    const [defectNotes, setDefectNotes] = useState(table.defectNotes || '');
+    const [photos, setPhotos] = useState<string[]>(table.photos || []);
+    const [isUploading, setIsUploading] = useState(false);
 
     const workers = useLiveQuery(() => db.workers.toArray());
     const project = useLiveQuery(() => db.projects.get(table.projectId));
+    const tableTasks = useLiveQuery(() =>
+        db.projectTasks
+            .where('projectId').equals(table.projectId)
+            .filter(t => t.tableIds?.includes(table.tableId))
+            .toArray()
+        , [table.projectId, table.tableId]);
+
+    const [showQuickTask, setShowQuickTask] = useState(false);
+    const [quickTaskType, setQuickTaskType] = useState<'construction' | 'panels' | 'cables'>('construction');
+    const [quickTaskPrice, setQuickTaskPrice] = useState('10'); // Default price for quick task
 
     const completedWorker = table.completedBy
         ? workers?.find(w => w.id === table.completedBy)
@@ -117,6 +131,100 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
         }
     };
 
+    const handleMarkAsDefect = async () => {
+        try {
+            await db.fieldTables.update(table.id!, {
+                status: 'defect',
+                defectNotes: defectNotes,
+                photos: photos,
+            });
+
+            if (firebaseService.isReady) {
+                firebaseService.upsertRecords('fieldTables', [{
+                    ...table,
+                    id: `${table.projectId}_${table.tableId}`,
+                    status: 'defect',
+                    defectNotes: defectNotes,
+                    photos: photos
+                }]).catch(console.error);
+            }
+
+            onUpdate?.();
+            onClose();
+        } catch (error) {
+            console.error('Failed to mark table as defect:', error);
+            alert(t('update_failed') || 'Nepodařilo se nahlásit závadu');
+        }
+    };
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            // In a real app, we would upload to Firebase Storage
+            // For now, we use FileReader to get a base64 for preview
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const base64 = event.target?.result as string;
+                const newPhotos = [...photos, base64];
+                setPhotos(newPhotos);
+
+                // Save immediately to DB
+                await db.fieldTables.update(table.id!, { photos: newPhotos });
+                setIsUploading(false);
+            };
+            reader.readAsDataURL(file);
+        } catch (error) {
+            console.error('Photo upload failed:', error);
+            setIsUploading(false);
+        }
+    };
+
+    const handleRemovePhoto = async (index: number) => {
+        const newPhotos = photos.filter((_, i) => i !== index);
+        setPhotos(newPhotos);
+        await db.fieldTables.update(table.id!, { photos: newPhotos });
+    };
+
+    const handleAddQuickTask = async () => {
+        if (!currentUser?.workerId) return;
+
+        const taskData: Omit<ProjectTask, 'id'> = {
+            projectId: table.projectId,
+            taskType: quickTaskType,
+            description: `${quickTaskType.toUpperCase()} - Stůl ${table.tableId}`,
+            price: Number(quickTaskPrice),
+            tableIds: [table.tableId],
+            assignedWorkerId: currentUser.workerId,
+        };
+
+        const newId = await db.projectTasks.add(taskData as ProjectTask);
+        if (firebaseService.isReady) {
+            const taskToUpsert = {
+                ...taskData,
+                id: newId,
+                assignedWorkerId: currentUser.workerId
+            };
+            firebaseService.upsertRecords('projectTasks', [taskToUpsert]).catch(console.error);
+        }
+        setShowQuickTask(false);
+    };
+
+    const handleToggleTaskStatus = async (task: ProjectTask) => {
+        const newDate = task.completionDate ? undefined : new Date();
+        await db.projectTasks.update(task.id!, { completionDate: newDate });
+        if (firebaseService.isReady) {
+            firebaseService.upsertRecords('projectTasks', [{
+                ...task,
+                completionDate: newDate ? newDate.toISOString() : undefined,
+                startTime: task.startTime ? (task.startTime instanceof Date ? task.startTime.toISOString() : task.startTime) : undefined,
+                endTime: task.endTime ? (task.endTime instanceof Date ? task.endTime.toISOString() : task.endTime) : undefined
+            }]).catch(console.error);
+        }
+    };
+
     const tableColor = completedWorker
         ? getWorkerColor(completedWorker.id!, completedWorker.color, workers)
         : '#f59e0b';
@@ -163,12 +271,19 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
                             </div>
 
                             {/* Status badge */}
-                            <div className="mt-4">
+                            <div className="mt-4 flex gap-2">
                                 {table.status === 'completed' ? (
                                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-xl">
                                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                                         <span className="text-green-400 font-black text-xs uppercase tracking-widest">
                                             ✓ {t('completed') || 'Hotovo'}
+                                        </span>
+                                    </div>
+                                ) : table.status === 'defect' ? (
+                                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-rose-500/20 border border-rose-500/30 rounded-xl shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+                                        <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                                        <span className="text-rose-400 font-black text-xs uppercase tracking-widest">
+                                            ⚠️ {t('defect') || 'Závada'}
                                         </span>
                                     </div>
                                 ) : (
@@ -220,7 +335,128 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
                         </div>
                     )}
 
-                    {/* Assigned workers */}
+                    {/* Table Tasks Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">
+                                {t('tasks') || 'Úkoly u tohoto stolu'}
+                            </h3>
+                            <button
+                                onClick={() => setShowQuickTask(!showQuickTask)}
+                                className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-white transition-colors"
+                            >
+                                {showQuickTask ? t('cancel') : `+ ${t('add_task')}`}
+                            </button>
+                        </div>
+
+                        {showQuickTask && (
+                            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3 animate-fade-in">
+                                <div className="flex gap-2">
+                                    {(['construction', 'panels', 'cables'] as const).map(type => (
+                                        <button
+                                            key={type}
+                                            onClick={() => setQuickTaskType(type)}
+                                            className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${quickTaskType === type ? 'bg-white text-black' : 'bg-black/40 text-gray-500'}`}
+                                        >
+                                            {t(type)}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="number"
+                                        value={quickTaskPrice}
+                                        onChange={e => setQuickTaskPrice(e.target.value)}
+                                        className="flex-1 bg-black/40 border border-white/10 rounded-xl p-2 text-white font-bold text-sm"
+                                        placeholder="Cena (€)"
+                                    />
+                                    <button
+                                        onClick={handleAddQuickTask}
+                                        className="px-4 py-2 bg-blue-500 text-white font-black rounded-xl text-[10px] uppercase shadow-lg shadow-blue-500/20"
+                                    >
+                                        Přidat
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-2">
+                            {tableTasks?.map(task => (
+                                <div key={task.id} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${task.completionDate ? 'bg-emerald-500/5 border-emerald-500/10 opacity-70' : 'bg-white/5 border-white/5'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black text-white ${task.taskType === 'construction' ? 'bg-amber-500' :
+                                            task.taskType === 'panels' ? 'bg-blue-500' : 'bg-emerald-500'
+                                            }`}>
+                                            {task.taskType === 'construction' ? 'K' : task.taskType === 'panels' ? 'P' : 'C'}
+                                        </div>
+                                        <div>
+                                            <div className={`text-sm font-bold ${task.completionDate ? 'text-gray-500 line-through' : 'text-white'}`}>{task.description}</div>
+                                            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">€{task.price} • {workers?.find(w => w.id === task.assignedWorkerId)?.name || 'Nepřiřazeno'}</div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleToggleTaskStatus(task)}
+                                        className={`p-2 rounded-lg transition-all ${task.completionDate ? 'text-emerald-500 bg-emerald-500/10' : 'text-gray-500 hover:text-white bg-white/5'}`}
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg>
+                                    </button>
+                                </div>
+                            ))}
+                            {(!tableTasks || tableTasks.length === 0) && !showQuickTask && (
+                                <div className="text-center py-6 border-2 border-dashed border-white/5 rounded-2xl">
+                                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Žádné úkoly u tohoto stolu</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Defect Notes Section (Always visible or visible when defect status?) */}
+                    {/* Let's make it visible so users can add notes even if it's pending */}
+                    <div className="space-y-4">
+                        <h3 className="text-xs font-black text-rose-500 uppercase tracking-widest">
+                            {t('defect_notes') || 'Poznámky k závadám'}
+                        </h3>
+                        <textarea
+                            value={defectNotes}
+                            onChange={(e) => setDefectNotes(e.target.value)}
+                            placeholder={t('defect_placeholder') || 'Popište problém...'}
+                            className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white font-bold text-sm focus:border-rose-500/50 transition-all outline-none min-h-[100px]"
+                        />
+                    </div>
+
+                    {/* Photo Evidence Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-xs font-black text-blue-500 uppercase tracking-widest">
+                                {t('photo_evidence') || 'Foto-evidence'}
+                            </h3>
+                            <label className="cursor-pointer">
+                                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploading} />
+                                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-white transition-colors">
+                                    {isUploading ? 'Nahrávám...' : `+ ${t('add_photo') || 'Přidat fotku'}`}
+                                </span>
+                            </label>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                            {photos.map((photo, idx) => (
+                                <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group">
+                                    <img src={photo} alt={`Evidence ${idx}`} className="w-full h-full object-cover" />
+                                    <button
+                                        onClick={() => handleRemovePhoto(idx)}
+                                        className="absolute top-1 right-1 bg-black/60 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                            ))}
+                            {photos.length === 0 && (
+                                <div className="col-span-3 py-6 border-2 border-dashed border-white/5 rounded-2xl text-center">
+                                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Žádné fotografie</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     <div>
                         <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">
                             {t('assigned_workers') || 'Přiřazení pracovníci'} (max 2)
@@ -265,13 +501,13 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
 
                 {/* Footer */}
                 <div className="p-8 pb-12 md:pb-8 border-t border-white/10 bg-black/20 flex flex-col md:flex-row gap-3 shrink-0">
-                    {table.status === 'pending' ? (
+                    {table.status === 'pending' || table.status === 'defect' ? (
                         <>
                             <button
-                                onClick={handleSaveAssignments}
-                                className="flex-1 px-6 py-4 bg-white/10 text-white font-black rounded-2xl hover:bg-white/20 transition-all uppercase tracking-widest text-xs"
+                                onClick={handleMarkAsDefect}
+                                className="flex-1 px-6 py-4 bg-rose-500/10 text-rose-500 font-black rounded-2xl hover:bg-rose-500/20 transition-all border border-rose-500/20 uppercase tracking-widest text-[10px]"
                             >
-                                {t('save_assignments') || 'Uložit přiřazení'}
+                                ⚠️ {table.status === 'defect' ? 'Uložit poznámky' : 'Nahlásit závadu'}
                             </button>
                             <button
                                 onClick={handleMarkAsCompleted}

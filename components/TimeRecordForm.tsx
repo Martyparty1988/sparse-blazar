@@ -4,7 +4,6 @@ import { db } from '../services/db';
 import type { Project, TimeRecord, ProjectTask } from '../types';
 import { useI18n } from '../contexts/I18nContext';
 import { processRecordDescription, processFieldTableDescription } from '../services/recordProcessor';
-import { processRecordDescription, processFieldTableDescription } from '../services/recordProcessor';
 import { firebaseService } from '../services/firebaseService';
 import { useToast } from '../contexts/ToastContext';
 
@@ -38,8 +37,8 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
     const savedProjectId = localStorage.getItem('last_project_id');
     const savedWorkerId = localStorage.getItem('last_worker_id');
 
-    const [workType, setWorkType] = useState<'hourly' | 'task'>(editRecord ? 'hourly' : (savedWorkType || 'hourly'));
-    const [taskType, setTaskType] = useState<'panels' | 'construction' | 'cables'>('cables');
+    const [workType, setWorkType] = useState<'hourly' | 'task'>(editRecord ? 'hourly' : (savedWorkType === 'task' ? 'task' : 'hourly'));
+    const [taskType, setTaskType] = useState<'panels' | 'construction' | 'cables'>('panels');
 
     // Fields
     const [projectId, setProjectId] = useState<number | ''>(editRecord ? editRecord.projectId : (savedProjectId ? Number(savedProjectId) : ''));
@@ -118,11 +117,18 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
                 .reverse()
                 .first()
                 .then(lastToday => {
-                    if (lastToday) {
-                        // If they worked today, start next task when the last one ended
-                        const nextStart = new Date(lastToday.endTime);
-                        nextStart.setMinutes(nextStart.getMinutes() - nextStart.getTimezoneOffset());
-                        setStartTime(nextStart.toISOString().slice(0, 16));
+                    if (lastToday && lastToday.endTime) {
+                        try {
+                            // If they worked today, start next task when the last one ended
+                            const endTimeDate = lastToday.endTime instanceof Date ? lastToday.endTime : new Date(lastToday.endTime);
+                            if (!isNaN(endTimeDate.getTime())) {
+                                const nextStart = new Date(endTimeDate);
+                                nextStart.setMinutes(nextStart.getMinutes() - nextStart.getTimezoneOffset());
+                                setStartTime(nextStart.toISOString().slice(0, 16));
+                            }
+                        } catch (e) {
+                            console.warn('Failed to parse last today endTime', e);
+                        }
                     }
                 });
         }
@@ -198,6 +204,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
                 const recordData: Omit<TimeRecord, 'id'> = {
                     workerId: Number(workerId),
                     projectId: Number(projectId),
+                    startTime: new Date(startTime),
                     endTime: new Date(endTime),
                     description,
                 };
@@ -464,8 +471,8 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
     );
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-md p-0 md:p-4 animate-fade-in">
-            <div className="w-full h-[90vh] md:h-auto md:max-h-[85vh] md:max-w-lg bg-slate-900 md:bg-slate-900/90 backdrop-blur-2xl rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-4 animate-fade-in">
+            <div className="w-full h-[95vh] md:h-auto md:max-h-[85vh] md:max-w-lg bg-slate-900 md:bg-slate-900/90 rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden animate-slide-up">
 
                 {/* Header with Progress Steps (Mobile) */}
                 <div className="p-6 md:p-8 border-b border-white/5 bg-white/[0.02]">
@@ -488,7 +495,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
                 </div>
 
                 {/* 1. Work Type Switch - Enhanced UI */}
-                <div className="bg-black/40 p-1.5 rounded-2xl mb-8 border border-white/10 flex relative relative-toggle">
+                <div className="bg-black/40 p-1.5 rounded-2xl mb-8 border border-white/10 flex relative">
                     <button
                         type="button"
                         onClick={() => setWorkType('hourly')}
@@ -513,7 +520,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 custom-scrollbar pb-40">
-                    <form onSubmit={handleSubmit} className="space-y-8">
+                    <form id="time-record-form" onSubmit={handleSubmit} className="space-y-8">
                         {/* Desktop: Show all. Mobile: Show current step */}
                         {isDesktop ? (
                             <>
@@ -555,9 +562,16 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
                     ) : (
                         // Save Button (Desktop or Mobile Last Step)
                         <button
-                            onClick={(e) => {
+                            type="button"
+                            onClick={() => {
                                 const form = document.getElementById('time-record-form') as HTMLFormElement;
-                                if (form) form.requestSubmit();
+                                if (form) {
+                                    if (typeof form.requestSubmit === 'function') {
+                                        form.requestSubmit();
+                                    } else {
+                                        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                                    }
+                                }
                             }}
                             className="flex-[2] py-4 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-white font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_20px_rgba(99,102,241,0.4)] text-xs"
                         >

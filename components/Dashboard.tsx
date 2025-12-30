@@ -5,6 +5,7 @@ import { useI18n } from '../contexts/I18nContext';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
 import TimeRecordForm from './TimeRecordForm';
+import SyncStatusIndicator from './SyncStatusIndicator';
 
 // Icons
 import ProjectsIcon from './icons/ProjectsIcon';
@@ -65,10 +66,7 @@ const Dashboard: React.FC = () => {
           MST<span className="text-[var(--color-accent)]">.</span>LAUNCHER
         </h1>
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 px-4 py-2 md:px-3 md:py-1 bg-green-500/20 rounded-full border border-green-500/30">
-            <span className="w-2.5 h-2.5 md:w-2 md:h-2 rounded-full bg-green-500 animate-pulse"></span>
-            <span className="text-xs md:text-[10px] font-black uppercase tracking-widest text-green-400">ONLINE</span>
-          </div>
+          <SyncStatusIndicator />
           <p className="text-slate-400 font-bold uppercase tracking-widest text-xs md:text-[10px]">
             {user?.username} • Admin Panel Ready
           </p>
@@ -207,6 +205,26 @@ const Dashboard: React.FC = () => {
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Právě na směně</p>
             </div>
           </div>
+        </div>
+
+        <div className="glass-card rounded-[3rem] p-8 flex flex-col justify-center border border-white/5 relative overflow-hidden group">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Dnešní Výkon Pole</p>
+              <h3 className="text-4xl font-black text-white mt-1 italic">
+                {useLiveQuery(() => db.fieldTables.where('status').equals('completed').filter(t => t.completedAt && new Date(t.completedAt).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]).count()) || 0}
+              </h3>
+            </div>
+            <div className="p-3 bg-emerald-500/10 rounded-2xl">
+              <MapIcon className="w-6 h-6 text-emerald-500" />
+            </div>
+          </div>
+          <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden mt-2">
+            <div className="h-full bg-emerald-500 rounded-full animate-progress-glow" style={{ width: '65%' }}></div>
+          </div>
+          <p className="text-slate-500 text-[10px] font-bold mt-4 uppercase tracking-[0.1em]">
+            Trend: <span className="text-emerald-500">+12%</span> oproti včerejšku
+          </p>
         </div>
 
         <div className="glass-card rounded-[3rem] p-8 flex flex-col justify-center bg-gradient-to-br from-indigo-600/20 to-transparent border border-white/5 group cursor-pointer" onClick={() => navigate('/payroll')}>

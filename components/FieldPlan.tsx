@@ -15,9 +15,11 @@ const TableItem: React.FC<{
     completedWorker: Worker | null | undefined;
     assignedWorkers: Worker[] | undefined;
     workers: Worker[] | undefined;
+    isSelected?: boolean;
+    isBulkMode?: boolean;
     onClick?: (table: FieldTable) => void;
     onLongPress?: (table: FieldTable) => void;
-}> = ({ table, color, isCompleted, completedWorker, assignedWorkers, workers, onClick, onLongPress }) => {
+}> = ({ table, color, isCompleted, completedWorker, assignedWorkers, workers, isSelected, isBulkMode, onClick, onLongPress }) => {
 
     // Double Tap detection
     const [lastTap, setLastTap] = React.useState<number>(0);
@@ -38,8 +40,13 @@ const TableItem: React.FC<{
     const handleClick = () => {
         // Simple click only if not long pressed
         if (!longPressTriggered.current) {
-            soundService.playClick();
-            onClick?.(table);
+            if (isBulkMode) {
+                soundService.playClick();
+                onClick?.(table);
+            } else {
+                soundService.playClick();
+                onClick?.(table);
+            }
         }
     }
 
@@ -65,14 +72,15 @@ const TableItem: React.FC<{
         <button
             type="button"
             onClick={handleClick}
-            onTouchStart={startPress}
+            onTouchStart={!isBulkMode ? startPress : undefined}
             onTouchEnd={() => { cancelPress(); handleTouchEnd({} as any); }}
             onTouchMove={cancelPress}
-            onMouseDown={startPress}
+            onMouseDown={!isBulkMode ? startPress : undefined}
             onMouseUp={cancelPress}
             onMouseLeave={cancelPress}
             onContextMenu={(e) => e.preventDefault()} // Disable default browser menu
-            className="relative group aspect-square rounded-2xl transition-all duration-200 active:scale-95 overflow-hidden touch-manipulation"
+            className={`relative group aspect-square rounded-2xl transition-all duration-200 active:scale-95 overflow-hidden touch-manipulation ${isSelected ? 'ring-4 ring-white ring-offset-4 ring-offset-slate-900 z-10 scale-95 shadow-2xl' : ''
+                }`}
             style={{
                 backgroundColor: color,
                 borderWidth: '2px',
@@ -82,8 +90,18 @@ const TableItem: React.FC<{
                     : '0 4px 12px rgba(0,0,0,0.2)',
             }}
         >
+            {/* Selection Checkmark */}
+            {isBulkMode && (
+                <div className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center transition-all z-20 ${isSelected ? 'bg-white text-indigo-600' : 'bg-black/20 text-transparent'
+                    }`}>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                </div>
+            )}
+
             {/* Table number */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
+            <div className={`absolute inset-0 flex flex-col items-center justify-center p-2 ${isSelected ? 'opacity-40' : ''}`}>
                 <span className="text-white font-black text-xl md:text-base leading-tight text-center drop-shadow-lg">
                     {table.tableId}
                 </span>
@@ -198,6 +216,8 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
     const { t } = useI18n();
     const [selectedFilter, setSelectedFilter] = useState<'all' | 'pending' | 'completed'>('all');
     const [contextMenuTable, setContextMenuTable] = useState<FieldTable | null>(null);
+    const [isBulkMode, setIsBulkMode] = useState(false);
+    const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set());
 
     // Load tables and workers
     const tables = useLiveQuery(
@@ -227,6 +247,30 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
     // Get worker by ID
     const getWorker = (workerId: number) => {
         return workers?.find(w => w.id === workerId);
+    };
+
+    const handleBulkAction = async (action: 'complete' | 'pending') => {
+        if (selectedTables.size === 0) return;
+
+        const tableIdsToUpdate = Array.from(selectedTables);
+
+        try {
+            // Bulk update in Dexie
+            for (const tableId of tableIdsToUpdate) {
+                const updateData: any = {
+                    status: action === 'complete' ? 'completed' : 'pending',
+                    completedAt: action === 'complete' ? new Date() : undefined,
+                };
+
+                await db.fieldTables.update(tableId, updateData);
+            }
+
+            soundService.playSuccess();
+            setIsBulkMode(false);
+            setSelectedTables(new Set());
+        } catch (error) {
+            console.error('Bulk update failed:', error);
+        }
     };
 
     if (!tables || tables.length === 0) {
@@ -271,6 +315,29 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
                             {t('completed') || 'Hotovo'}
                         </div>
                     </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => {
+                            setIsBulkMode(!isBulkMode);
+                            setSelectedTables(new Set());
+                        }}
+                        className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all border ${isBulkMode
+                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)]'
+                            : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                            }`}
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                        {isBulkMode ? 'Zrušit výběr' : 'Hromadné akce'}
+                    </button>
+                    {isBulkMode && (
+                        <div className="flex items-center gap-2 animate-fade-in">
+                            <span className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-3 py-2 rounded-lg border border-indigo-500/20">
+                                VYBRÁNO: {selectedTables.size}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -333,9 +400,19 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
                                     isCompleted={isCompleted}
                                     completedWorker={completedWorker}
                                     assignedWorkers={assignedWorkers}
-                                    assignedWorkers={assignedWorkers}
-                                    onClick={onTableClick}
-                                    onLongPress={setContextMenuTable}
+                                    onClick={() => {
+                                        if (isBulkMode) {
+                                            const newSelection = new Set(selectedTables);
+                                            if (newSelection.has(table.id!)) newSelection.delete(table.id!);
+                                            else newSelection.add(table.id!);
+                                            setSelectedTables(newSelection);
+                                        } else {
+                                            onTableClick?.(table);
+                                        }
+                                    }}
+                                    onLongPress={!isBulkMode ? setContextMenuTable : undefined}
+                                    isBulkMode={isBulkMode}
+                                    isSelected={selectedTables.has(table.id!)}
                                     workers={workers} // Pass workers for color lookup
                                 />
                             );
@@ -392,6 +469,42 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
                     </div>
                 )
             }
+
+            {/* Bulk Action Controls */}
+            {isBulkMode && selectedTables.size > 0 && (
+                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[80] w-[90%] md:w-auto animate-slide-up">
+                    <div className="bg-slate-900 border border-white/20 p-4 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col md:flex-row items-center gap-4">
+                        <div className="px-5 py-2">
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">{selectedTables.size} stolů vybráno</p>
+                        </div>
+                        <div className="flex items-center gap-2 w-full md:w-auto">
+                            <button
+                                onClick={() => handleBulkAction('complete')}
+                                className="flex-1 md:flex-none px-6 py-3 bg-green-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-green-500 transition-all flex items-center justify-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                                Hotovo
+                            </button>
+                            <button
+                                onClick={() => handleBulkAction('pending')}
+                                className="flex-1 md:flex-none px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2 border border-white/10"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                Reset
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsBulkMode(false);
+                                    setSelectedTables(new Set());
+                                }}
+                                className="flex-1 md:flex-none px-6 py-3 bg-black text-gray-400 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:text-white transition-all flex items-center justify-center"
+                            >
+                                Zrušit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Context Menu */}
             {contextMenuTable && (

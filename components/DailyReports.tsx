@@ -93,6 +93,26 @@ ${issues || '-'}`;
         handleSave(true);
     };
 
+    const handleWhatsAppShare = () => {
+        if (!projectId) return;
+        const project = projects?.find(p => p.id === Number(projectId));
+
+        const textToShare = `*${t('daily_report')} - ${project?.name} - ${reportDate}*
+
+✅ *${t('completed_strings')}:* ${stringsCompleted || '0'}
+
+📝 *${t('notes')}:*
+${notes || '-'}
+
+⚠️ *${t('issues')}:*
+${issues || '-'}`;
+
+        const encodedText = encodeURIComponent(textToShare);
+        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+
+        handleSave(true);
+    };
+
     const handleSave = async (silent = false) => {
         if (!projectId) {
             alert(t('project_required_error'));
@@ -223,10 +243,18 @@ ${issues || '-'}`;
                     <button
                         onClick={handleShareReport}
                         disabled={!projectId}
-                        className="flex-1 px-8 py-4 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                        className="flex-1 px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl transition-all border border-white/10 disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                        {t('share_copy_report')}
+                        {t('share_copy_report') || 'Sdílet / Kopírovat'}
+                    </button>
+                    <button
+                        onClick={handleWhatsAppShare}
+                        disabled={!projectId}
+                        className="flex-1 px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12.012 2c-5.508 0-9.987 4.479-9.987 9.987 0 1.763.462 3.487 1.339 5.004L2 22l5.132-1.347c1.467.799 3.111 1.221 4.88 1.221 5.508 0 9.987-4.479 9.987-9.987 0-2.662-1.037-5.164-2.921-7.048C17.164 3.037 14.674 2 12.012 2zM12.012 3.974c2.14 0 4.152.83 5.662 2.34 1.51 1.51 2.34 3.522 2.34 5.662 0 4.417-3.593 8.01-8.01 8.01-1.554 0-3.048-.452-4.323-1.306l-.31-.205-3.045.798.813-2.964-.225-.358c-.933-1.488-1.425-3.21-1.425-4.975C3.501 7.567 7.094 3.974 12.012 3.974zM8.336 7.427c-.157 0-.414.059-.628.293-.214.234-.814.796-.814 1.94s.828 2.248.943 2.404c.114.156 1.63 2.488 3.948 3.487.551.238 1.054.382 1.487.52.553.176 1.056.151 1.453.092.443-.066 1.357-.554 1.543-1.091.186-.537.186-.996.129-1.092-.057-.096-.214-.156-.443-.272s-1.357-.669-1.571-.747c-.214-.078-.371-.117-.528.117s-.6 1.15-.742 1.31c-.143.159-.286.176-.514.059-.228-.117-.964-.356-1.837-1.134-.68-.606-1.138-1.355-1.272-1.583-.133-.228-.014-.351.099-.465.105-.102.228-.272.343-.408s.157-.228.228-.382c.071-.156.036-.293-.017-.408a2.59 2.59 0 00-.547-1.305c-.144-.338-.288-.282-.414-.282z" /></svg>
+                        WhatsApp
                     </button>
                 </div>
             </div>

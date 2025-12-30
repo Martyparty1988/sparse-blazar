@@ -22,12 +22,16 @@ class FirebaseService {
     private app: FirebaseApp;
     private db: Database;
     public isInitialized = false;
+    public isOnline = false;
+    public pendingOps = 0;
+    private listeners: Set<(online: boolean, pending: number) => void> = new Set();
 
     constructor() {
         try {
             this.app = initializeApp(firebaseConfig);
             this.db = getDatabase(this.app);
             this.isInitialized = true;
+            this.setupConnectivityListener();
             console.log('🔥 Firebase initialized automatically');
         } catch (error) {
             console.error('Firebase auto-init failed:', error);
@@ -40,6 +44,29 @@ class FirebaseService {
 
     public get isReady() {
         return this.isInitialized && this.db !== null;
+    }
+
+    private setupConnectivityListener() {
+        const connectedRef = ref(this.db, ".info/connected");
+        onValue(connectedRef, (snap) => {
+            if (snap.val() === true) {
+                this.isOnline = true;
+                console.log("📡 App is ONLINE (Firebase)");
+            } else {
+                this.isOnline = false;
+                console.log("🔌 App is OFFLINE (Firebase)");
+            }
+            this.notify();
+        });
+    }
+
+    private notify() {
+        this.listeners.forEach(cb => cb(this.isOnline, this.pendingOps));
+    }
+
+    public onStatusChange(callback: (online: boolean, pending: number) => void) {
+        this.listeners.add(callback);
+        return () => this.listeners.delete(callback);
     }
 
     // --- Generic Data Operations ---
@@ -129,7 +156,12 @@ class FirebaseService {
             }
         });
 
-        return this.updateData('/', updates);
+        this.pendingOps++;
+        this.notify();
+        const res = await this.updateData('/', updates);
+        this.pendingOps = Math.max(0, this.pendingOps - 1);
+        this.notify();
+        return res;
     }
 
     public async deleteRecords(collectionName: string, ids: string[]): Promise<SyncResult> {

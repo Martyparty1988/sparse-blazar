@@ -60,13 +60,19 @@ const FieldPlans: React.FC = () => {
     return (
         <div className="space-y-8 pb-32">
             {/* Header */}
-            <header className="space-y-4">
-                <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8] drop-shadow-2xl">
-                    {t('field_plans') || 'Plánová pole'}<span className="text-[var(--color-accent)]">.</span>
+            {/* Header */}
+            <header className="space-y-4 md:hidden">
+                <div className="flex items-center justify-between">
+                    <h1 className="text-3xl font-black text-white uppercase italic tracking-tighter">
+                        {t('field_plans') || 'Plánová pole'}
+                    </h1>
+                </div>
+            </header>
+
+            <header className="hidden md:block">
+                <h1 className="text-6xl font-black mb-12 text-white italic uppercase tracking-tighter underline decoration-[var(--color-accent)] decoration-8">
+                    {t('field_plans')}
                 </h1>
-                <p className="text-sm md:text-xl text-slate-400 font-bold tracking-tight max-w-2xl border-l-4 border-[var(--color-accent)] pl-4 py-1">
-                    {t('field_plans_description') || 'Vizuální přehled všech stolů projektu s barevným kódováním podle pracovníků'}
-                </p>
             </header>
 
             {/* Project Selector */}

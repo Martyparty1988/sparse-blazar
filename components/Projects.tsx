@@ -135,7 +135,7 @@ const ProjectCard: React.FC<{
                         <div className="flex gap-2">
                             {/* Create Plan / Map Button */}
                             <Link
-                                to={`/plan?projectId=${project.id}`}
+                                to={`/field-plans?projectId=${project.id}`}
                                 onClick={(e) => e.stopPropagation()}
                                 className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-purple-400 hover:bg-purple-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
                                 title={t('field_plan')}

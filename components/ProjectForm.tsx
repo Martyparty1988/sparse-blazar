@@ -158,7 +158,6 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                 <div className="flex border-b border-white/5 bg-black/20 shrink-0 p-2 gap-2">
                     {[
                         { id: 'details', label: t('details') },
-                        { id: 'plan', label: t('plan') },
                         { id: 'components', label: t('components') }
                     ].map(tab => (
                         <button
@@ -198,6 +197,26 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                                     placeholder="Detailní informace o lokalitě, klientovi..."
                                 />
                             </div>
+
+                            {/* Table List Input - Promoted */}
+                            <div className="bg-white/[0.03] p-6 rounded-3xl border border-white/10">
+                                <label className="block text-xs font-black text-[var(--color-accent)] uppercase tracking-widest mb-4 ml-1 flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                                    {t('table_list_manual') || 'Seznam stolů (Generátor Mapy)'}
+                                </label>
+                                <textarea
+                                    value={tableList}
+                                    onChange={(e) => setTableList(e.target.value)}
+                                    rows={8}
+                                    placeholder="Zadejte čísla stolů oddělená novým řádkem nebo čárkou (např: IT28-1, IT28-2...)"
+                                    className="w-full p-5 bg-black/60 text-white placeholder-gray-600 rounded-2xl shadow-inner border border-white/10 text-sm font-mono custom-scrollbar focus:ring-2 focus:ring-[var(--color-accent)] outline-none"
+                                />
+                                <div className="mt-3 flex gap-2 items-start text-[10px] text-slate-400 font-medium leading-relaxed bg-black/20 p-3 rounded-xl">
+                                    <span className="text-lg">💡</span>
+                                    <p>{t('table_list_help') || 'Z tohoto seznamu se automaticky vygeneruje interaktivní mapa projektu. Každé ID stolu vytvoří jeden blok v mřížce.'}</p>
+                                </div>
+                            </div>
+
                             <div>
                                 <label htmlFor="status" className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 ml-1">{t('status')}</label>
                                 <select
@@ -210,17 +229,6 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                                     <option value="completed">{t('completed')}</option>
                                     <option value="on_hold">{t('on_hold')}</option>
                                 </select>
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 ml-1">{t('table_list_manual')}</label>
-                                <textarea
-                                    value={tableList}
-                                    onChange={(e) => setTableList(e.target.value)}
-                                    rows={5}
-                                    placeholder="IT28-1, IT28-2..."
-                                    className="w-full p-5 bg-black/40 text-white placeholder-gray-600 rounded-2xl shadow-inner border border-white/10 text-sm font-mono custom-scrollbar"
-                                />
-                                <p className="text-[10px] text-gray-500 mt-2 italic font-medium">{t('table_list_help')}</p>
                             </div>
 
                             {/* Timestamps Display for Existing Projects */}
@@ -236,32 +244,6 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                                     </div>
                                 </div>
                             )}
-                        </div>
-                    )}
-
-                    {activeTab === 'plan' && (
-                        <div className="space-y-8 animate-fade-in">
-                            <div className="p-8 bg-black/40 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center text-center">
-                                <div className="p-5 bg-white/5 rounded-full mb-4">
-                                    <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                                </div>
-                                <label className="block text-xl font-black text-white italic tracking-tighter mb-2 cursor-pointer hover:text-[var(--color-accent)] transition-colors">
-                                    {t('upload_plan')}
-                                    <input
-                                        type="file"
-                                        accept="application/pdf"
-                                        onChange={handleFileChange}
-                                        className="sr-only"
-                                    />
-                                </label>
-                                <p className="text-gray-500 text-sm font-bold">Pouze soubory PDF (Max 10MB)</p>
-                                {existingFileName && (
-                                    <div className="mt-6 px-6 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                                        <span className="text-emerald-400 font-black text-[11px] uppercase tracking-widest">{existingFileName}</span>
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     )}
 

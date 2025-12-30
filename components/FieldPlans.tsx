@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useSearchParams } from 'react-router-dom'; // Import useSearchParams
 import { db } from '../services/db';
 import { useI18n } from '../contexts/I18nContext';
 import type { Project } from '../types';
@@ -12,7 +13,11 @@ import FieldPlanView from './FieldPlanView';
  */
 const FieldPlans: React.FC = () => {
     const { t } = useI18n();
-    const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+    const [searchParams] = useSearchParams();
+    const urlProjectId = searchParams.get('projectId');
+
+    // Initialize with URL param if present, otherwise null
+    const [selectedProjectId, setSelectedProjectId] = useState<number | null>(urlProjectId ? Number(urlProjectId) : null);
 
     const projects = useLiveQuery(() =>
         db.projects
@@ -22,12 +27,19 @@ const FieldPlans: React.FC = () => {
 
     const selectedProject = projects?.find(p => p.id === selectedProjectId);
 
-    // Auto-select first project
-    React.useEffect(() => {
-        if (projects && projects.length > 0 && !selectedProjectId) {
+    // Update selectedProjectId if URL param changes (e.g. navigation)
+    useEffect(() => {
+        if (urlProjectId) {
+            setSelectedProjectId(Number(urlProjectId));
+        }
+    }, [urlProjectId]);
+
+    // Auto-select first project if nothing selected
+    useEffect(() => {
+        if (projects && projects.length > 0 && !selectedProjectId && !urlProjectId) {
             setSelectedProjectId(projects[0].id!);
         }
-    }, [projects, selectedProjectId]);
+    }, [projects, selectedProjectId, urlProjectId]);
 
     if (!projects || projects.length === 0) {
         return (
@@ -72,8 +84,8 @@ const FieldPlans: React.FC = () => {
                                 key={project.id}
                                 onClick={() => setSelectedProjectId(project.id!)}
                                 className={`p-6 rounded-2xl transition-all text-left ${isSelected
-                                        ? 'bg-white/10 border-2 border-[var(--color-accent)] shadow-lg'
-                                        : 'bg-white/5 border-2 border-transparent hover:bg-white/10'
+                                    ? 'bg-white/10 border-2 border-[var(--color-accent)] shadow-lg'
+                                    : 'bg-white/5 border-2 border-transparent hover:bg-white/10'
                                     }`}
                             >
                                 <div className="flex items-start justify-between mb-3">
@@ -94,8 +106,8 @@ const FieldPlans: React.FC = () => {
                                         <span className="text-gray-500 ml-1">{t('tables') || 'stolů'}</span>
                                     </div>
                                     <div className={`px-3 py-1 rounded-lg border ${project.status === 'active' ? 'bg-green-500/20 border-green-500/30 text-green-400' :
-                                            project.status === 'completed' ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' :
-                                                'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'
+                                        project.status === 'completed' ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' :
+                                            'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'
                                         }`}>
                                         <span className="text-xs font-bold uppercase">{t(project.status as any)}</span>
                                     </div>

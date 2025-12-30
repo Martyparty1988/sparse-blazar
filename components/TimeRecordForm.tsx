@@ -68,18 +68,24 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
     // --- Smart Defaults & Initialization ---
 
     useEffect(() => {
-        // Initialize Timestamps
+        // Initialize Timestamps - Always Refresh on Open
         const now = new Date();
-        const end = new Date(now);
-        end.setMinutes(end.getMinutes() - end.getTimezoneOffset()); // Local ISO fix
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // Local ISO logic check
 
-        // Default Start: 7:00 AM or based on last entry logic
+        // Default End: Now
+        const endISO = now.toISOString().slice(0, 16);
+
+        // Default Start: End minus 8 hours (standard shift) or 7:00 AM if it's morning
         const start = new Date(now);
-        start.setHours(7, 0, 0, 0);
-        start.setMinutes(start.getMinutes() - start.getTimezoneOffset());
+        start.setHours(start.getHours() - 8);
+        // Or specific logic:
+        // start.setHours(7, 0, 0, 0);
+        // start.setMinutes(start.getMinutes() - start.getTimezoneOffset());
 
-        setStartTime(start.toISOString().slice(0, 16));
-        setEndTime(end.toISOString().slice(0, 16));
+        const startISO = start.toISOString().slice(0, 16);
+
+        setStartTime(startISO);
+        setEndTime(endISO);
 
         // Attempt to find last record to offer "Repeat"
         if (savedWorkerId) {
@@ -235,7 +241,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                     }
 
                 } else if (taskType === 'cables') {
-                    if (!tableId) { alert("Select a table."); return; }
+                    if (!tableId) { alert("Prosím vyberte stůl ze seznamu pro kabeláž."); return; }
                     // Cabling logic...
                     await db.transaction('rw', db.solarTables, db.tableAssignments, db.tableStatusHistory, async () => {
                         await db.solarTables.update(tableId, { status: 'completed', tableType: tableSize });
@@ -350,41 +356,42 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
     // Krok 2: KOLIK / DETAILY
     const renderStep2 = () => (
         <div className="space-y-6 animate-fade-in">
-            {/* Time Section - Always visible now for better data */}
-            <div className="p-4 rounded-3xl bg-black/20 border border-white/5">
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('start_time')}</label>
-                        <input
-                            type="datetime-local"
-                            value={startTime}
-                            onChange={e => setStartTime(e.target.value)}
-                            required
-                            className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-mono text-xs font-bold"
-                        />
-                        <div className="flex gap-1 mt-2 overflow-x-auto pb-1 no-scrollbar">
-                            <button type="button" onClick={() => handleQuickTime('start', '-1h')} className="px-2 py-1 bg-white/5 rounded-lg text-[9px] font-bold text-slate-400 hover:text-white whitespace-nowrap">-1h</button>
-                            <button type="button" onClick={() => handleQuickTime('start', '-30m')} className="px-2 py-1 bg-white/5 rounded-lg text-[9px] font-bold text-slate-400 hover:text-white whitespace-nowrap">-30m</button>
-                            <button type="button" onClick={() => handleQuickTime('start', '+30m')} className="px-2 py-1 bg-white/5 rounded-lg text-[9px] font-bold text-slate-400 hover:text-white whitespace-nowrap">+30m</button>
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('end_time')}</label>
-                        <input
-                            type="datetime-local"
-                            value={endTime}
-                            onChange={e => setEndTime(e.target.value)}
-                            required
-                            className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-mono text-xs font-bold"
-                        />
-                        <div className="flex gap-1 mt-2 overflow-x-auto pb-1 no-scrollbar">
-                            <button type="button" onClick={() => handleQuickTime('end', 'now')} className="px-2 py-1 bg-[var(--color-accent)]/20 text-[var(--color-accent)] rounded-lg text-[9px] font-bold hover:bg-[var(--color-accent)] hover:text-white whitespace-nowrap">TEĎ</button>
-                            <button type="button" onClick={() => handleQuickTime('end', '+1h')} className="px-2 py-1 bg-white/5 rounded-lg text-[9px] font-bold text-slate-400 hover:text-white whitespace-nowrap">+1h</button>
-                        </div>
+            {/* Improved Time Inputs with Clear Separate Controls */}
+            <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">{t('start_time')}</label>
+                    <input
+                        type="datetime-local"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:border-[var(--color-primary)] outline-none"
+                    />
+                    <div className="flex gap-1 justify-center">
+                        <button type="button" onClick={() => handleQuickTime('start', '-30m')} className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded text-[10px] text-gray-400 font-mono">-30m</button>
+                        <button type="button" onClick={() => handleQuickTime('start', '+30m')} className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded text-[10px] text-gray-400 font-mono">+30m</button>
                     </div>
                 </div>
-                <div className="mt-3 text-center">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-white/5 px-3 py-1 rounded-full">Trvání: {calculateDuration().toFixed(1)}h</span>
+
+                <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">{t('end_time')}</label>
+                    <input
+                        type="datetime-local"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:border-[var(--color-primary)] outline-none"
+                    />
+                    <div className="flex gap-1 justify-center">
+                        <button type="button" onClick={() => handleQuickTime('end', '-30m')} className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded text-[10px] text-gray-400 font-mono">-30m</button>
+                        <button type="button" onClick={() => handleQuickTime('end', '+30m')} className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded text-[10px] text-gray-400 font-mono">+30m</button>
+                        <button type="button" onClick={() => handleQuickTime('end', 'now')} className="px-2 py-1 bg-[var(--color-primary)]/20 text-[var(--color-primary)] rounded text-[10px] font-bold">TEĎ</button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Duration Display */}
+            <div className="flex justify-center py-2">
+                <div className="px-4 py-1 rounded-full bg-white/5 border border-white/5 text-xs font-mono text-gray-400">
+                    Celkem: <span className="text-white font-bold">{calculateDuration().toFixed(1)}h</span>
                 </div>
             </div>
 
@@ -462,9 +469,33 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                     )}
                 </div>
 
+                {/* 1. Work Type Switch - Enhanced UI */}
+                <div className="bg-black/40 p-1.5 rounded-2xl mb-8 border border-white/10 flex relative relative-toggle">
+                    <button
+                        type="button"
+                        onClick={() => setWorkType('hourly')}
+                        className={`flex-1 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all relative z-10 ${workType === 'hourly'
+                                ? 'bg-[var(--color-primary)] text-white shadow-lg scale-[1.02]'
+                                : 'text-gray-500 hover:text-gray-300'
+                            }`}
+                    >
+                        ⏱️ {t('work_type_hourly')}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setWorkType('task')}
+                        className={`flex-1 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all relative z-10 ${workType === 'task'
+                                ? 'bg-[var(--color-accent)] text-white shadow-lg scale-[1.02]'
+                                : 'text-gray-500 hover:text-gray-300'
+                            }`}
+                    >
+                        📦 {t('work_type_task')}
+                    </button>
+                </div>
+
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 custom-scrollbar pb-40">
-                    <form id="time-record-form" onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-8">
                         {/* Desktop: Show all. Mobile: Show current step */}
                         {isDesktop ? (
                             <>

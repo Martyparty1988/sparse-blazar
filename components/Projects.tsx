@@ -406,42 +406,7 @@ const Projects: React.FC = () => {
         }
     };
 
-    const handleSync = async (project: Project) => {
-        setSyncing(true);
-        showToast('Connecting to Google Sheets...', 'info');
 
-        try {
-            await googleSheetsService.init();
-            if (!googleSheetsService.isLoggedIn) {
-                await googleSheetsService.signIn();
-            }
-
-            let spreadsheetId = project.googleSpreadsheetId;
-
-            if (!spreadsheetId) {
-                spreadsheetId = await googleSheetsService.createSpreadsheet(`MST - ${project.name}`);
-                await db.projects.update(project.id!, { googleSpreadsheetId: spreadsheetId });
-            }
-
-            const pTables = await db.solarTables.where('projectId').equals(project.id!).toArray();
-            const pTasks = await db.projectTasks.where('projectId').equals(project.id!).toArray();
-            const pRecords = await db.records.where('projectId').equals(project.id!).toArray();
-            const pWorkers = await db.workers.toArray();
-
-            const dataPayload = { project, tables: pTables, tasks: pTasks, records: pRecords, workers: pWorkers };
-            await googleSheetsService.syncProjectData(spreadsheetId, dataPayload);
-
-            const syncTimestamp = new Date();
-            await db.projects.update(project.id!, { lastSync: syncTimestamp });
-            showToast('Project synced successfully!', 'success');
-            window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}`, '_blank');
-        } catch (e) {
-            console.error(e);
-            showToast('Sync failed. Check console or API Key.', 'error');
-        } finally {
-            setSyncing(false);
-        }
-    };
 
     const filterOptions: ('all' | 'active' | 'completed' | 'on_hold')[] = ['all', 'active', 'completed', 'on_hold'];
 
@@ -543,8 +508,7 @@ const Projects: React.FC = () => {
                         isAdmin={user?.role === 'admin'}
                         onEdit={handleEdit}
                         onDelete={confirmDelete}
-                        onManageTasks={handleManageTasks}
-                        onSync={handleSync}
+                        onManageTasks={setManagingTasksFor}
                         onExport={handleExport}
                     />
                 ))}

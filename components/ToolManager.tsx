@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
 import { useI18n } from '../contexts/I18nContext';
+import { useToast } from '../contexts/ToastContext';
+import { googleSheetsService } from '../services/googleSheetsService';
 import type { Tool, ToolStatus, Worker } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import TrashIcon from './icons/TrashIcon';
@@ -19,6 +21,7 @@ const getToolIcon = (type: string) => {
 
 const ToolManager: React.FC = () => {
     const { t } = useI18n();
+    const { showToast } = useToast();
     const tools = useLiveQuery(() => db.tools.toArray());
     const workers = useLiveQuery(() => db.workers.toArray());
 
@@ -69,22 +72,60 @@ const ToolManager: React.FC = () => {
             lastInspection: new Date(),
         };
 
-        if (editingTool?.id) {
-            await db.tools.update(editingTool.id, toolData);
-        } else {
-            await db.tools.add(toolData);
+        try {
+            let finalId = toolData.id;
+
+            if (finalId) {
+                await db.tools.update(finalId, toolData);
+            } else {
+                finalId = await db.tools.add(toolData);
+            }
+
+            // Sync to Google Sheets
+            if (googleSheetsService.isReady) {
+                const toolToSync = { ...toolData, id: finalId };
+                googleSheetsService.upsertData('tools', [toolToSync])
+                    .then(res => {
+                        if (res.success) showToast('Tool synced to cloud', 'success');
+                        else showToast('Cloud sync warning', 'warning');
+                    })
+                    .catch(() => showToast('Cloud sync failed', 'error'));
+            }
+
+            resetForm();
+        } catch (error) {
+            console.error("Failed to save tool:", error);
+            showToast('Failed to save tool', 'error');
         }
-        resetForm();
     };
 
     const handleDelete = async (id: number, name: string) => {
         if (confirm(t('confirm_delete_tool').replace('{name}', name))) {
             await db.tools.delete(id);
+
+            // Sync Delete
+            if (googleSheetsService.isReady) {
+                googleSheetsService.deleteData('tools', [String(id)])
+                    .then(res => {
+                        if (!res.success) console.warn('Cloud delete warning', res);
+                    })
+                    .catch(err => console.error('Cloud delete failed', err));
+            }
         }
     };
 
     const handleQuickReturn = async (tool: Tool) => {
-        await db.tools.update(tool.id!, { status: 'available', assignedWorkerId: undefined });
+        const updatedTool = { ...tool, status: 'available' as ToolStatus, assignedWorkerId: undefined };
+        await db.tools.update(tool.id!, updatedTool);
+
+        // Sync Update
+        if (googleSheetsService.isReady) {
+            googleSheetsService.upsertData('tools', [updatedTool])
+                .then(res => {
+                    if (res.success) showToast('Return synced to cloud', 'success');
+                })
+                .catch(() => showToast('Cloud sync failed', 'error'));
+        }
     };
 
     const filteredTools = tools?.filter(tool => filterStatus === 'all' || tool.status === filterStatus);

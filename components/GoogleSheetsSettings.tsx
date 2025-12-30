@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { googleSheetsService, SyncConfig } from '../services/googleSheetsService';
+import { useAuth } from '../contexts/AuthContext';
 import './GoogleSheetsSettings.css';
 
 interface GoogleSheetSettingsProps {
@@ -12,6 +13,9 @@ interface GoogleSheetSettingsProps {
 }
 
 export const GoogleSheetsSettings: React.FC<GoogleSheetSettingsProps> = ({ onConfigChange }) => {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
+
     const [deploymentUrl, setDeploymentUrl] = useState('');
     const [autoSync, setAutoSync] = useState(false);
     const [syncInterval, setSyncInterval] = useState(30);
@@ -104,6 +108,8 @@ export const GoogleSheetsSettings: React.FC<GoogleSheetSettingsProps> = ({ onCon
     };
 
     const handleDisconnect = () => {
+        if (!isAdmin) return; // Security check
+
         googleSheetsService.disconnect();
         setIsConnected(false);
         setDeploymentUrl('');
@@ -212,7 +218,7 @@ export const GoogleSheetsSettings: React.FC<GoogleSheetSettingsProps> = ({ onCon
                     </div>
                 )}
 
-                {isConnected && (
+                {isConnected && isAdmin && (
                     <button
                         onClick={handleDisconnect}
                         className="btn-danger"

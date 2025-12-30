@@ -34,9 +34,22 @@ const WorkerCard: React.FC<{
         <div>
           <h3 className="text-xl font-black text-white italic tracking-tight">{worker.name}</h3>
           {isAdmin && (
-            <p className="text-gray-400 font-black text-[10px] uppercase tracking-widest mt-1">
-              {t('hourly_rate')}: <span className="text-[var(--color-accent)]">€{Number(worker.hourlyRate).toFixed(2)}</span>
-            </p>
+            <div className="mt-2 space-y-1">
+              <p className="text-gray-400 font-black text-[10px] uppercase tracking-widest leading-none">
+                {t('hourly_rate') || 'Hodinivo'}: <span className="text-white">€{Number(worker.hourlyRate || 0).toFixed(2)}</span>
+              </p>
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                <p className="text-emerald-500 font-bold text-[9px] uppercase tracking-tighter">
+                  Panel: <span className="text-white">€{Number(worker.panelPrice || 0).toFixed(2)}</span>
+                </p>
+                <p className="text-indigo-400 font-bold text-[9px] uppercase tracking-tighter">
+                  Cable: <span className="text-white">€{Number(worker.stringPrice || 0).toFixed(2)}</span>
+                </p>
+                <p className="text-amber-500 font-bold text-[9px] uppercase tracking-tighter">
+                  Const: <span className="text-white">€{Number(worker.meterPrice || 0).toFixed(2)}</span>
+                </p>
+              </div>
+            </div>
           )}
         </div>
       </div>

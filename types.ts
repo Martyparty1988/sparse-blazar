@@ -3,6 +3,9 @@ export interface Worker {
   id?: number;
   name: string;
   hourlyRate: number;
+  panelPrice: number;    // NEW: Cena za panel (€/ks)
+  stringPrice: number;   // NEW: Cena za string (€/ks)
+  meterPrice: number;    // NEW: Cena za metr konstrukce (€/m)
   username?: string; // New: Login username
   password?: string; // New: Simple password/pin
   color?: string; // NEW: Barva zaměstnance (hex, např. "#3b82f6")

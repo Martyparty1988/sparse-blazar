@@ -16,18 +16,27 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
   const { user } = useAuth();
   const [name, setName] = useState('');
   const [hourlyRate, setHourlyRate] = useState('0');
+  const [panelPrice, setPanelPrice] = useState('0');
+  const [stringPrice, setStringPrice] = useState('0');
+  const [meterPrice, setMeterPrice] = useState('0');
   const [password, setPassword] = useState('');
   const [color, setColor] = useState('#3b82f6');
 
   useEffect(() => {
     if (worker) {
       setName(worker.name);
-      setHourlyRate(String(worker.hourlyRate));
+      setHourlyRate(String(worker.hourlyRate || 0));
+      setPanelPrice(String(worker.panelPrice || 0));
+      setStringPrice(String(worker.stringPrice || 0));
+      setMeterPrice(String(worker.meterPrice || 0));
       setPassword(worker.password || '1234');
       setColor(worker.color || '#3b82f6');
     } else {
       setName('');
       setHourlyRate('0');
+      setPanelPrice('0');
+      setStringPrice('0');
+      setMeterPrice('0');
       setPassword('1234');
       setColor('#3b82f6');
     }
@@ -38,6 +47,9 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
     const workerData: Omit<Worker, 'id'> = {
       name,
       hourlyRate: user?.role === 'admin' ? (Number(hourlyRate) || 0) : (worker?.hourlyRate ?? 0),
+      panelPrice: user?.role === 'admin' ? (Number(panelPrice) || 0) : (worker?.panelPrice ?? 0),
+      stringPrice: user?.role === 'admin' ? (Number(stringPrice) || 0) : (worker?.stringPrice ?? 0),
+      meterPrice: user?.role === 'admin' ? (Number(meterPrice) || 0) : (worker?.meterPrice ?? 0),
       password: password,
       username: name.toLowerCase().replace(/\s/g, ''),
       color: color,
@@ -96,20 +108,73 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
 
           {user?.role === 'admin' && (
             <>
-              <div>
-                <label htmlFor="hourlyRate" className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">{t('hourly_rate')}</label>
-                <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-black">€</span>
-                  <input
-                    type="number"
-                    id="hourlyRate"
-                    value={hourlyRate}
-                    onChange={(e) => setHourlyRate(e.target.value)}
-                    required
-                    step="0.01"
-                    min="0"
-                    className="w-full p-5 pl-10 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10 transition-all"
-                  />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="hourlyRate" className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">{t('hourly_rate') || 'Hodinivo'}</label>
+                  <div className="relative">
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-black">€</span>
+                    <input
+                      type="number"
+                      id="hourlyRate"
+                      value={hourlyRate}
+                      onChange={(e) => setHourlyRate(e.target.value)}
+                      required
+                      step="0.01"
+                      min="0"
+                      className="w-full p-5 pl-10 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="panelPrice" className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Cena Panel (€/ks)</label>
+                  <div className="relative">
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-black">€</span>
+                    <input
+                      type="number"
+                      id="panelPrice"
+                      value={panelPrice}
+                      onChange={(e) => setPanelPrice(e.target.value)}
+                      required
+                      step="0.01"
+                      min="0"
+                      className="w-full p-5 pl-10 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10 transition-all text-emerald-400"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="stringPrice" className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Cena String (€/ks)</label>
+                  <div className="relative">
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-black">€</span>
+                    <input
+                      type="number"
+                      id="stringPrice"
+                      value={stringPrice}
+                      onChange={(e) => setStringPrice(e.target.value)}
+                      required
+                      step="0.01"
+                      min="0"
+                      className="w-full p-5 pl-10 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10 transition-all text-indigo-400"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="meterPrice" className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Cena Konstrukce (€/m)</label>
+                  <div className="relative">
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-black">€</span>
+                    <input
+                      type="number"
+                      id="meterPrice"
+                      value={meterPrice}
+                      onChange={(e) => setMeterPrice(e.target.value)}
+                      required
+                      step="0.01"
+                      min="0"
+                      className="w-full p-5 pl-10 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10 transition-all text-amber-400"
+                    />
+                  </div>
                 </div>
               </div>
 

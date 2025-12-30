@@ -15,7 +15,6 @@ const TableItem: React.FC<{
     completedWorker: Worker | null | undefined;
     assignedWorkers: Worker[] | undefined;
     workers: Worker[] | undefined;
-    workers: Worker[] | undefined;
     onClick?: (table: FieldTable) => void;
     onLongPress?: (table: FieldTable) => void;
 }> = ({ table, color, isCompleted, completedWorker, assignedWorkers, workers, onClick, onLongPress }) => {
@@ -159,8 +158,8 @@ const ContextMenu: React.FC<{
                 <button
                     onClick={() => onAction(table.status === 'completed' ? 'pending' : 'complete')}
                     className={`p-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center gap-3 transition-all ${table.status === 'completed'
-                            ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30'
-                            : 'bg-green-500/20 text-green-500 hover:bg-green-500/30'
+                        ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30'
+                        : 'bg-green-500/20 text-green-500 hover:bg-green-500/30'
                         }`}
                 >
                     {table.status === 'completed' ? (

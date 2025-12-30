@@ -19,6 +19,7 @@ import DocumentTextIcon from './icons/DocumentTextIcon';
 import SettingsIcon from './icons/SettingsIcon';
 import ChatIcon from './icons/ChatIcon';
 import WorkersIcon from './icons/WorkersIcon';
+import { soundService } from '../services/soundService';
 
 const ActionTile: React.FC<{
   icon: React.ReactNode;
@@ -28,7 +29,10 @@ const ActionTile: React.FC<{
   desc?: string;
 }> = ({ icon, label, onClick, color, desc }) => (
   <button
-    onClick={onClick}
+    onClick={() => {
+      soundService.playClick();
+      onClick();
+    }}
     className={`flex flex-col items-start p-7 md:p-6 rounded-[2.5rem] glass-card transition-all group hover:scale-[1.02] active:scale-95 border-l-8 ${color} shadow-2xl relative overflow-hidden h-full min-h-[180px] md:min-h-[160px] touch-manipulation`}
   >
     <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -70,6 +74,24 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
       </header>
+
+      {/* Active Shift Banner */}
+      {activeSessions.some(s => s.workerId === user?.workerId) && (
+        <div className="mx-2 p-6 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-[2rem] shadow-xl animate-pulse-slow flex items-center justify-between group cursor-pointer" onClick={() => navigate('/attendance')}>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white">
+              <ClockIcon className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-white font-black uppercase tracking-tighter text-lg leading-tight">Máš aktivní směnu!</p>
+              <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Nezapomeň se na konci dne odhlásit.</p>
+            </div>
+          </div>
+          <div className="bg-white/10 px-4 py-2 rounded-xl text-white font-black text-[10px] uppercase tracking-widest group-hover:bg-white group-hover:text-indigo-600 transition-all">
+            Check-out →
+          </div>
+        </div>
+      )}
 
       {/* Main Grid Actions - Mobile First: 1 column, MD+: 2 columns, LG: 4 columns */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 px-2">

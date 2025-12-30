@@ -33,7 +33,6 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
             } else if (prev.length < 2) {
                 return [...prev, workerId];
             } else {
-                // Replace first worker
                 return [prev[1], workerId];
             }
         });
@@ -52,12 +51,10 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
                 completedBy: currentUser.workerId,
             });
 
-
-
-            // Sync to Firebase
             if (firebaseService.isReady) {
                 firebaseService.upsertRecords('fieldTables', [{
                     ...table,
+                    id: `${table.projectId}_${table.tableId}`, // Standardize ID for Firebase
                     status: 'completed',
                     completedAt: new Date().toISOString(),
                     completedBy: currentUser.workerId
@@ -80,12 +77,10 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
                 completedBy: undefined,
             });
 
-
-
-            // Sync to Firebase
             if (firebaseService.isReady) {
                 firebaseService.upsertRecords('fieldTables', [{
                     ...table,
+                    id: `${table.projectId}_${table.tableId}`,
                     status: 'pending',
                     completedAt: undefined,
                     completedBy: undefined
@@ -106,12 +101,10 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
                 assignedWorkers: selectedWorkers,
             });
 
-
-
-            // Sync to Firebase
             if (firebaseService.isReady) {
                 firebaseService.upsertRecords('fieldTables', [{
                     ...table,
+                    id: `${table.projectId}_${table.tableId}`,
                     assignedWorkers: selectedWorkers
                 }]).catch(console.error);
             }
@@ -135,11 +128,15 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
     };
 
     return (
-        <div className="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in overflow-hidden">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={onClose} />
 
-            <div className="relative w-full md:max-w-2xl bg-slate-900/95 backdrop-blur-2xl md:rounded-[3rem] rounded-t-[3rem] shadow-2xl border-t md:border border-white/20 max-h-[90vh] flex flex-col overflow-hidden animate-slide-up">
-                {/* Header */}
+            <div className="relative w-full md:max-w-2xl bg-slate-900/95 backdrop-blur-2xl md:rounded-[3rem] rounded-t-[3rem] shadow-2xl border-t md:border border-white/20 max-h-[95vh] md:max-h-[90vh] flex flex-col overflow-hidden animate-slide-up">
+
+                {/* Drag Handle for Mobile */}
+                <div className="md:hidden w-full flex justify-center pt-4 pb-2 shrink-0">
+                    <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+                </div>
                 <div
                     className="p-8 border-b border-white/10 shrink-0"
                     style={{

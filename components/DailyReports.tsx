@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
+import { firebaseService } from '../services/firebaseService';
 import { DailyReport } from '../types';
 
 const DailyReports: React.FC = () => {
@@ -115,6 +116,21 @@ ${issues || '-'}`;
                 await db.dailyReports.add(reportData);
             }
             if (!silent) alert(`✅ ${t('save_success')}`);
+
+            // Sync to Firebase
+            if (firebaseService.isReady) {
+                // Fetch the ID if it was a new add
+                let reportId = existing?.id;
+                if (!reportId) {
+                    const newReport = await db.dailyReports.where({ projectId: Number(projectId), date: reportDate }).first();
+                    reportId = newReport?.id;
+                }
+
+                if (reportId) {
+                    firebaseService.upsertRecords('dailyReports', [{ ...reportData, id: reportId }])
+                        .catch(err => console.error('Firebase sync failed', err));
+                }
+            }
         } catch (error) {
             console.error('Error saving report:', error);
             alert(t('save_error'));

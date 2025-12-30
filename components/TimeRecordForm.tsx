@@ -4,7 +4,8 @@ import { db } from '../services/db';
 import type { Project, TimeRecord, ProjectTask } from '../types';
 import { useI18n } from '../contexts/I18nContext';
 import { processRecordDescription, processFieldTableDescription } from '../services/recordProcessor';
-import { googleSheetsService } from '../services/googleSheetsService';
+import { processRecordDescription, processFieldTableDescription } from '../services/recordProcessor';
+import { firebaseService } from '../services/firebaseService';
 import { useToast } from '../contexts/ToastContext';
 
 // Utility Hook for Media Query
@@ -197,8 +198,9 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                 }
 
                 // --- Sync TimeRecord ---
-                if (googleSheetsService.isReady) {
-                    googleSheetsService.upsertData('timeRecords', [record]).catch(err => console.error('Sync failed', err));
+                if (firebaseService.isReady) {
+                    firebaseService.upsertRecords('timeRecords', [{ ...record, startTime: record.startTime.toISOString(), endTime: record.endTime.toISOString() }])
+                        .then(res => res.success ? showToast('✅ Cloud Synced', 'success') : console.warn(res.error));
                 }
 
             } else { // Task
@@ -217,8 +219,9 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
 
                     const newId = await db.projectTasks.add(taskData as ProjectTask);
 
-                    if (googleSheetsService.isReady) {
-                        googleSheetsService.upsertData('projectTasks', [{ ...taskData, id: newId }]).catch(console.error);
+                    if (firebaseService.isReady) {
+                        firebaseService.upsertRecords('projectTasks', [{ ...taskData, id: newId, completionDate: taskData.completionDate.toISOString(), startTime: taskData.startTime.toISOString(), endTime: taskData.endTime.toISOString() }])
+                            .catch(console.error);
                     }
 
                 } else if (taskType === 'construction') {
@@ -226,8 +229,9 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
 
                     const newId = await db.projectTasks.add(taskData as ProjectTask);
 
-                    if (googleSheetsService.isReady) {
-                        googleSheetsService.upsertData('projectTasks', [{ ...taskData, id: newId }]).catch(console.error);
+                    if (firebaseService.isReady) {
+                        firebaseService.upsertRecords('projectTasks', [{ ...taskData, id: newId, completionDate: taskData.completionDate.toISOString(), startTime: taskData.startTime.toISOString(), endTime: taskData.endTime.toISOString() }])
+                            .catch(console.error);
                     }
 
                 } else if (taskType === 'cables') {
@@ -246,9 +250,9 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                     // Note: Cables updates 'solarTables' and 'assignments', difficult to sync individual upserts without complex logic.
                     // We rely on periodic pushing/pulling for this or just trigger a pushAll in background?
                     // Let's trigger a pushAll for solarTables if possible, or just leave it for global sync.
-                    if (googleSheetsService.isReady) {
-                        showToast('Syncing cables data...', 'info');
-                        // No easy granular sync yet for cables
+                    if (firebaseService.isReady) {
+                        // For cables, we might want to sync the table status if we track tables in Firebase
+                        // But for now, just logging tasks support
                     }
                 }
             }
@@ -258,10 +262,10 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
             localStorage.setItem('last_project_id', String(projectId));
             localStorage.setItem('last_worker_id', String(workerId));
 
-            if (googleSheetsService.isReady) {
-                showToast('✅ Saved & Synced', 'success');
+            if (firebaseService.isReady) {
+                // Toast handled above per record type usually, or here general success
             } else {
-                alert(t('saved_successfully') || 'Uloženo!');
+                showToast(t('saved_successfully') || 'Uloženo (Offline)', 'success');
             }
             onClose();
 

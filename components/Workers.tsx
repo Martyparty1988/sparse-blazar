@@ -5,6 +5,7 @@ import { useI18n } from '../contexts/I18nContext';
 import type { Worker } from '../types';
 import WorkerForm from './WorkerForm';
 import { useAuth } from '../contexts/AuthContext';
+import { firebaseService } from '../services/firebaseService';
 import ConfirmationModal from './ConfirmationModal';
 import PlusIcon from './icons/PlusIcon';
 import SearchIcon from './icons/SearchIcon';
@@ -111,6 +112,12 @@ const Workers: React.FC = () => {
     if (workerToDelete?.id) {
       await db.workers.delete(workerToDelete.id);
       setWorkerToDelete(null);
+
+      // Sync Delete to Firebase
+      if (firebaseService.isReady) {
+        firebaseService.deleteRecords('workers', [String(workerToDelete.id)])
+          .catch(console.error);
+      }
     }
   };
 

@@ -4,6 +4,7 @@ import { db } from '../services/db';
 import type { Worker } from '../types';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
+import { firebaseService } from '../services/firebaseService';
 
 interface WorkerFormProps {
   worker?: Worker;
@@ -43,6 +44,24 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
       await db.workers.update(worker.id, workerData);
     } else {
       await db.workers.add(workerData as Worker);
+    }
+
+    // Sync to Firebase
+    if (firebaseService.isReady) {
+      // Ensure id is present for sync (it should be if we updated, if added we might need to fetch it or rely on uuid if we used one, but here we use auto-increment from Dexie. 
+      // Syncing auto-increment IDs to distributed DB is tricky.
+      // For now we assume best effort or that we fetch the new ID.
+      // Actually db.workers.add returns the new ID.
+      let finalId = worker?.id;
+      if (!finalId) {
+        const newWorker = await db.workers.where('username').equals(workerData.username!).last();
+        finalId = newWorker?.id;
+      }
+
+      if (finalId) {
+        firebaseService.upsertRecords('workers', [{ ...workerData, id: finalId }])
+          .catch(console.error);
+      }
     }
     onClose();
   };

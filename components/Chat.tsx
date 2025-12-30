@@ -2,8 +2,49 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { firebaseService } from '../services/firebaseService';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../services/db';
 import type { ChatMessage } from '../types';
 import BackButton from './BackButton';
+
+// Notification Helper
+const playNotificationSound = () => {
+    try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 500;
+        gainNode.gain.value = 0.1;
+
+        oscillator.start();
+        setTimeout(() => oscillator.stop(), 200);
+    } catch (e) {
+        console.error("Audio play failed", e);
+    }
+};
+
+const notifyUser = (message: ChatMessage) => {
+    // Sound
+    playNotificationSound();
+
+    // Vibration
+    if (navigator.vibrate) {
+        navigator.vibrate(200);
+    }
+
+    // System Notification
+    if (Notification.permission === 'granted' && document.hidden) {
+        new Notification(`New message from ${message.senderName}`, {
+            body: message.text,
+            icon: '/icon-192.png' // Adjust if needed
+        });
+    }
+};
 
 const Chat: React.FC = () => {
     const { user, currentUser } = useAuth();
@@ -13,9 +54,18 @@ const Chat: React.FC = () => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [isSending, setIsSending] = useState(false);
 
-    // Limit to last 50 messages to keep it fast
-    // In a real app we would paginate, but for now this is fine.
+    // Channels
+    const [activeChannelId, setActiveChannelId] = useState<string>('general');
+    const projects = useLiveQuery(() => db.projects.where('status').equals('active').toArray());
+
     const CHAT_LIMIT = 50;
+
+    // Permissions on mount
+    useEffect(() => {
+        if ('Notification' in window && Notification.permission !== 'granted') {
+            Notification.requestPermission();
+        }
+    }, []);
 
     useEffect(() => {
         const scrollToBottom = () => {
@@ -27,25 +77,37 @@ const Chat: React.FC = () => {
     useEffect(() => {
         if (!firebaseService.isReady) return;
 
-        console.log("Subscribing to chat...");
-        // Listen to the chat node
-        firebaseService.subscribe('chat', (data) => {
+        // Path: /chat/{channelId}
+        const path = `chat/${activeChannelId}`;
+        console.log(`Subscribing to ${path}...`);
+
+        setMessages([]); // Clear on switch
+
+        firebaseService.subscribe(path, (data) => {
             if (data) {
                 const messageList: ChatMessage[] = Object.values(data);
-                // Sort by timestamp
                 messageList.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-                // Keep only last N
                 setMessages(messageList.slice(-CHAT_LIMIT));
+
+                // Notify if new message is not from me and recent
+                const lastMsg = messageList[messageList.length - 1];
+                if (lastMsg && lastMsg.senderId !== currentUser?.workerId && lastMsg.senderId !== -1) {
+                    // Simple check: is it really new? (within last 5 seconds)
+                    const msgTime = new Date(lastMsg.timestamp).getTime();
+                    if (Date.now() - msgTime < 5000) {
+                        notifyUser(lastMsg);
+                    }
+                }
+
             } else {
                 setMessages([]);
             }
         });
 
-        // Cleanup listener on unmount
         return () => {
-            firebaseService.unsubscribe('chat');
+            firebaseService.unsubscribe(path);
         };
-    }, []);
+    }, [activeChannelId]); // Re-sub when channel changes
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -55,16 +117,17 @@ const Chat: React.FC = () => {
         const newMessage: ChatMessage = {
             id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
             text: inputText.trim(),
-            senderId: currentUser?.workerId || -1, // -1 for Admin/Unknown
+            senderId: currentUser?.workerId || -1,
             senderName: currentUser?.name || user?.username || 'Admin',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            channelId: activeChannelId
         };
 
         try {
-            // We use upsertRecords with a custom array to just push this 1 message
-            // Ideally we'd use 'push' but our service exposes upsert.
-            // Using ID keys manually works fine for this scale.
-            await firebaseService.upsertRecords('chat', [newMessage]);
+            // Upsert into specific channel path: /chat/{channelId}/{messageId}
+            // upsertRecords expects collection root. 
+            // We can treat `chat/${activeChannelId}` as the collection.
+            await firebaseService.upsertRecords(`chat/${activeChannelId}`, [newMessage]);
             setInputText('');
         } catch (error) {
             console.error("Failed to send message", error);
@@ -78,10 +141,10 @@ const Chat: React.FC = () => {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    const isMe = (msg: ChatMessage) => msg.senderId === currentUser?.workerId;
+    const isMe = (msg: ChatMessage) => msg.senderId === currentUser?.workerId || (msg.senderId === -1 && user?.role === 'admin' && currentUser?.workerId === undefined);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)] max-w-4xl mx-auto">
+        <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)] max-w-6xl mx-auto md:flex-row gap-6">
             <div className="md:hidden pt-4 pb-2">
                 <div className="flex items-center gap-4">
                     <BackButton />
@@ -91,21 +154,55 @@ const Chat: React.FC = () => {
                 </div>
             </div>
 
-            <div className="hidden md:block mb-6">
-                <h1 className="text-5xl font-black text-white italic uppercase tracking-tighter underline decoration-indigo-500 decoration-4">
-                    Team Chat
-                </h1>
+            <div className="hidden md:block mb-6 md:mb-0 w-full md:w-auto">
+                {/* Desktop Title not needed in sidebar layout usually, but keeping consistency */}
+            </div>
+
+            {/* Channels Sidebar */}
+            <div className="w-full md:w-64 flex flex-col gap-2 shrink-0 md:h-full overflow-y-auto pb-4">
+                <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest px-2 mb-2">Kanály</h2>
+
+                <button
+                    onClick={() => setActiveChannelId('general')}
+                    className={`p-4 rounded-2xl text-left transition-all font-bold flex items-center gap-3 ${activeChannelId === 'general'
+                            ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20'
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                        }`}
+                >
+                    <span className="text-lg">📢</span> General
+                </button>
+
+                {projects?.map(project => (
+                    <button
+                        key={project.id}
+                        onClick={() => setActiveChannelId(`project_${project.id}`)}
+                        className={`p-4 rounded-2xl text-left transition-all font-bold flex items-center gap-3 ${activeChannelId === `project_${project.id}`
+                                ? 'bg-[var(--color-accent)] text-white shadow-lg shadow-[var(--color-accent)]/20'
+                                : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                            }`}
+                    >
+                        <span className="text-lg">🏗️</span> #{project.name}
+                    </button>
+                ))}
             </div>
 
             {/* Chat Window */}
-            <div className="flex-1 bg-slate-900/60 backdrop-blur-xl rounded-2xl md:rounded-[2.5rem] border border-white/10 flex flex-col overflow-hidden shadow-2xl relative">
+            <div className="flex-1 bg-slate-900/60 backdrop-blur-xl rounded-2xl md:rounded-[2.5rem] border border-white/10 flex flex-col overflow-hidden shadow-2xl relative h-full">
+
+                {/* Mobile Channel Indicator */}
+                <div className="md:hidden px-4 py-2 bg-black/20 text-xs font-black text-gray-400 uppercase tracking-widest text-center border-b border-white/5">
+                    {activeChannelId === 'general' ? '📢 General' : `🏗️ #${projects?.find(p => `project_${p.id}` === activeChannelId)?.name || 'Project'}`}
+                </div>
+
                 {/* Messages Area */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                     {messages.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-gray-500 opacity-50">
-                            <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                            <p className="text-sm font-bold uppercase tracking-widest">Zatím žádné zprávy</p>
-                            <p className="text-xs">Buďte první kdo něco napíše!</p>
+                            <span className="text-4xl mb-4">💬</span>
+                            <p className="text-sm font-bold uppercase tracking-widest">Zatím žádné zprávy v kanálu</p>
+                            <p className="text-xs">
+                                {activeChannelId === 'general' ? 'General' : activeChannelId}
+                            </p>
                         </div>
                     ) : (
                         messages.map((msg) => (
@@ -122,8 +219,8 @@ const Chat: React.FC = () => {
                                     {/* Bubble */}
                                     <div
                                         className={`px-4 py-3 rounded-2xl text-sm font-medium shadow-lg break-words ${isMe(msg)
-                                            ? 'bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-tr-none'
-                                            : 'bg-white/10 text-gray-100 rounded-tl-none border border-white/5'
+                                                ? 'bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-tr-none'
+                                                : 'bg-white/10 text-gray-100 rounded-tl-none border border-white/5'
                                             }`}
                                     >
                                         {!isMe(msg) && (

@@ -217,5 +217,7 @@ export interface ChatMessage {
   text: string;
   senderId: number; // Worker ID
   senderName: string; // Snapshot of name
+  senderName: string; // Snapshot of name
   timestamp: string; // ISO String
+  channelId?: string; // NEW: Channel ID (e.g., 'general' or 'project_123')
 }

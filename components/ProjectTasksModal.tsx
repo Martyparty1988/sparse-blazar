@@ -4,6 +4,7 @@ import { db } from '../services/db';
 import { useI18n } from '../contexts/I18nContext';
 import type { Project, ProjectTask, Worker } from '../types';
 import ConfirmationModal from './ConfirmationModal';
+import { firebaseService } from '../services/firebaseService';
 
 interface ProjectTasksModalProps {
     project: Project;
@@ -113,18 +114,46 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
     }
 
     const handleToggleCompletion = async (task: ProjectTask) => {
+        const newDate = task.completionDate ? undefined : new Date();
         await db.projectTasks.update(task.id!, {
-            completionDate: task.completionDate ? undefined : new Date()
+            completionDate: newDate
         });
+
+        if (firebaseService.isReady) {
+            firebaseService.upsertRecords('projectTasks', [{
+                ...task,
+                completionDate: newDate ? newDate.toISOString() : undefined
+            }]).catch(console.error);
+        }
     };
 
     const handleAssignWorker = async (taskId: number, workerId: number | '') => {
-        await db.projectTasks.update(taskId, { assignedWorkerId: workerId === '' ? undefined : Number(workerId) });
+        const assignedId = workerId === '' ? undefined : Number(workerId);
+        await db.projectTasks.update(taskId, { assignedWorkerId: assignedId });
+
+        if (firebaseService.isReady) {
+            const task = await db.projectTasks.get(taskId);
+            if (task) {
+                firebaseService.upsertRecords('projectTasks', [{
+                    ...task,
+                    assignedWorkerId: assignedId,
+                    completionDate: task.completionDate ? (task.completionDate instanceof Date ? task.completionDate.toISOString() : task.completionDate) : undefined,
+                    startTime: task.startTime ? (task.startTime instanceof Date ? task.startTime.toISOString() : task.startTime) : undefined,
+                    endTime: task.endTime ? (task.endTime instanceof Date ? task.endTime.toISOString() : task.endTime) : undefined
+                }]).catch(console.error);
+            }
+        }
     };
 
     const handleDeleteTask = async () => {
         if (taskToDelete !== null) {
             await db.projectTasks.delete(taskToDelete);
+
+            if (firebaseService.isReady) {
+                firebaseService.deleteRecords('projectTasks', [String(taskToDelete)])
+                    .catch(console.error);
+            }
+
             setTaskToDelete(null);
         }
     };
@@ -175,7 +204,13 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                 break;
         }
 
-        await db.projectTasks.add(taskData as ProjectTask);
+        const newId = await db.projectTasks.add(taskData as ProjectTask);
+
+        if (firebaseService.isReady) {
+            firebaseService.upsertRecords('projectTasks', [{ ...taskData, id: newId }])
+                .catch(console.error);
+        }
+
         resetForm();
     };
 
@@ -322,8 +357,8 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                                             value={task.assignedWorkerId || ''}
                                             onChange={(e) => handleAssignWorker(task.id!, e.target.value === '' ? '' : Number(e.target.value))}
                                             className={`px-3 py-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all cursor-pointer ${task.assignedWorkerId
-                                                    ? 'bg-blue-600/20 text-blue-200 border-blue-500/30'
-                                                    : 'bg-white/5 text-gray-400 border-white/10'
+                                                ? 'bg-blue-600/20 text-blue-200 border-blue-500/30'
+                                                : 'bg-white/5 text-gray-400 border-white/10'
                                                 } [&>option]:bg-slate-900`}
                                             disabled={!!task.completionDate}
                                         >
@@ -341,8 +376,8 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                                         <button
                                             onClick={() => handleToggleCompletion(task)}
                                             className={`p-2.5 rounded-xl transition-all shadow-lg active:scale-95 ${task.completionDate
-                                                    ? 'bg-amber-500/20 text-amber-400'
-                                                    : 'bg-emerald-500 text-black'
+                                                ? 'bg-amber-500/20 text-amber-400'
+                                                : 'bg-emerald-500 text-black'
                                                 }`}
                                         >
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>

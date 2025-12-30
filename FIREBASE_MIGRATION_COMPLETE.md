@@ -36,8 +36,8 @@ The application has been successfully migrated to use **Firebase Realtime Databa
 
 ## ✅ Verified Files
 
-- `services/firebaseService.ts`
-- `components/FirebaseSettings.tsx`
+- `components/TableModal.tsx` (Updated - Field Tables)
+- `components/ProjectTasksModal.tsx` (Updated - Tasks)
 - `components/ProjectForm.tsx` (Updated)
 - `components/ToolManager.tsx` (Updated)
 - `components/TimeRecordForm.tsx` (Updated)

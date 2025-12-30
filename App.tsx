@@ -24,6 +24,7 @@ const DataImporter = React.lazy(() => import('./components/DataImporter'));
 const FieldPlans = React.lazy(() => import('./components/FieldPlans'));
 const ToolManager = React.lazy(() => import('./components/ToolManager'));
 const DailyReports = React.lazy(() => import('./components/DailyReports'));
+const Chat = React.lazy(() => import('./components/Chat'));
 
 // Loading Fallback Component
 const PageLoader = () => (
@@ -184,6 +185,7 @@ const App: React.FC = () => {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/tools" element={<ToolManager />} />
                 <Route path="/daily-reports" element={<DailyReports />} />
+                <Route path="/chat" element={<Chat />} />
                 <Route path="/import" element={<DataImporter />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>

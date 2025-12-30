@@ -211,3 +211,11 @@ export interface DailyReport {
   managerEmail?: string; // Email site managera
   sentAt?: Date; // Kdy byl report odeslán
 }
+
+export interface ChatMessage {
+  id: string; // Firebase Push ID or similar
+  text: string;
+  senderId: number; // Worker ID
+  senderName: string; // Snapshot of name
+  timestamp: string; // ISO String
+}

@@ -7,6 +7,9 @@ import ProjectsIcon from './icons/ProjectsIcon';
 import SettingsIcon from './icons/SettingsIcon';
 import ClockIcon from './icons/ClockIcon';
 import BrainIcon from './icons/BrainIcon';
+import ClockIcon from './icons/ClockIcon';
+import BrainIcon from './icons/BrainIcon';
+import ChatIcon from './icons/ChatIcon';
 import ConnectionStatusIndicator from './ConnectionStatusIndicator';
 
 const BottomNavBar: React.FC = () => {
@@ -16,6 +19,7 @@ const BottomNavBar: React.FC = () => {
     const navItems = [
         { to: "/", title: t('dashboard'), icon: <DashboardIcon className="w-7 h-7" />, roles: ['admin', 'user'] },
         { to: "/projects", title: t('projects'), icon: <ProjectsIcon className="w-7 h-7" />, roles: ['admin', 'user'] },
+        { to: "/chat", title: "Chat", icon: <ChatIcon className="w-7 h-7" />, roles: ['admin', 'user'] },
         { to: "/records", title: t('work_log'), icon: <ClockIcon className="w-7 h-7" />, roles: ['admin', 'user'] },
         { to: "/settings", title: t('settings'), icon: <SettingsIcon className="w-7 h-7" />, roles: ['admin'] },
     ];
@@ -77,6 +81,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     {[
                         { to: "/", title: t('dashboard'), roles: ['admin', 'user'] },
                         { to: "/projects", title: t('projects'), roles: ['admin', 'user'] },
+                        { to: "/chat", title: "TEAM CHAT", roles: ['admin', 'user'] },
                         { to: "/records", title: t('work_log'), roles: ['admin', 'user'] },
                         { to: "/settings", title: t('settings'), roles: ['admin'] },
                     ].filter(item => item.roles.includes(user?.role || 'user')).map(item => (

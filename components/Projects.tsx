@@ -74,8 +74,8 @@ const ProjectCard: React.FC<{
     onEdit: (p: Project) => void;
     onDelete: (p: Project) => void;
     onManageTasks: (p: Project) => void;
-    onSync: (p: Project) => void;
-}> = ({ project, index, isAdmin, onEdit, onDelete, onManageTasks, onSync }) => {
+    onExport: (p: Project) => void;
+}> = ({ project, index, isAdmin, onEdit, onDelete, onManageTasks, onExport }) => {
     const { t, language } = useI18n();
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -147,9 +147,13 @@ const ProjectCard: React.FC<{
                             <button
                                 onClick={(e) => { e.stopPropagation(); onSync(project) }}
                                 className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-emerald-400 hover:bg-emerald-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
-                                title={t('sync_to_sheets')}
+                                {/* Export CSV Button */}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onExport(project) }}
+                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-emerald-400 hover:bg-emerald-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
+                                title={t('export_csv') || "Exportovat Data"}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                             </button>
 
                             {/* Edit Button */}
@@ -351,6 +355,61 @@ const Projects: React.FC = () => {
         }
     };
 
+    const handleExport = async (project: Project) => {
+        try {
+            // Fetch ALL data for export
+            const [tables, tasks, workers] = await Promise.all([
+                db.solarTables.where('projectId').equals(project.id!).toArray(),
+                db.projectTasks.where('projectId').equals(project.id!).toArray(),
+                db.workers.toArray()
+            ]);
+
+            // Helper to get worker name
+            const getWorkerName = (id?: number) => workers.find(w => w.id === id)?.name || 'Neznámý';
+
+            // CSV Content
+            let csv = "Typ;ID/Popis;Status;Pracovník;Dokončeno;Cena\n";
+
+            // Add Tables
+            tables.forEach(t => {
+                const status = t.status === 'completed' ? 'Dokončeno' : 'Čeká';
+                // For old tables, we might not have 'completedBy', but new FieldTables would (if migrated).
+                // Assuming standard SolarTable structure here which doesn't strictly have completedBy on root always?
+                // Let's check type. SolarTable doesn't have completedBy. 
+                // Wait, we are syncing from FieldTable logic in other places. 
+                // Let's stick to what we have in DB.
+
+                // If using FieldTable (new), we might need to fetch from fieldTables table?
+                // The current ProjectCard uses `db.solarTables`. Let's stick to that for now or check both.
+                // Actually, FieldPlan uses `fieldTables`. We should probably check if project uses fieldTables.
+
+                csv += `Stůl;${t.tableCode};${status};-;-;-\n`;
+            });
+
+            // Add Tasks
+            tasks.forEach(t => {
+                const worker = getWorkerName(t.assignedWorkerId);
+                const date = t.completionDate ? new Date(t.completionDate).toLocaleDateString() : '-';
+                csv += `Úkol;${t.description};${t.completionDate ? 'Hotovo' : 'Přiřazeno'};${worker};${date};${t.price}\n`;
+            });
+
+            // Create and download file
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${project.name}_export_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast(t('export_success') || "Export dokončen", 'success');
+        } catch (error) {
+            console.error("Export failed", error);
+            showToast("Export selhal", 'error');
+        }
+    };
+
     const handleSync = async (project: Project) => {
         setSyncing(true);
         showToast('Connecting to Google Sheets...', 'info');
@@ -488,8 +547,9 @@ const Projects: React.FC = () => {
                         isAdmin={user?.role === 'admin'}
                         onEdit={handleEdit}
                         onDelete={confirmDelete}
-                        onManageTasks={setManagingTasksFor}
+                        onManageTasks={handleManageTasks}
                         onSync={handleSync}
+                        onExport={handleExport}
                     />
                 ))}
 

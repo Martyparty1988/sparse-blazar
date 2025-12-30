@@ -1,7 +1,7 @@
 {
   "short_name": "MST",
   "name": "Martyho Solar Tracker",
-  "description": "Profesionální PWA nástroj pro správu solárních montáží, docházky, projektů a týmů. Funguje offline s AI asistentem.",
+  "description": "Profesionální PWA nástroj pro správu solárních montáží, docházky, projektů a týmů. Funguje offline.",
   "start_url": "/",
   "scope": "/",
   "id": "/",

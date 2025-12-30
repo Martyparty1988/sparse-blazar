@@ -73,49 +73,49 @@ const Dashboard: React.FC = () => {
         <ActionTile
           icon={<ClockIcon className="w-8 h-8 md:w-7 md:h-7" />}
           label={t('log_work')}
-          desc="Zapsat hotové stoly a čas"
+          desc={t('work_log_desc')}
           onClick={() => setIsLoggingWork(true)}
           color="border-indigo-500"
         />
         <ActionTile
           icon={<MapIcon className="w-8 h-8 md:w-7 md:h-7" />}
           label={t('plan')}
-          desc="Interaktivní mapy a markery"
+          desc={t('plan_desc')}
           onClick={() => navigate('/plan')}
           color="border-cyan-500"
         />
         <ActionTile
           icon={<CalendarIcon className="w-8 h-8 md:w-7 md:h-7" />}
           label={t('attendance')}
-          desc="Check-in / Check-out"
+          desc={t('attendance_desc')}
           onClick={() => navigate('/attendance')}
           color="border-amber-500"
         />
         <ActionTile
           icon={<ProjectsIcon className="w-8 h-8 md:w-7 md:h-7" />}
           label={t('projects')}
-          desc="Správa výstavby polí"
+          desc={t('projects_desc')}
           onClick={() => navigate('/projects')}
           color="border-emerald-500"
         />
         <ActionTile
           icon={<WrenchIcon className="w-8 h-8 md:w-7 md:h-7" />}
-          label="Nářadí"
-          desc="Sklad a evidence nářadí"
+          label={t('tools')}
+          desc={t('tools_desc')}
           onClick={() => navigate('/tools')}
           color="border-slate-500"
         />
         <ActionTile
           icon={<ChartBarIcon className="w-8 h-8 md:w-7 md:h-7" />}
-          label="Statistiky"
-          desc="Grafy, KPI a analýzy"
+          label={t('statistics')}
+          desc={t('statistics_dashboard_desc')}
           onClick={() => navigate('/stats')}
           color="border-purple-500"
         />
         <ActionTile
           icon={<DocumentTextIcon className="w-8 h-8 md:w-7 md:h-7" />}
-          label="Denní Report"
-          desc="Reporty pro manažery"
+          label={t('daily_report')}
+          desc={t('daily_reports_desc')}
           onClick={() => navigate('/daily-reports')}
           color="border-orange-500"
         />
@@ -156,18 +156,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="glass-card rounded-[3rem] p-8 bg-indigo-950/20 border-indigo-500/20 flex flex-col cursor-pointer hover:bg-indigo-900/30 transition-all group" onClick={() => navigate('/import')}>
-          <div className="p-4 bg-indigo-600 rounded-3xl w-fit mb-6 shadow-[0_0_30px_rgba(79,70,229,0.4)] group-hover:scale-110 transition-transform">
-            <BrainIcon className="w-8 h-8 text-white" />
-          </div>
-          <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-2">AI Copilot</h3>
-          <p className="text-slate-400 text-sm font-bold leading-relaxed">
-            Nahrajte fotku nebo vložte text pro inteligentní analýzu dat.
-          </p>
-          <div className="mt-auto pt-6 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 group-hover:text-white transition-colors">
-            Spustit Analýzu →
-          </div>
-        </div>
       </section>
 
       {isLoggingWork && (

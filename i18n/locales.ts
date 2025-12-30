@@ -80,6 +80,7 @@ export const locales = {
     statistics: 'Statistics',
     statistics_desc: 'Visualize project data.',
     project_statistics: 'Project Statistics',
+    statistics_dashboard_desc: 'Graphs, KPIs and analytics',
     total_projects: 'Total Projects',
     completion_rate: 'Completion Rate',
     inner_completion_rate: 'Project Progress',
@@ -349,6 +350,7 @@ export const locales = {
 
     // Daily Reports
     daily_report: 'Daily Report',
+    daily_reports_desc: 'Reports for managers',
     date: 'Date',
     completed_strings: 'Completed Strings',
     issues: 'Issues',
@@ -357,7 +359,28 @@ export const locales = {
     report_copy_failed: 'Failed to copy report.',
     save_success: 'Saved',
     save_error: 'Error saving.',
-    project_required_error: 'Please select a project.'
+    project_required_error: 'Please select a project.',
+
+    // Tools
+    tools: 'Tools',
+    tools_desc: 'Manage company tools and equipment.',
+    add_tool: 'Add Tool',
+    edit_tool: 'Edit Tool',
+    tool_name: 'Tool Name',
+    tool_type: 'Type',
+    serial_number: 'Serial Number',
+    tool_status: 'Status',
+    tool_status_available: 'Available',
+    tool_status_borrowed: 'Borrowed',
+    tool_status_broken: 'Broken',
+    tool_status_service: 'Service',
+    tool_status_lost: 'Lost',
+    assigned_to: 'Assigned To',
+    quick_return: 'Return',
+    has_borrowed: 'Has borrowed',
+    confirm_delete_tool: 'Are you sure you want to delete tool {name}?',
+    borow_date: 'Borrow Date',
+    return_tool: 'Return Tool'
   },
   cs: {
     login: 'Přihlásit se',
@@ -438,6 +461,7 @@ export const locales = {
     statistics: 'Statistiky',
     statistics_desc: 'Vizualizace projektových dat.',
     project_statistics: 'Statistiky projektu',
+    statistics_dashboard_desc: 'Grafy, KPI a analýzy',
     total_projects: 'Celkem projektů',
     completion_rate: 'Míra dokončení',
     inner_completion_rate: 'Postup projektu',
@@ -707,6 +731,7 @@ export const locales = {
 
     // Daily Reports
     daily_report: 'Denní Report',
+    daily_reports_desc: 'Reporty pro manažery',
     date: 'Datum',
     completed_strings: 'Hotové Stringy',
     issues: 'Problémy',
@@ -715,6 +740,27 @@ export const locales = {
     report_copy_failed: 'Nepodařilo se zkopírovat report.',
     save_success: 'Uloženo',
     save_error: 'Chyba při ukládání.',
-    project_required_error: 'Vyberte prosím projekt.'
+    project_required_error: 'Vyberte prosím projekt.',
+
+    // Tools
+    tools: 'Nářadí',
+    tools_desc: 'Správa firemního nářadí a vybavení.',
+    add_tool: 'Přidat nářadí',
+    edit_tool: 'Upravit nářadí',
+    tool_name: 'Název nářadí',
+    tool_type: 'Typ',
+    serial_number: 'Sériové číslo',
+    tool_status: 'Stav',
+    tool_status_available: 'Volné',
+    tool_status_borrowed: 'Půjčené',
+    tool_status_broken: 'Rozbité',
+    tool_status_service: 'Servis',
+    tool_status_lost: 'Ztracené',
+    assigned_to: 'Přiřazeno komu',
+    quick_return: 'Vrátit',
+    has_borrowed: 'Má u sebe',
+    confirm_delete_tool: 'Opravdu chcete smazat nářadí {name}?',
+    borow_date: 'Datum zapůjčení',
+    return_tool: 'Vrátit nářadí'
   },
 };

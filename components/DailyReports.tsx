@@ -55,7 +55,7 @@ const DailyReports: React.FC = () => {
         if (!projectId) return;
         const project = projects?.find(p => p.id === Number(projectId));
 
-        const textToShare = `*Daily Report - ${project?.name} - ${reportDate}*
+        const textToShare = `*${t('daily_report')} - ${project?.name} - ${reportDate}*
 
 ✅ *${t('completed_strings')}:* ${stringsCompleted || '0'}
 
@@ -69,7 +69,7 @@ ${issues || '-'}`;
             // Try native share first (mobile)
             if (navigator.share && /mobile|android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
                 await navigator.share({
-                    title: `Daily Report - ${project?.name}`,
+                    title: `${t('daily_report')} - ${project?.name}`,
                     text: textToShare,
                 });
             } else {

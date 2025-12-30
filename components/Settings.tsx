@@ -54,7 +54,7 @@ const Settings: React.FC = () => {
             setSheetsApiKey(storedDeploymentUrl);
             googleSheetsService.init({
                 deploymentUrl: storedDeploymentUrl,
-                autoSync: false
+                autoSync: localStorage.getItem('google_sheets_auto_sync') === 'true'
             }).then(() => {
                 setIsSheetsConnected(googleSheetsService.isReady);
             }).catch(console.error);
@@ -323,6 +323,32 @@ const Settings: React.FC = () => {
                                     >
                                         ⬇️ Pull from Sheets
                                     </button>
+                                </div>
+
+                                <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-white">Auto Synchronizace</h4>
+                                        <p className="text-xs text-gray-400">Automaticky stahovat data každých 30 sekund</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={googleSheetsService.getConfig().autoSync}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    googleSheetsService.startAutoSync();
+                                                } else {
+                                                    googleSheetsService.stopAutoSync();
+                                                }
+                                                // Force re-render
+                                                setSheetsApiKey(prev => prev + ' ');
+                                                setTimeout(() => setSheetsApiKey(prev => prev.trim()), 0);
+                                                showToast(e.target.checked ? 'Auto-sync zapnut' : 'Auto-sync vypnut', 'info');
+                                            }}
+                                        />
+                                        <div className="w-14 h-8 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-primary)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-emerald-500"></div>
+                                    </label>
                                 </div>
 
                                 <p className="text-sm text-gray-400 text-center">

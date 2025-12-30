@@ -224,24 +224,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 4. External APIs (Pollinations, Google AI) - Network Only (don't cache)
-  if (url.hostname.includes('pollinations.ai') ||
-    url.hostname.includes('googleapis.com') ||
-    url.hostname.includes('generativelanguage.googleapis.com')) {
-    event.respondWith(
-      fetch(request).catch(() => {
-        // Return a JSON error response for API failures
-        return new Response(JSON.stringify({
-          error: 'offline',
-          message: 'API není dostupné offline'
-        }), {
-          headers: { 'Content-Type': 'application/json' },
-          status: 503
-        });
-      })
-    );
-    return;
-  }
+
 
   // 5. Default Strategy: Network First, fallback to Cache
   event.respondWith(

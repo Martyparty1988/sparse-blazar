@@ -104,16 +104,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
             <BottomNavBar />
 
-            {/* Desktop Floating AI Button */}
-            <Link
-                to="/import"
-                className="hidden md:flex fixed bottom-10 right-10 z-50 p-5 rounded-full bg-indigo-600 text-white shadow-[0_15px_40px_rgba(79,70,229,0.5)] hover:scale-110 active:scale-90 transition-all border border-white/20 group"
-            >
-                <BrainIcon className="w-8 h-8" />
-                <span className="absolute right-full mr-5 top-1/2 -translate-y-1/2 px-4 py-2 bg-indigo-950/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-white/10 shadow-2xl">
-                    Inteligentní Asistent
-                </span>
-            </Link>
+
         </div>
     );
 };

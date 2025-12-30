@@ -76,8 +76,8 @@ const ToolManager: React.FC = () => {
         resetForm();
     };
 
-    const handleDelete = async (id: number) => {
-        if (confirm(t('confirm_delete'))) {
+    const handleDelete = async (id: number, name: string) => {
+        if (confirm(t('confirm_delete_tool').replace('{name}', name))) {
             await db.tools.delete(id);
         }
     };
@@ -95,11 +95,11 @@ const ToolManager: React.FC = () => {
 
     const getStatusBadge = (s: ToolStatus) => {
         switch (s) {
-            case 'available': return <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider">Volné</span>;
-            case 'borrowed': return <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold uppercase tracking-wider">Půjčené</span>;
-            case 'broken': return <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-300 text-xs font-bold uppercase tracking-wider">Rozbité</span>;
-            case 'service': return <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider">Servis</span>;
-            case 'lost': return <span className="px-3 py-1 rounded-full bg-gray-500/20 text-gray-400 text-xs font-bold uppercase tracking-wider">Ztracené</span>;
+            case 'available': return <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider">{t('tool_status_available')}</span>;
+            case 'borrowed': return <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold uppercase tracking-wider">{t('tool_status_borrowed')}</span>;
+            case 'broken': return <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-300 text-xs font-bold uppercase tracking-wider">{t('tool_status_broken')}</span>;
+            case 'service': return <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider">{t('tool_status_service')}</span>;
+            case 'lost': return <span className="px-3 py-1 rounded-full bg-gray-500/20 text-gray-400 text-xs font-bold uppercase tracking-wider">{t('tool_status_lost')}</span>;
         }
     };
 
@@ -113,7 +113,7 @@ const ToolManager: React.FC = () => {
                             onClick={() => setFilterStatus(s)}
                             className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${filterStatus === s ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
                         >
-                            {s === 'all' ? 'Vše' : s === 'available' ? 'Na skladě' : s === 'borrowed' ? 'U lidí' : 'Servis'}
+                            {s === 'all' ? t('all_statuses') : s === 'available' ? t('tool_status_available') : s === 'borrowed' ? t('tool_status_borrowed') : t('tool_status_service')}
                         </button>
                     ))}
                 </div>
@@ -121,7 +121,7 @@ const ToolManager: React.FC = () => {
                     onClick={() => setIsAddModalOpen(true)}
                     className="px-6 py-3 bg-[var(--color-primary)] text-white font-bold rounded-xl hover:bg-[var(--color-primary-hover)] transition-all shadow-lg text-sm uppercase tracking-wider flex items-center gap-2"
                 >
-                    + Přidat
+                    + {t('add')}
                 </button>
             </div>
 
@@ -141,18 +141,18 @@ const ToolManager: React.FC = () => {
                                     {getWorkerName(tool.assignedWorkerId).substring(0, 2)}
                                 </div>
                                 <div>
-                                    <p className="text-[10px] text-blue-300 uppercase font-bold">Má u sebe</p>
+                                    <p className="text-[10px] text-blue-300 uppercase font-bold">{t('has_borrowed')}</p>
                                     <p className="text-sm text-white font-bold">{getWorkerName(tool.assignedWorkerId)}</p>
                                 </div>
                             </div>
                         )}
 
                         <div className="flex gap-2 mt-auto pt-4 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => handleEdit(tool)} className="flex-1 py-2 bg-white/5 text-white text-xs font-bold rounded-lg hover:bg-white/10">Upravit</button>
+                            <button onClick={() => handleEdit(tool)} className="flex-1 py-2 bg-white/5 text-white text-xs font-bold rounded-lg hover:bg-white/10">{t('edit_tool')}</button>
                             {tool.status === 'borrowed' ? (
-                                <button onClick={() => handleQuickReturn(tool)} className="flex-1 py-2 bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-lg hover:bg-emerald-500/30">Vrátit</button>
+                                <button onClick={() => handleQuickReturn(tool)} className="flex-1 py-2 bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-lg hover:bg-emerald-500/30">{t('quick_return')}</button>
                             ) : (
-                                <button onClick={() => handleDelete(tool.id!)} className="p-2 text-rose-400 hover:bg-rose-500/20 rounded-lg"><TrashIcon className="w-4 h-4" /></button>
+                                <button onClick={() => handleDelete(tool.id!, tool.name)} className="p-2 text-rose-400 hover:bg-rose-500/20 rounded-lg"><TrashIcon className="w-4 h-4" /></button>
                             )}
                         </div>
                     </div>
@@ -163,38 +163,38 @@ const ToolManager: React.FC = () => {
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in">
                     <form onSubmit={handleSave} className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-8 shadow-2xl relative">
-                        <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-wider">{editingTool ? 'Upravit nářadí' : 'Nové nářadí'}</h2>
+                        <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-wider">{editingTool ? t('edit_tool') : t('add_tool')}</h2>
 
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">Název</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('tool_name')}</label>
                                     <input value={name} onChange={e => setName(e.target.value)} required className="w-full p-3 bg-black/40 rounded-xl border border-white/10 text-white focus:border-indigo-500 outline-none" placeholder="Např. Aku vrtačka Makita" />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">Typ</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('tool_type')}</label>
                                     <input value={type} onChange={e => setType(e.target.value)} required className="w-full p-3 bg-black/40 rounded-xl border border-white/10 text-white focus:border-indigo-500 outline-none" placeholder="Např. Vrtačka" />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Sériové číslo</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('serial_number')}</label>
                                 <input value={serialNumber} onChange={e => setSerialNumber(e.target.value)} className="w-full p-3 bg-black/40 rounded-xl border border-white/10 text-white focus:border-indigo-500 outline-none" placeholder="S/N..." />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">Stav</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('tool_status')}</label>
                                     <select value={status} onChange={e => setStatus(e.target.value as ToolStatus)} className="w-full p-3 bg-black/40 rounded-xl border border-white/10 text-white focus:border-indigo-500 outline-none  [&>option]:bg-slate-900">
-                                        <option value="available">🟢 Volné</option>
-                                        <option value="borrowed">🔵 Půjčené</option>
-                                        <option value="broken">🔴 Rozbité</option>
-                                        <option value="service">🟠 Servis</option>
-                                        <option value="lost">⚫ Ztracené</option>
+                                        <option value="available">🟢 {t('tool_status_available')}</option>
+                                        <option value="borrowed">🔵 {t('tool_status_borrowed')}</option>
+                                        <option value="broken">🔴 {t('tool_status_broken')}</option>
+                                        <option value="service">🟠 {t('tool_status_service')}</option>
+                                        <option value="lost">⚫ {t('tool_status_lost')}</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">Přiřazeno komu</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('assigned_to')}</label>
                                     <select
                                         value={assignedWorkerId}
                                         onChange={e => setAssignedWorkerId(e.target.value)}
@@ -202,7 +202,7 @@ const ToolManager: React.FC = () => {
                                         required={status === 'borrowed'}
                                         className="w-full p-3 bg-black/40 rounded-xl border border-white/10 text-white focus:border-indigo-500 outline-none disabled:opacity-50 [&>option]:bg-slate-900"
                                     >
-                                        <option value="">- Vybrat -</option>
+                                        <option value="">- {t('select_worker')} -</option>
                                         {workers?.map(w => (
                                             <option key={w.id} value={w.id}>{w.name}</option>
                                         ))}
@@ -211,14 +211,14 @@ const ToolManager: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Poznámky</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('notes')}</label>
                                 <textarea value={notes} onChange={e => setNotes(e.target.value)} className="w-full p-3 bg-black/40 rounded-xl border border-white/10 text-white focus:border-indigo-500 outline-none" rows={3}></textarea>
                             </div>
                         </div>
 
                         <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-white/10">
-                            <button type="button" onClick={resetForm} className="px-5 py-3 rounded-xl bg-white/5 text-white text-sm font-bold hover:bg-white/10">Zrušit</button>
-                            <button type="submit" className="px-8 py-3 rounded-xl bg-[var(--color-primary)] text-white text-sm font-bold hover:opacity-90 shadow-lg">Uložit</button>
+                            <button type="button" onClick={resetForm} className="px-5 py-3 rounded-xl bg-white/5 text-white text-sm font-bold hover:bg-white/10">{t('cancel')}</button>
+                            <button type="submit" className="px-8 py-3 rounded-xl bg-[var(--color-primary)] text-white text-sm font-bold hover:opacity-90 shadow-lg">{t('save')}</button>
                         </div>
                     </form>
                 </div>

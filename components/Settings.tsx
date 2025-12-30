@@ -2,18 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { useDarkMode } from '../hooks/useDarkMode';
-import { useTheme, themesData } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useBackup } from '../contexts/BackupContext';
 import { useToast } from '../contexts/ToastContext';
 import { db } from '../services/db';
 import { googleDriveService } from '../services/googleDriveService';
-import { googleSheetsService } from '../services/googleSheetsService';
 import TrashIcon from './icons/TrashIcon';
 import ConfirmationModal from './ConfirmationModal';
 import BackupManager from './BackupManager';
 import ShareIcon from './icons/ShareIcon';
 import BackButton from './BackButton';
+import { FirebaseSettings } from './FirebaseSettings';
 
 const Settings: React.FC = () => {
     const { t, language, setLanguage } = useI18n();
@@ -30,10 +30,6 @@ const Settings: React.FC = () => {
     const [cloudBackups, setCloudBackups] = useState<any[]>([]);
     const [loadingDrive, setLoadingDrive] = useState(false);
 
-    // Google Sheets API State
-    const [sheetsApiKey, setSheetsApiKey] = useState('');
-    const [isSheetsConnected, setIsSheetsConnected] = useState(false);
-
     useEffect(() => {
         // Google Drive initialization
         const storedId = localStorage.getItem('google_drive_client_id');
@@ -46,18 +42,6 @@ const Settings: React.FC = () => {
                     setIsDriveConnected(true);
                     loadCloudBackups();
                 }
-            }).catch(console.error);
-        }
-
-        // Google Sheets initialization (Apps Script)
-        const storedDeploymentUrl = localStorage.getItem('google_sheets_deployment_url');
-        if (storedDeploymentUrl) {
-            setSheetsApiKey(storedDeploymentUrl);
-            googleSheetsService.init({
-                deploymentUrl: storedDeploymentUrl,
-                autoSync: localStorage.getItem('google_sheets_auto_sync') === 'true'
-            }).then(() => {
-                setIsSheetsConnected(googleSheetsService.isReady);
             }).catch(console.error);
         }
     }, []);
@@ -141,120 +125,6 @@ const Settings: React.FC = () => {
         }
     };
 
-    const handleConnectSheets = async () => {
-        if (!sheetsApiKey) {
-            showToast('Please enter Google Apps Script Deployment URL', 'error');
-            return;
-        }
-        try {
-            await googleSheetsService.init({
-                deploymentUrl: sheetsApiKey,
-                autoSync: false
-            });
-            localStorage.setItem('google_sheets_deployment_url', sheetsApiKey);
-            setIsSheetsConnected(true);
-            showToast('Google Sheets connected!', 'success');
-        } catch (error) {
-            console.error(error);
-            showToast('Failed to connect. Check deployment URL.', 'error');
-        }
-    };
-
-    const handleDisconnectSheets = () => {
-        googleSheetsService.disconnect();
-        setIsSheetsConnected(false);
-        setSheetsApiKey('');
-        showToast('Google Sheets disconnected', 'info');
-    };
-
-    const handleSyncToSheets = async () => {
-        try {
-            showToast('⏳ Uploading to Google Sheets...', 'info');
-
-            // Get all data from database
-            const [workers, projects, fieldTables, timeRecords, dailyLogs, tools, projectTasks] = await Promise.all([
-                db.workers.toArray(),
-                db.projects.toArray(),
-                db.fieldTables.toArray(),
-                db.timeRecords.toArray(),
-                db.dailyLogs.toArray(),
-                db.tools.toArray(),
-                db.projectTasks.toArray()
-            ]);
-
-            const result = await googleSheetsService.pushAllData({
-                workers,
-                projects,
-                fieldTables,
-                timeRecords,
-                dailyLogs,
-                tools,
-                projectTasks
-            });
-
-            if (result.success) {
-                showToast(`✅ Synced! Updated: ${result.updated || 0}, Inserted: ${result.inserted || 0}`, 'success');
-            } else {
-                showToast(`❌ Sync failed: ${result.error}`, 'error');
-            }
-        } catch (error) {
-            console.error(error);
-            showToast('Failed to sync!', 'error');
-        }
-    };
-
-    const handlePullFromSheets = async () => {
-        if (!window.confirm('Pull data from Google Sheets? This will merge with local data.')) return;
-
-        try {
-            showToast('⏳ Downloading from Google Sheets...', 'info');
-            const data = await googleSheetsService.pullAllData();
-
-            // Merge data into database
-            let totalUpdated = 0;
-
-            if (data.workers && data.workers.length > 0) {
-                await db.workers.bulkPut(data.workers);
-                totalUpdated += data.workers.length;
-            }
-
-            if (data.projects && data.projects.length > 0) {
-                await db.projects.bulkPut(data.projects);
-                totalUpdated += data.projects.length;
-            }
-
-            if (data.fieldTables && data.fieldTables.length > 0) {
-                await db.fieldTables.bulkPut(data.fieldTables);
-                totalUpdated += data.fieldTables.length;
-            }
-
-            if (data.timeRecords && data.timeRecords.length > 0) {
-                await db.timeRecords.bulkPut(data.timeRecords);
-                totalUpdated += data.timeRecords.length;
-            }
-
-            if (data.dailyLogs && data.dailyLogs.length > 0) {
-                await db.dailyLogs.bulkPut(data.dailyLogs);
-                totalUpdated += data.dailyLogs.length;
-            }
-
-            if (data.tools && data.tools.length > 0) {
-                await db.tools.bulkPut(data.tools);
-                totalUpdated += data.tools.length;
-            }
-
-            if (data.projectTasks && data.projectTasks.length > 0) {
-                await db.projectTasks.bulkPut(data.projectTasks);
-                totalUpdated += data.projectTasks.length;
-            }
-
-            showToast(`✅ Downloaded ${totalUpdated} records!`, 'success');
-        } catch (error) {
-            console.error(error);
-            showToast('Failed to pull data!', 'error');
-        }
-    };
-
     const SettingsSection: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen = false }) => (
         <details className="group p-6 md:p-8 bg-slate-900/40 backdrop-blur-3xl rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden" open={defaultOpen}>
             <summary className="text-2xl md:text-3xl font-black text-white uppercase tracking-widest cursor-pointer list-none flex items-center justify-between outline-none [&::-webkit-details-marker]:hidden">
@@ -279,105 +149,12 @@ const Settings: React.FC = () => {
 
             <div className="space-y-8 max-w-5xl">
 
-                {/* Google Sheets API Section - Admin Only */}
+                {/* Firebase Section - Admin Only */}
                 {user?.role === 'admin' && (
-                    <SettingsSection title="Google Sheets" defaultOpen={true}>
-                        {!isSheetsConnected ? (
-                            <div className="space-y-6 max-w-lg">
-                                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl">
-                                    <p className="text-emerald-200 text-sm font-medium">
-                                        🚀 Pro synchronizaci s Google Sheets potřebujete <strong>Google Apps Script Deployment URL</strong>.
-                                        <br /><br />
-                                        📖 <a href="GOOGLE_SHEETS_SETUP.md" target="_blank" className="underline text-white font-bold">Přečtěte si kompletního průvodce</a>
-                                        <br /><br />
-                                        Zkrácený postup:
-                                        <ol className="list-decimal ml-4 mt-2 space-y-1">
-                                            <li>Vytvořte Google Sheets</li>
-                                            <li>Extensions → Apps Script</li>
-                                            <li>Zkopírujte kód z <code className="bg-black/40 px-1 rounded">google-apps-script.js</code></li>
-                                            <li>Deploy → Web app → Zkopírujte URL</li>
-                                        </ol>
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-2">Deployment URL</label>
-                                    <input
-                                        type="text"
-                                        value={sheetsApiKey}
-                                        onChange={e => setSheetsApiKey(e.target.value)}
-                                        className="w-full p-4 bg-black/40 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-emerald-500 font-mono text-sm shadow-inner"
-                                        placeholder="https://script.google.com/macros/s/..."
-                                    />
-                                </div>
-                                <button
-                                    onClick={handleConnectSheets}
-                                    disabled={!sheetsApiKey}
-                                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    🔗 Connect Google Sheets
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
-                                    <span className="flex items-center gap-2 text-emerald-400 font-bold">
-                                        <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></div>
-                                        ✅ Google Sheets Connected
-                                    </span>
-                                    <button onClick={handleDisconnectSheets} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/30 text-red-400 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">Disconnect</button>
-                                </div>
-
-                                <div className="flex flex-col md:flex-row gap-4">
-                                    <button
-                                        onClick={handleSyncToSheets}
-                                        className="flex-1 px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
-                                    >
-                                        ⬆️ Push to Sheets
-                                    </button>
-                                    <button
-                                        onClick={handlePullFromSheets}
-                                        className="flex-1 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
-                                    >
-                                        ⬇️ Pull from Sheets
-                                    </button>
-                                </div>
-
-                                <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5">
-                                    <div className="flex-1">
-                                        <h4 className="font-bold text-white">Auto Synchronizace</h4>
-                                        <p className="text-xs text-gray-400">Automaticky stahovat data každých 30 sekund</p>
-                                    </div>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            className="sr-only peer"
-                                            checked={googleSheetsService.getConfig().autoSync}
-                                            onChange={(e) => {
-                                                if (e.target.checked) {
-                                                    googleSheetsService.startAutoSync();
-                                                } else {
-                                                    googleSheetsService.stopAutoSync();
-                                                }
-                                                // Force re-render
-                                                setSheetsApiKey(prev => prev + ' ');
-                                                setTimeout(() => setSheetsApiKey(prev => prev.trim()), 0);
-                                                showToast(e.target.checked ? 'Auto-sync zapnut' : 'Auto-sync vypnut', 'info');
-                                            }}
-                                        />
-                                        <div className="w-14 h-8 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-primary)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-emerald-500"></div>
-                                    </label>
-                                </div>
-
-                                <p className="text-sm text-gray-400 text-center">
-                                    💡 Můžete také editovat data přímo v Google Sheets!
-                                </p>
-                            </div>
-                        )}
+                    <SettingsSection title="Cloud Database" defaultOpen={true}>
+                        <FirebaseSettings />
                     </SettingsSection>
                 )}
-
-
 
                 {/* Local Backup Section */}
                 {user?.role === 'admin' && (
@@ -385,8 +162,6 @@ const Settings: React.FC = () => {
                         <BackupManager />
                     </SettingsSection>
                 )}
-
-
 
                 <SettingsSection title={t('language')}>
                     <div className="grid grid-cols-2 gap-4">

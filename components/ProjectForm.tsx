@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
 import type { Project, ProjectComponent, FieldTable } from '../types';
 import { useI18n } from '../contexts/I18nContext';
-import { googleSheetsService } from '../services/googleSheetsService';
+import { firebaseService } from '../services/firebaseService';
 import { useToast } from '../contexts/ToastContext';
 
 interface ProjectFormProps {
@@ -128,28 +128,30 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                 }));
                 await db.fieldTables.bulkAdd(fieldTables);
 
-                // --- Auto Sync to Google Sheets ---
-                if (googleSheetsService.isReady) {
-                    showToast('Syncing to Google Sheets...', 'info');
+                // --- Auto Sync to Firebase ---
+                if (firebaseService.isReady) {
+                    showToast('Syncing to Firebase...', 'info');
 
-                    // Prepare data for sync (remove File object)
+                    // Prepare data for sync (remove File object if needed, though Firebase won't upload binary blob easily via RTDB without serialization, but for now we skip file)
                     const projectPayload = {
                         ...projectData,
                         id: projectId!,
-                        planFile: undefined,
-                        planFileName: projectData.planFile?.name
+                        planFile: undefined, // Don't sync blobs to RTDB directly usually
+                        planFileName: projectData.planFile?.name,
                     };
+
+                    // Serialize field tables
+                    const tablesPayload = fieldTables.map(ft => ({ ...ft, id: `${ft.projectId}_${ft.tableId}` }));
 
                     // Perform Upsert in background
                     Promise.all([
-                        googleSheetsService.upsertData('projects', [projectPayload]),
-                        googleSheetsService.upsertData('fieldTables', fieldTables)
+                        firebaseService.upsertRecords('projects', [projectPayload]),
+                        firebaseService.upsertRecords('fieldTables', tablesPayload)
                     ]).then(([projRes, tableRes]) => {
                         if (projRes.success && tableRes.success) {
                             showToast('✅ Project synced to Cloud', 'success');
                         } else {
                             console.warn('Sync issues:', { projRes, tableRes });
-                            // showToast('Cloud sync had warnings', 'warning'); // Optional: don't annoy user if it works mostly
                         }
                     }).catch((err: any) => {
                         console.error('Auto-sync failed:', err);

@@ -251,7 +251,6 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
                             );
                         })}
                     </div>
-                        })}
                 </div>
 
                 {/* Empty state for filtered view */}
@@ -264,46 +263,45 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
                     </div>
                 )}
             </div>
-        </div>
 
-            {/* Workers legend */ }
-    {
-        workers && workers.length > 0 && (
-            <div className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/5 p-6">
-                <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">
-                    {t('workers_legend') || 'Legenda pracovníků'}
-                </h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {workers.map(worker => {
-                        const color = getWorkerColor(worker.id!, worker.color, workers);
-                        const completedCount = tables.filter(t => t.completedBy === worker.id).length;
+            {/* Workers legend */}
+            {
+                workers && workers.length > 0 && (
+                    <div className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/5 p-6">
+                        <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">
+                            {t('workers_legend') || 'Legenda pracovníků'}
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {workers.map(worker => {
+                                const color = getWorkerColor(worker.id!, worker.color, workers);
+                                const completedCount = tables.filter(t => t.completedBy === worker.id).length;
 
-                        return (
-                            <div
-                                key={worker.id}
-                                className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
-                            >
-                                <div
-                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white/20"
-                                    style={{ backgroundColor: color }}
-                                >
-                                    {getInitials(worker.name)}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-white font-bold text-sm truncate">
-                                        {worker.name}
+                                return (
+                                    <div
+                                        key={worker.id}
+                                        className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                                    >
+                                        <div
+                                            className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white/20"
+                                            style={{ backgroundColor: color }}
+                                        >
+                                            {getInitials(worker.name)}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-white font-bold text-sm truncate">
+                                                {worker.name}
+                                            </div>
+                                            <div className="text-gray-500 text-xs font-bold">
+                                                {completedCount} {t('tables') || 'stolů'}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="text-gray-500 text-xs font-bold">
-                                        {completedCount} {t('tables') || 'stolů'}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        )
-    }
+                                );
+                            })}
+                        </div>
+                    </div>
+                )
+            }
         </div >
     );
 };

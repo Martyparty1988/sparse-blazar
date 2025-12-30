@@ -72,6 +72,24 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     <ConnectionStatusIndicator />
                 </div>
 
+                {/* Desktop Navigation */}
+                <nav className="hidden md:flex items-center gap-6 lg:gap-10 bg-black/20 px-8 py-3 rounded-2xl border border-white/5 backdrop-blur-sm shadow-xl">
+                    {[
+                        { to: "/", title: t('dashboard'), roles: ['admin', 'user'] },
+                        { to: "/projects", title: t('projects'), roles: ['admin', 'user'] },
+                        { to: "/records", title: t('work_log'), roles: ['admin', 'user'] },
+                        { to: "/settings", title: t('settings'), roles: ['admin'] },
+                    ].filter(item => item.roles.includes(user?.role || 'user')).map(item => (
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            className={({ isActive }) => `text-sm font-black uppercase tracking-widest transition-all hover:scale-105 ${isActive ? 'text-[var(--color-accent)] drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            {item.title}
+                        </NavLink>
+                    ))}
+                </nav>
+
                 <div className="flex items-center gap-3">
                     <div className="hidden sm:flex bg-black/20 rounded-xl p-1 border border-white/10">
                         <button

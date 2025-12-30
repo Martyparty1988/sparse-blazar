@@ -38,7 +38,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
     const [worker2Id, setWorker2Id] = useState<number | ''>('');
 
     const projects = useLiveQuery(() => db.projects.toArray());
-    const workers = useLiveQuery(() => db.workers.toArray());
+    const workers = useLiveQuery(() => db.workers.orderBy('name').toArray());
     const tables = useLiveQuery(() => projectId ? db.solarTables.where({ projectId: Number(projectId), status: 'pending' }).toArray() : [], [projectId]);
 
     useEffect(() => {

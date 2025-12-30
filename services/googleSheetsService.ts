@@ -17,6 +17,8 @@ export interface SyncData {
   fieldTables?: any[];
   timeRecords?: any[];
   dailyLogs?: any[];
+  tools?: any[];
+  projectTasks?: any[];
 }
 
 export interface SyncResult {
@@ -414,6 +416,8 @@ class GoogleSheetsSyncService {
       fieldTables: data.fieldTables ? parse(data.fieldTables) : [],
       timeRecords: data.timeRecords ? parse(data.timeRecords) : [],
       dailyLogs: data.dailyLogs ? parse(data.dailyLogs) : [],
+      tools: data.tools ? parse(data.tools) : [],
+      projectTasks: data.projectTasks ? parse(data.projectTasks) : [],
     };
   }
 
@@ -427,6 +431,8 @@ class GoogleSheetsSyncService {
       fieldTables: data.fieldTables ? this.serializeRecords(data.fieldTables) : [],
       timeRecords: data.timeRecords ? this.serializeRecords(data.timeRecords) : [],
       dailyLogs: data.dailyLogs ? this.serializeRecords(data.dailyLogs) : [],
+      tools: data.tools ? this.serializeRecords(data.tools) : [],
+      projectTasks: data.projectTasks ? this.serializeRecords(data.projectTasks) : [],
     };
   }
 

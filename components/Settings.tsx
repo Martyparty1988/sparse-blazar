@@ -171,12 +171,14 @@ const Settings: React.FC = () => {
             showToast('⏳ Uploading to Google Sheets...', 'info');
 
             // Get all data from database
-            const [workers, projects, fieldTables, timeRecords, dailyLogs] = await Promise.all([
+            const [workers, projects, fieldTables, timeRecords, dailyLogs, tools, projectTasks] = await Promise.all([
                 db.workers.toArray(),
                 db.projects.toArray(),
                 db.fieldTables.toArray(),
                 db.timeRecords.toArray(),
-                db.dailyLogs.toArray()
+                db.dailyLogs.toArray(),
+                db.tools.toArray(),
+                db.projectTasks.toArray()
             ]);
 
             const result = await googleSheetsService.pushAllData({
@@ -184,7 +186,9 @@ const Settings: React.FC = () => {
                 projects,
                 fieldTables,
                 timeRecords,
-                dailyLogs
+                dailyLogs,
+                tools,
+                projectTasks
             });
 
             if (result.success) {
@@ -231,6 +235,16 @@ const Settings: React.FC = () => {
             if (data.dailyLogs && data.dailyLogs.length > 0) {
                 await db.dailyLogs.bulkPut(data.dailyLogs);
                 totalUpdated += data.dailyLogs.length;
+            }
+
+            if (data.tools && data.tools.length > 0) {
+                await db.tools.bulkPut(data.tools);
+                totalUpdated += data.tools.length;
+            }
+
+            if (data.projectTasks && data.projectTasks.length > 0) {
+                await db.projectTasks.bulkPut(data.projectTasks);
+                totalUpdated += data.projectTasks.length;
             }
 
             showToast(`✅ Downloaded ${totalUpdated} records!`, 'success');

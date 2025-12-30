@@ -13,6 +13,7 @@ import TrashIcon from './icons/TrashIcon';
 import ConfirmationModal from './ConfirmationModal';
 import BackupManager from './BackupManager';
 import ShareIcon from './icons/ShareIcon';
+import BackButton from './BackButton';
 
 const Settings: React.FC = () => {
     const { t, language, setLanguage } = useI18n();
@@ -268,6 +269,9 @@ const Settings: React.FC = () => {
 
     return (
         <div className="pb-12">
+            <div className="md:hidden">
+                <BackButton />
+            </div>
             <h1 className="text-6xl font-black mb-12 text-white [text-shadow:0_4px_12px_rgba(0,0,0,0.5)] italic uppercase tracking-tighter underline decoration-[var(--color-accent)] decoration-8">
                 {t('settings')}
             </h1>

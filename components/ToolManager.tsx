@@ -5,6 +5,7 @@ import { useI18n } from '../contexts/I18nContext';
 import type { Tool, ToolStatus, Worker } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import TrashIcon from './icons/TrashIcon';
+import BackButton from './BackButton';
 
 // Mock icons mapping - in a real app, import specific icons
 const getToolIcon = (type: string) => {
@@ -105,6 +106,9 @@ const ToolManager: React.FC = () => {
 
     return (
         <div className="space-y-6">
+            <div className="md:hidden">
+                <BackButton />
+            </div>
             <div className="flex justify-between items-center">
                 <div className="flex gap-2 bg-black/20 p-1 rounded-xl border border-white/5">
                     {(['all', 'available', 'borrowed', 'service'] as const).map(s => (

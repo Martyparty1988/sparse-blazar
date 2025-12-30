@@ -19,6 +19,7 @@ import {
 import { db } from '../services/db';
 import { useI18n } from '../contexts/I18nContext';
 import type { Project, Worker, FieldTable } from '../types';
+import BackButton from './BackButton';
 
 // Power constants for different table types (in kWp)
 const TABLE_POWER = {
@@ -182,6 +183,9 @@ const StatsPage: React.FC = () => {
 
     return (
         <div className="space-y-8">
+            <div className="md:hidden">
+                <BackButton />
+            </div>
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <h1 className="text-5xl font-bold text-white [text-shadow:0_4px_12px_rgba(0,0,0,0.5)]">

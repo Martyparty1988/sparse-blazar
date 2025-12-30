@@ -19,6 +19,7 @@ import TrashIcon from './icons/TrashIcon';
 import SearchIcon from './icons/SearchIcon';
 import WorkersIcon from './icons/WorkersIcon';
 import ShareIcon from './icons/ShareIcon';
+import BackButton from './BackButton';
 
 const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m6 9 6 6 6-6" /></svg>
@@ -376,6 +377,9 @@ const Projects: React.FC = () => {
 
     return (
         <div className="space-y-8 md:space-y-12 pb-32">
+            <div className="md:hidden">
+                <BackButton />
+            </div>
             {syncing && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
                     <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-white/20 flex flex-col items-center gap-4 shadow-2xl">

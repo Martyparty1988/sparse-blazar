@@ -7,6 +7,8 @@ import { ToastProvider } from './contexts/ToastContext';
 import Layout from './components/Layout';
 import SplashScreen from './components/SplashScreen';
 import Login from './components/Login';
+import { firebaseService } from './services/firebaseService';
+import { db } from './services/db';
 
 // Lazy loading components for performance optimization (Code Splitting)
 const Dashboard = React.lazy(() => import('./components/Dashboard'));
@@ -100,6 +102,67 @@ const App: React.FC = () => {
     checkNotifications(); // Run once on mount
 
     return () => clearInterval(interval);
+  }, []);
+
+  // Sync Data on Startup
+  React.useEffect(() => {
+    const syncData = async () => {
+      if (!firebaseService.isReady) return;
+
+      console.log('🔄 Starting initial cloud sync...');
+
+      try {
+        // 1. Workers
+        const workers = await firebaseService.getData('workers');
+        if (workers) await db.workers.bulkPut(Object.values(workers));
+
+        // 2. Projects
+        const projects = await firebaseService.getData('projects');
+        if (projects) await db.projects.bulkPut(Object.values(projects));
+
+        // 3. Tools
+        const tools = await firebaseService.getData('tools');
+        if (tools) await db.tools.bulkPut(Object.values(tools));
+
+        // 4. Field Tables
+        const fieldTables = await firebaseService.getData('fieldTables');
+        if (fieldTables) await db.fieldTables.bulkPut(Object.values(fieldTables));
+
+        // 5. Daily Reports
+        const dailyReports = await firebaseService.getData('dailyReports');
+        if (dailyReports) await db.dailyReports.bulkPut(Object.values(dailyReports));
+
+        // 6. Time Records (Map 'timeRecords' -> 'records')
+        const timeRecords = await firebaseService.getData('timeRecords');
+        if (timeRecords) {
+          const records = Object.values(timeRecords).map((r: any) => ({
+            ...r,
+            startTime: new Date(r.startTime),
+            endTime: new Date(r.endTime)
+          }));
+          await db.records.bulkPut(records);
+        }
+
+        // 7. Project Tasks
+        const tasks = await firebaseService.getData('projectTasks');
+        if (tasks) {
+          const taskList = Object.values(tasks).map((t: any) => ({
+            ...t,
+            completionDate: t.completionDate ? new Date(t.completionDate) : undefined,
+            startTime: t.startTime ? new Date(t.startTime) : undefined,
+            endTime: t.endTime ? new Date(t.endTime) : undefined
+          }));
+          await db.projectTasks.bulkPut(taskList);
+        }
+
+        console.log('✅ Initial cloud sync completed');
+      } catch (error) {
+        console.error('Initial sync failed:', error);
+      }
+    };
+
+    // Run sync slightly after mount to let UI settle, or immediately
+    syncData();
   }, []);
 
   return (

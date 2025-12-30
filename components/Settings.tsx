@@ -13,7 +13,7 @@ import ConfirmationModal from './ConfirmationModal';
 import BackupManager from './BackupManager';
 import ShareIcon from './icons/ShareIcon';
 import BackButton from './BackButton';
-import { FirebaseSettings } from './FirebaseSettings';
+
 
 const Settings: React.FC = () => {
     const { t, language, setLanguage } = useI18n();
@@ -149,12 +149,7 @@ const Settings: React.FC = () => {
 
             <div className="space-y-8 max-w-5xl">
 
-                {/* Firebase Section - Admin Only */}
-                {user?.role === 'admin' && (
-                    <SettingsSection title="Cloud Database" defaultOpen={true}>
-                        <FirebaseSettings />
-                    </SettingsSection>
-                )}
+
 
                 {/* Local Backup Section */}
                 {user?.role === 'admin' && (

@@ -1,15 +1,17 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getDatabase, ref, set, get, child, update, remove, Database, onValue, off } from 'firebase/database';
 
-export interface FirebaseConfig {
-    apiKey: string;
-    authDomain: string;
-    databaseURL: string;
-    projectId: string;
-    storageBucket: string;
-    messagingSenderId: string;
-    appId: string;
-}
+// Hardcoded configuration for MST App
+const firebaseConfig = {
+    apiKey: "AIzaSyD5RkJAXUvuBAbuug9C1cU0PGNUMjbaGc8",
+    authDomain: "mst-ap.firebaseapp.com",
+    databaseURL: "https://mst-ap-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "mst-ap",
+    storageBucket: "mst-ap.firebasestorage.app",
+    messagingSenderId: "708181032604",
+    appId: "1:708181032604:web:4613ca54f8fd5c2805f759",
+    measurementId: "G-2W5047GKL9"
+};
 
 export interface SyncResult {
     success: boolean;
@@ -17,61 +19,34 @@ export interface SyncResult {
 }
 
 class FirebaseService {
-    private app: FirebaseApp | null = null;
-    private db: Database | null = null;
-    private isInitialized = false;
+    private app: FirebaseApp;
+    private db: Database;
+    public isInitialized = false;
 
     constructor() {
-        this.loadConfig();
-    }
-
-    private loadConfig() {
-        const storedConfig = localStorage.getItem('firebase_config');
-        if (storedConfig) {
-            try {
-                const config = JSON.parse(storedConfig);
-                this.init(config);
-            } catch (e) {
-                console.error('Failed to load firebase config', e);
-            }
-        }
-    }
-
-    public init(config: FirebaseConfig) {
         try {
-            this.app = initializeApp(config);
+            this.app = initializeApp(firebaseConfig);
             this.db = getDatabase(this.app);
             this.isInitialized = true;
-            localStorage.setItem('firebase_config', JSON.stringify(config));
-            console.log('🔥 Firebase initialized successfully');
-            return true;
+            console.log('🔥 Firebase initialized automatically');
         } catch (error) {
-            console.error('Firebase init failed:', error);
-            return false;
+            console.error('Firebase auto-init failed:', error);
+            // We can't do much if init fails, but we should handle it gracefully
+            // By casting to any we allow usage but methods will likely fail or we check isInitialized
+            this.app = null as any;
+            this.db = null as any;
         }
-    }
-
-    public disconnect() {
-        this.app = null;
-        this.db = null;
-        this.isInitialized = false;
-        localStorage.removeItem('firebase_config');
     }
 
     public get isReady() {
         return this.isInitialized && this.db !== null;
     }
 
-    public getConfig(): FirebaseConfig | null {
-        const stored = localStorage.getItem('firebase_config');
-        return stored ? JSON.parse(stored) : null;
-    }
-
     // --- Generic Data Operations ---
 
     // Write (Set/Overwrite) data to a path
     public async setData(path: string, data: any): Promise<SyncResult> {
-        if (!this.db) return { success: false, error: 'Firebase not initialized' };
+        if (!this.isReady) return { success: false, error: 'Firebase not initialized' };
         try {
             await set(ref(this.db, path), data);
             return { success: true };
@@ -83,7 +58,7 @@ class FirebaseService {
 
     // Update data at a path (updates specific keys, keeps others)
     public async updateData(path: string, data: any): Promise<SyncResult> {
-        if (!this.db) return { success: false, error: 'Firebase not initialized' };
+        if (!this.isReady) return { success: false, error: 'Firebase not initialized' };
         try {
             await update(ref(this.db, path), data);
             return { success: true };
@@ -95,7 +70,7 @@ class FirebaseService {
 
     // Read data once
     public async getData(path: string): Promise<any> {
-        if (!this.db) return null;
+        if (!this.isReady) return null;
         try {
             const snapshot = await get(child(ref(this.db), path));
             if (snapshot.exists()) {
@@ -111,7 +86,7 @@ class FirebaseService {
 
     // Remove data
     public async removeData(path: string): Promise<SyncResult> {
-        if (!this.db) return { success: false, error: 'Firebase not initialized' };
+        if (!this.isReady) return { success: false, error: 'Firebase not initialized' };
         try {
             await remove(ref(this.db, path));
             return { success: true };
@@ -123,7 +98,7 @@ class FirebaseService {
     // --- Realtime Listeners ---
 
     public subscribe(path: string, callback: (data: any) => void) {
-        if (!this.db) return;
+        if (!this.isReady) return;
         const dataRef = ref(this.db, path);
         onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
@@ -132,7 +107,7 @@ class FirebaseService {
     }
 
     public unsubscribe(path: string) {
-        if (!this.db) return;
+        if (!this.isReady) return;
         const dataRef = ref(this.db, path);
         off(dataRef);
     }
@@ -143,7 +118,7 @@ class FirebaseService {
     // Firebase stores lists best as Objects with IDs as keys, OR arrays.
     // We will store as Objects: /workers/{id} = { ...workerData }
     public async upsertRecords(collectionName: string, records: any[]): Promise<SyncResult> {
-        if (!this.db || records.length === 0) return { success: true };
+        if (!this.isReady || records.length === 0) return { success: true };
 
         const updates: any = {};
         records.forEach(record => {
@@ -158,7 +133,7 @@ class FirebaseService {
     }
 
     public async deleteRecords(collectionName: string, ids: string[]): Promise<SyncResult> {
-        if (!this.db || ids.length === 0) return { success: true };
+        if (!this.isReady || ids.length === 0) return { success: true };
 
         const updates: any = {};
         ids.forEach(id => {

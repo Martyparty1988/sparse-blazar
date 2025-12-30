@@ -17,6 +17,8 @@ import ChartBarIcon from './icons/ChartBarIcon';
 import WrenchIcon from './icons/WrenchIcon';
 import DocumentTextIcon from './icons/DocumentTextIcon';
 import SettingsIcon from './icons/SettingsIcon';
+import ChatIcon from './icons/ChatIcon';
+import WorkersIcon from './icons/WorkersIcon';
 
 const ActionTile: React.FC<{
   icon: React.ReactNode;
@@ -105,6 +107,20 @@ const Dashboard: React.FC = () => {
           desc={t('tools_desc')}
           onClick={() => navigate('/tools')}
           color="border-slate-500"
+        />
+        <ActionTile
+          icon={<ChatIcon className="w-8 h-8 md:w-7 md:h-7" />}
+          label="Team Chat"
+          desc={t('chat_desc') || "Komunikace týmu"}
+          onClick={() => navigate('/chat')}
+          color="border-indigo-500"
+        />
+        <ActionTile
+          icon={<WorkersIcon className="w-8 h-8 md:w-7 md:h-7" />}
+          label={t('workers') || "Tým"}
+          desc={t('workers_desc') || "Správa pracovníků"}
+          onClick={() => navigate('/workers')}
+          color="border-pink-500"
         />
         <ActionTile
           icon={<ChartBarIcon className="w-8 h-8 md:w-7 md:h-7" />}

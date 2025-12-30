@@ -17,16 +17,19 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
   const [name, setName] = useState('');
   const [hourlyRate, setHourlyRate] = useState('0');
   const [password, setPassword] = useState('');
+  const [color, setColor] = useState('#3b82f6');
 
   useEffect(() => {
     if (worker) {
       setName(worker.name);
       setHourlyRate(String(worker.hourlyRate));
       setPassword(worker.password || '1234');
+      setColor(worker.color || '#3b82f6');
     } else {
       setName('');
       setHourlyRate('0');
       setPassword('1234');
+      setColor('#3b82f6');
     }
   }, [worker]);
 
@@ -37,6 +40,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
       hourlyRate: user?.role === 'admin' ? (Number(hourlyRate) || 0) : (worker?.hourlyRate ?? 0),
       password: password,
       username: name.toLowerCase().replace(/\s/g, ''),
+      color: color,
       createdAt: worker?.createdAt || new Date(),
     };
 
@@ -122,6 +126,25 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
               </div>
             </>
           )}
+
+          {/* Color Picker */}
+          <div>
+            <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">{t('worker_color') || 'Barva'}</label>
+            <div className="grid grid-cols-5 gap-3">
+              {[
+                '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316',
+                '#f59e0b', '#10b981', '#059669', '#14b8a6', '#06b6d4'
+              ].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`h-12 rounded-xl transition-all ${color === c ? 'ring-4 ring-white shadow-lg scale-110' : 'hover:scale-105 opacity-70 hover:opacity-100'}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
 
           <div className="flex justify-end gap-4 pt-6 border-t border-white/10">
             <button

@@ -28,7 +28,7 @@ const WorkerCard: React.FC<{
       style={{ animationDelay: `${index * 0.05}s` }}
     >
       <div className="flex items-center gap-6">
-        <div className="w-16 h-16 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-lg group-hover:rotate-3 transition-transform">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-lg group-hover:rotate-3 transition-transform" style={{ backgroundColor: worker.color || 'var(--color-accent)' }}>
           {worker.name.charAt(0)}
         </div>
         <div>

@@ -181,17 +181,19 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
             case 'panels':
                 return (
                     <>
-                        <div>
-                            <label htmlFor="panelCount" className="block text-lg font-medium text-gray-300 mb-2">{t('panel_count')}</label>
-                            <input type="number" id="panelCount" value={panelCount} onChange={e => setPanelCount(e.target.value)} required min="1" className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl" />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('panel_count')}</label>
+                                <input type="number" id="panelCount" value={panelCount} onChange={e => setPanelCount(e.target.value)} required min="1" className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-bold text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('price_per_panel')}</label>
+                                <input type="number" id="pricePerPanel" value={pricePerPanel} onChange={e => setPricePerPanel(e.target.value)} required min="0.01" step="0.01" className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-bold text-sm" />
+                            </div>
                         </div>
-                        <div>
-                            <label htmlFor="pricePerPanel" className="block text-lg font-medium text-gray-300 mb-2">{t('price_per_panel')}</label>
-                            <input type="number" id="pricePerPanel" value={pricePerPanel} onChange={e => setPricePerPanel(e.target.value)} required min="0.01" step="0.01" className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl" />
-                        </div>
-                        <div className="p-4 bg-black/30 rounded-lg text-center">
-                            <span className="text-lg font-bold text-gray-300">{t('total_price')}: </span>
-                            <span className="text-xl font-bold text-white">€{calculatedTaskPrice.toFixed(2)}</span>
+                        <div className="p-4 bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 rounded-2xl flex justify-between items-center">
+                            <span className="text-xs font-black text-[var(--color-primary)] uppercase tracking-widest">{t('total_price')}</span>
+                            <span className="text-xl font-black text-white">€{calculatedTaskPrice.toFixed(2)}</span>
                         </div>
                     </>
                 );
@@ -199,12 +201,12 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                 return (
                     <>
                         <div>
-                            <label htmlFor="description" className="block text-lg font-medium text-gray-300 mb-2">{t('description')}</label>
-                            <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} required rows={3} className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl" />
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('description')}</label>
+                            <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} required rows={3} placeholder="Popis práce..." className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none text-sm leading-relaxed" />
                         </div>
                         <div>
-                            <label htmlFor="flatPrice" className="block text-lg font-medium text-gray-300 mb-2">{t('flat_rate')}</label>
-                            <input type="number" id="flatPrice" value={flatPrice} onChange={e => setFlatPrice(e.target.value)} required min="0.01" step="0.01" className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl" />
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('flat_rate')}</label>
+                            <input type="number" id="flatPrice" value={flatPrice} onChange={e => setFlatPrice(e.target.value)} required min="0.01" step="0.01" className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-bold text-sm" />
                         </div>
                     </>
                 );
@@ -212,26 +214,28 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
                 return (
                     <>
                         <div>
-                            <label htmlFor="tableId" className="block text-lg font-medium text-gray-300 mb-2">{t('select_table')}</label>
-                            <select id="tableId" value={tableId} onChange={e => setTableId(Number(e.target.value))} required className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl [&>option]:bg-gray-800" disabled={!tables || tables.length === 0}>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('select_table')}</label>
+                            <select id="tableId" value={tableId} onChange={e => setTableId(Number(e.target.value))} required className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-bold text-sm [&>option]:bg-slate-900" disabled={!tables || tables.length === 0}>
                                 <option value="" disabled>{tables && tables.length > 0 ? t('select_table') : t('no_tables_defined')}</option>
                                 {tables?.map(t => <option key={t.id} value={t.id}>{t.tableCode}</option>)}
                             </select>
                         </div>
-                        <div>
-                            <label htmlFor="table-size" className="block text-lg font-medium text-gray-300 mb-2">{t('table_size')}</label>
-                            <select id="table-size" value={tableSize} onChange={e => setTableSize(e.target.value as any)} className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl [&>option]:bg-gray-800">
-                                <option value="small">{t('small')}</option>
-                                <option value="medium">{t('medium')}</option>
-                                <option value="large">{t('large')}</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label htmlFor="worker2Id" className="block text-lg font-medium text-gray-300 mb-2">{t('worker_2_optional')}</label>
-                            <select id="worker2Id" value={worker2Id} onChange={e => setWorker2Id(e.target.value === '' ? '' : Number(e.target.value))} className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl [&>option]:bg-gray-800">
-                                <option value="">N/A</option>
-                                {workers?.filter(w => w.id !== Number(workerId)).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                            </select>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('table_size')}</label>
+                                <select id="table-size" value={tableSize} onChange={e => setTableSize(e.target.value as any)} className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-bold text-sm [&>option]:bg-slate-900">
+                                    <option value="small">{t('small')}</option>
+                                    <option value="medium">{t('medium')}</option>
+                                    <option value="large">{t('large')}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('worker_2_optional')}</label>
+                                <select id="worker2Id" value={worker2Id} onChange={e => setWorker2Id(e.target.value === '' ? '' : Number(e.target.value))} className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-bold text-sm [&>option]:bg-slate-900">
+                                    <option value="">-</option>
+                                    {workers?.filter(w => w.id !== Number(workerId)).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                </select>
+                            </div>
                         </div>
                     </>
                 );
@@ -241,97 +245,144 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose }) => {
 
 
     return (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/30 backdrop-blur-lg p-0 md:p-4">
-            <div className="w-full h-full md:h-auto md:max-h-[90vh] md:max-w-lg p-6 md:p-8 bg-black/80 md:bg-black/20 backdrop-blur-2xl md:rounded-3xl shadow-xl border-none md:border border-white/10 overflow-y-auto">
-                <h2 className="text-3xl font-bold mb-6 text-white">{t('log_work')}</h2>
-                <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-md p-0 md:p-4 animate-fade-in">
+            <div className="w-full h-[90vh] md:h-auto md:max-h-[85vh] md:max-w-lg bg-slate-900 md:bg-slate-900/90 backdrop-blur-2xl rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden">
 
-                    {/* Work Type Switcher */}
-                    <div>
-                        <label className="block text-lg font-medium text-gray-300 mb-2">{t('work_type')}</label>
-                        <div className="inline-flex rounded-lg bg-black/20 border border-white/10 p-1 w-full">
-                            <button type="button" onClick={() => handleWorkTypeChange('hourly')} className={`px-4 py-2 text-sm font-bold rounded-md w-1/2 transition-colors ${workType === 'hourly' ? 'bg-[var(--color-primary)]' : 'hover:bg-white/10'}`}>{t('hourly_rate_work')}</button>
-                            <button type="button" onClick={() => handleWorkTypeChange('task')} className={`px-4 py-2 text-sm font-bold rounded-md w-1/2 transition-colors ${workType === 'task' ? 'bg-[var(--color-primary)]' : 'hover:bg-white/10'}`}>{t('task_based_work')}</button>
-                        </div>
-                    </div>
+                {/* Header */}
+                <div className="flex justify-between items-center p-6 md:p-8 border-b border-white/5 bg-white/[0.02]">
+                    <h2 className="text-2xl font-black text-white uppercase tracking-tight">{t('log_work')}</h2>
+                    <button
+                        onClick={onClose}
+                        className="p-2 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-gray-400 hover:text-white"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
 
-                    {/* Common Fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 custom-scrollbar pb-40">
+                    <form id="time-record-form" onSubmit={handleSubmit} className="space-y-6">
+
+                        {/* Work Type Switcher (iOS Segmented Control Style) */}
                         <div>
-                            <label htmlFor="workerId-main" className="block text-lg font-medium text-gray-300 mb-2">{t('select_worker')}</label>
-                            <select id="workerId-main" value={workerId} onChange={handleWorkerChange} required className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl [&>option]:bg-gray-800">
-                                <option value="" disabled>{t('select_worker')}</option>
-                                {workers?.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                            </select>
+                            <div className="flex p-1 rounded-2xl bg-black/40 border border-white/5 relative">
+                                <div
+                                    className="absolute top-1 bottom-1 rounded-xl bg-[var(--color-primary)] shadow-lg transition-all duration-300 ease-out"
+                                    style={{
+                                        left: '4px',
+                                        width: 'calc(50% - 4px)',
+                                        transform: workType === 'task' ? 'translateX(100%)' : 'translateX(0)'
+                                    }}
+                                ></div>
+                                <button type="button" onClick={() => handleWorkTypeChange('hourly')} className="relative z-10 flex-1 py-3 text-xs font-black uppercase tracking-wider text-center transition-colors text-white">{t('hourly_rate_work')}</button>
+                                <button type="button" onClick={() => handleWorkTypeChange('task')} className="relative z-10 flex-1 py-3 text-xs font-black uppercase tracking-wider text-center transition-colors text-white">{t('task_based_work')}</button>
+                            </div>
                         </div>
-                        <div>
-                            <label htmlFor="projectId-main" className="block text-lg font-medium text-gray-300 mb-2">{t('select_project')}</label>
-                            <select id="projectId-main" value={projectId} onChange={handleProjectChange} required className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl [&>option]:bg-gray-800">
-                                <option value="" disabled>{t('select_project')}</option>
-                                {projects?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                            </select>
-                        </div>
-                    </div>
 
-                    {/* Conditional Fields */}
-                    {workType === 'hourly' ? (
-                        <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="startTime" className="block text-lg font-medium text-gray-300 mb-2">{t('start_time')}</label>
-                                    <input type="datetime-local" id="startTime" value={startTime} onChange={e => setStartTime(e.target.value)} required className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl" />
-                                </div>
-                                <div>
-                                    <label htmlFor="endTime" className="block text-lg font-medium text-gray-300 mb-2">{t('end_time')}</label>
-                                    <input type="datetime-local" id="endTime" value={endTime} onChange={e => setEndTime(e.target.value)} required className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl" />
-                                </div>
-                            </div>
+                        {/* Common Fields */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="description-hourly" className="block text-lg font-medium text-gray-300 mb-2">{t('description')}</label>
-                                <textarea id="description-hourly" value={description} onChange={e => setDescription(e.target.value)} rows={3} className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl" />
-                                <div className="mt-2 flex items-start gap-2 text-xs text-gray-500">
-                                    <span className="text-lg">💡</span>
-                                    <p>
-                                        <strong>Tip:</strong> Napište "hotový stůl 28.1" nebo "dokončil 149" pro automatické označení stolů v plánovém poli.
-                                    </p>
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div>
-                                <label className="block text-lg font-medium text-gray-300 mb-2">{t('task_type')}</label>
-                                <select value={taskType} onChange={e => setTaskType(e.target.value as any)} className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl [&>option]:bg-gray-800">
-                                    <option value="cables">{t('cables')}</option>
-                                    <option value="panels">{t('panels')}</option>
-                                    <option value="construction">{t('construction')}</option>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('select_worker')}</label>
+                                <select id="workerId-main" value={workerId} onChange={handleWorkerChange} required className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-bold text-sm appearance-none [&>option]:bg-slate-900">
+                                    <option value="" disabled>{t('select_worker')}</option>
+                                    {workers?.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                                 </select>
                             </div>
-                            {projectId && renderTaskFields()}
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('select_project')}</label>
+                                <select id="projectId-main" value={projectId} onChange={handleProjectChange} required className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-bold text-sm appearance-none [&>option]:bg-slate-900">
+                                    <option value="" disabled>{t('select_project')}</option>
+                                    {projects?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                            </div>
+                        </div>
 
-                            {/* Time Fields for Efficiency Tracking */}
-                            <div className="pt-4 border-t border-white/5">
-                                <p className="text-sm text-gray-400 font-bold mb-3 uppercase tracking-wider">Čas strávený na úkolu (pro efektivitu)</p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Conditional Fields */}
+                        {workType === 'hourly' ? (
+                            <>
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label htmlFor="startTime-task" className="block text-lg font-medium text-gray-300 mb-2">{t('start_time')}</label>
-                                        <input type="datetime-local" id="startTime-task" value={startTime} onChange={e => setStartTime(e.target.value)} required className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl" />
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('start_time')}</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={startTime}
+                                            onChange={e => setStartTime(e.target.value)}
+                                            required
+                                            className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-mono text-xs font-bold"
+                                        />
                                     </div>
                                     <div>
-                                        <label htmlFor="endTime-task" className="block text-lg font-medium text-gray-300 mb-2">{t('end_time')}</label>
-                                        <input type="datetime-local" id="endTime-task" value={endTime} onChange={e => setEndTime(e.target.value)} required className="mt-1 block w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl" />
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('end_time')}</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={endTime}
+                                            onChange={e => setEndTime(e.target.value)}
+                                            required
+                                            className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-mono text-xs font-bold"
+                                        />
                                     </div>
                                 </div>
-                            </div>
-                        </>
-                    )}
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('description')}</label>
+                                    <textarea
+                                        value={description}
+                                        onChange={e => setDescription(e.target.value)}
+                                        rows={3}
+                                        placeholder="Např. hotový stůl 28.1..."
+                                        className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none text-sm leading-relaxed"
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('task_type')}</label>
+                                    <select value={taskType} onChange={e => setTaskType(e.target.value as any)} className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-bold text-sm [&>option]:bg-slate-900">
+                                        <option value="cables">{t('cables')}</option>
+                                        <option value="panels">{t('panels')}</option>
+                                        <option value="construction">{t('construction')}</option>
+                                    </select>
+                                </div>
+                                {projectId && renderTaskFields()}
 
-                    {/* Actions */}
-                    <div className="flex justify-end space-x-4 pt-4 sticky bottom-0 bg-slate-900/95 md:bg-transparent backdrop-blur-xl md:backdrop-blur-none p-4 md:p-0 -mx-6 md:mx-0 border-t border-white/10 md:border-none z-10">
-                        <button type="button" onClick={onClose} className="px-6 py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors text-lg">{t('cancel')}</button>
-                        <button type="submit" className="px-6 py-3 bg-[var(--color-primary)] text-white font-bold rounded-xl hover:bg-[var(--color-primary-hover)] transition-all shadow-md text-lg">{t('save')}</button>
-                    </div>
-                </form>
+                                {/* Time Fields for Efficiency Tracking */}
+                                <div className="pt-6 border-t border-white/10">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('start_time')}</label>
+                                            <input type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)} required className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-mono text-xs font-bold" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('end_time')}</label>
+                                            <input type="datetime-local" value={endTime} onChange={e => setEndTime(e.target.value)} required className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-mono text-xs font-bold" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </form>
+                </div>
+
+                {/* Fixed Footer */}
+                <div className="border-t border-white/10 p-4 md:p-6 bg-slate-900/95 backdrop-blur-xl flex gap-3 pb-safe">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex-1 py-4 bg-white/5 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-colors text-xs"
+                    >
+                        {t('cancel')}
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            // Trigger form submission manually since button is outside form on mobile often
+                            const form = document.getElementById('time-record-form') as HTMLFormElement;
+                            if (form) form.requestSubmit();
+                        }}
+                        className="flex-[2] py-4 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-white font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_20px_rgba(99,102,241,0.4)] text-xs"
+                    >
+                        {t('save')}
+                    </button>
+                </div>
             </div>
         </div>
     );

@@ -42,6 +42,13 @@ const App: React.FC = () => {
     return <Login />;
   }
 
+  // Request Notification Permission
+  React.useEffect(() => {
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   return (
     <ToastProvider>
       <BackupProvider>

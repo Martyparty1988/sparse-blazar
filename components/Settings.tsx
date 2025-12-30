@@ -382,35 +382,7 @@ const Settings: React.FC = () => {
                     </SettingsSection>
                 )}
 
-                <SettingsSection title={t('app_theme')}>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                        {themesData.map(themeOption => (
-                            <button
-                                key={themeOption.id}
-                                onClick={() => setTheme(themeOption.id)}
-                                className={`p-1 rounded-2xl transition-all border-4 ${theme === themeOption.id ? 'border-[var(--color-accent)] scale-105 shadow-xl' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-102'}`}
-                            >
-                                <div className="h-20 rounded-xl flex overflow-hidden shadow-inner">
-                                    <div style={{ backgroundColor: themeOption.colors[0] }} className="w-1/2 h-full"></div>
-                                    <div style={{ backgroundColor: themeOption.colors[1] }} className="w-1/2 h-full"></div>
-                                </div>
-                                <span className="block mt-2 font-bold text-sm text-white truncate">{t(themeOption.nameKey)}</span>
-                            </button>
-                        ))}
-                    </div>
-                    <div className="mt-10 pt-8 border-t border-white/10 flex items-center justify-between bg-white/5 p-6 rounded-2xl">
-                        <div>
-                            <h3 className="text-xl font-bold text-white mb-1">{t('theme')}</h3>
-                            <p className="text-gray-400 text-sm">{colorTheme === 'light' ? t('dark_mode_active') : t('light_mode_active')}</p>
-                        </div>
-                        <button
-                            onClick={toggleTheme}
-                            className="px-8 py-3 bg-white/10 text-white font-black rounded-xl hover:bg-white/20 transition-all border border-white/20 uppercase tracking-tighter"
-                        >
-                            {colorTheme === 'light' ? t('switch_to_dark') : t('switch_to_light')}
-                        </button>
-                    </div>
-                </SettingsSection>
+
 
                 <SettingsSection title={t('language')}>
                     <div className="grid grid-cols-2 gap-4">

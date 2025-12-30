@@ -6,6 +6,102 @@ import type { FieldTable, Worker } from '../types';
 import { getWorkerColor, getInitials } from '../utils/workerColors';
 import { useI18n } from '../contexts/I18nContext';
 
+// --- Subcomponent for Table Item to handle Double Tap / Long Press ---
+const TableItem: React.FC<{
+    table: FieldTable;
+    color: string;
+    isCompleted: boolean;
+    completedWorker: Worker | null | undefined;
+    assignedWorkers: Worker[] | undefined;
+    workers: Worker[] | undefined;
+    onClick?: (table: FieldTable) => void;
+}> = ({ table, color, isCompleted, completedWorker, assignedWorkers, workers, onClick }) => {
+
+    // Double Tap detection
+    const [lastTap, setLastTap] = React.useState<number>(0);
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        // Prevent default zoom if multiple taps
+        // e.preventDefault(); // Careful, this might block scrolling
+        const now = Date.now();
+        const DOUBLE_TAP_DELAY = 300;
+
+        if (now - lastTap < DOUBLE_TAP_DELAY) {
+            // DOUBLE TAP detected
+            onClick?.(table);
+        }
+        setLastTap(now);
+    };
+
+    const handleClick = () => {
+        // PC click or Mobile Single Tap
+        // We can debate if single tap should open details or separate "select" mode.
+        // For now, simple click = open details.
+        onClick?.(table);
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={handleClick}
+            onTouchEnd={handleTouchEnd}
+            className="relative group aspect-square rounded-2xl transition-all duration-200 active:scale-95 overflow-hidden touch-manipulation"
+            style={{
+                backgroundColor: color,
+                borderWidth: '2px',
+                borderColor: color,
+                boxShadow: isCompleted
+                    ? `0 0 20px ${color}40, 0 4px 12px rgba(0,0,0,0.3)`
+                    : '0 4px 12px rgba(0,0,0,0.2)',
+            }}
+        >
+            {/* Table number */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
+                <span className="text-white font-black text-xl md:text-base leading-tight text-center drop-shadow-lg">
+                    {table.tableId}
+                </span>
+
+                {/* Worker initials */}
+                {isCompleted && completedWorker && (
+                    <span className="text-white/80 font-bold text-xs mt-1 drop-shadow">
+                        {getInitials(completedWorker.name)}
+                    </span>
+                )}
+
+                {/* Assigned workers dots */}
+                {assignedWorkers && assignedWorkers.length > 0 && (
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                        {assignedWorkers.slice(0, 2).map(worker => {
+                            const workerColor = getWorkerColor(worker.id!, worker.color, workers || []);
+                            return (
+                                <div
+                                    key={worker.id}
+                                    className="w-3 h-3 rounded-full border border-white/50 shadow-sm"
+                                    style={{ backgroundColor: workerColor }}
+                                    title={worker.name}
+                                />
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Hover/Active overlay */}
+            <div className="absolute inset-0 bg-black/0 active:bg-black/20 hover:bg-black/10 transition-colors" />
+
+            {/* Glow effect for completed */}
+            {isCompleted && (
+                <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{
+                        background: `radial-gradient(circle at center, ${color}40 0%, transparent 70%)`,
+                    }}
+                />
+            )}
+        </button>
+    )
+}
+
 interface FieldPlanProps {
     projectId: number;
     onTableClick?: (table: FieldTable) => void;
@@ -90,8 +186,8 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
                 </div>
             </div>
 
-            {/* Filter buttons */}
-            <div className="flex gap-2 bg-black/20 p-2 rounded-2xl">
+            {/* Filter buttons - Mobile Scrollable Pills */}
+            <div className="flex gap-2 bg-black/20 p-2 rounded-2xl overflow-x-auto touch-manipulation no-scrollbar">
                 {[
                     { id: 'all', label: t('all') || 'Vše', count: stats.total },
                     { id: 'pending', label: t('pending') || 'Čeká', count: stats.pending },
@@ -100,9 +196,9 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
                     <button
                         key={filter.id}
                         onClick={() => setSelectedFilter(filter.id as any)}
-                        className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${selectedFilter === filter.id
-                                ? 'bg-white/10 text-white shadow-inner'
-                                : 'text-gray-500 hover:bg-white/5'
+                        className={`flex-none py-3 px-6 rounded-xl font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap ${selectedFilter === filter.id
+                            ? 'bg-white/10 text-white shadow-inner border border-white/20'
+                            : 'text-gray-500 hover:bg-white/5 border border-transparent'
                             }`}
                     >
                         {filter.label} ({filter.count})
@@ -124,9 +220,9 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
                     </div>
                 </div>
 
-                {/* Tables grid */}
-                <div className="p-6">
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+                {/* Tables grid - Responsive (Mobile: 2 cols, Tablet: 4, Desktop: 8+) */}
+                <div className="p-4 md:p-6">
+                    <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-x-3 gap-y-4">
                         {filteredTables.map(table => {
                             const isCompleted = table.status === 'completed';
                             const completedWorker = isCompleted && table.completedBy
@@ -142,116 +238,73 @@ const FieldPlan: React.FC<FieldPlanProps> = ({ projectId, onTableClick }) => {
                                 .filter(Boolean) as Worker[] | undefined;
 
                             return (
-                                <button
+                                <TableItem
                                     key={table.id}
-                                    onClick={() => onTableClick?.(table)}
-                                    className="relative group aspect-square rounded-2xl transition-all duration-300 hover:scale-110 active:scale-95 overflow-hidden"
-                                    style={{
-                                        backgroundColor: color,
-                                        borderWidth: '2px',
-                                        borderColor: color,
-                                        boxShadow: isCompleted
-                                            ? `0 0 20px ${color}40, 0 4px 12px rgba(0,0,0,0.3)`
-                                            : '0 4px 12px rgba(0,0,0,0.2)',
-                                    }}
-                                >
-                                    {/* Table number */}
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
-                                        <span className="text-white font-black text-sm md:text-base leading-tight text-center drop-shadow-lg">
-                                            {table.tableId}
-                                        </span>
-
-                                        {/* Worker initials */}
-                                        {isCompleted && completedWorker && (
-                                            <span className="text-white/80 font-bold text-[10px] mt-1 drop-shadow">
-                                                {getInitials(completedWorker.name)}
-                                            </span>
-                                        )}
-
-                                        {/* Assigned workers dots */}
-                                        {assignedWorkers && assignedWorkers.length > 0 && (
-                                            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
-                                                {assignedWorkers.slice(0, 2).map(worker => {
-                                                    const workerColor = getWorkerColor(worker.id!, worker.color, workers);
-                                                    return (
-                                                        <div
-                                                            key={worker.id}
-                                                            className="w-3 h-3 rounded-full border border-white/50"
-                                                            style={{ backgroundColor: workerColor }}
-                                                            title={worker.name}
-                                                        />
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Hover overlay */}
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-
-                                    {/* Glow effect for completed */}
-                                    {isCompleted && (
-                                        <div
-                                            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            style={{
-                                                background: `radial-gradient(circle at center, ${color}40 0%, transparent 70%)`,
-                                            }}
-                                        />
-                                    )}
-                                </button>
+                                    table={table}
+                                    color={color}
+                                    isCompleted={isCompleted}
+                                    completedWorker={completedWorker}
+                                    assignedWorkers={assignedWorkers}
+                                    onClick={onTableClick}
+                                    workers={workers} // Pass workers for color lookup
+                                />
                             );
                         })}
                     </div>
-
-                    {/* Empty state for filtered view */}
-                    {filteredTables.length === 0 && (
-                        <div className="py-12 text-center">
-                            <div className="text-4xl mb-3 opacity-20">🔍</div>
-                            <p className="text-gray-500 font-bold uppercase text-sm tracking-widest">
-                                {t('no_tables_match_filter') || 'Žádné stoly nevyhovují filtru'}
-                            </p>
-                        </div>
-                    )}
+                        })}
                 </div>
+
+                {/* Empty state for filtered view */}
+                {filteredTables.length === 0 && (
+                    <div className="py-12 text-center">
+                        <div className="text-4xl mb-3 opacity-20">🔍</div>
+                        <p className="text-gray-500 font-bold uppercase text-sm tracking-widest">
+                            {t('no_tables_match_filter') || 'Žádné stoly nevyhovují filtru'}
+                        </p>
+                    </div>
+                )}
             </div>
+        </div>
 
-            {/* Workers legend */}
-            {workers && workers.length > 0 && (
-                <div className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/5 p-6">
-                    <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">
-                        {t('workers_legend') || 'Legenda pracovníků'}
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {workers.map(worker => {
-                            const color = getWorkerColor(worker.id!, worker.color, workers);
-                            const completedCount = tables.filter(t => t.completedBy === worker.id).length;
+            {/* Workers legend */ }
+    {
+        workers && workers.length > 0 && (
+            <div className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/5 p-6">
+                <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">
+                    {t('workers_legend') || 'Legenda pracovníků'}
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {workers.map(worker => {
+                        const color = getWorkerColor(worker.id!, worker.color, workers);
+                        const completedCount = tables.filter(t => t.completedBy === worker.id).length;
 
-                            return (
+                        return (
+                            <div
+                                key={worker.id}
+                                className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                            >
                                 <div
-                                    key={worker.id}
-                                    className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white/20"
+                                    style={{ backgroundColor: color }}
                                 >
-                                    <div
-                                        className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white/20"
-                                        style={{ backgroundColor: color }}
-                                    >
-                                        {getInitials(worker.name)}
+                                    {getInitials(worker.name)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-white font-bold text-sm truncate">
+                                        {worker.name}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-white font-bold text-sm truncate">
-                                            {worker.name}
-                                        </div>
-                                        <div className="text-gray-500 text-xs font-bold">
-                                            {completedCount} {t('tables') || 'stolů'}
-                                        </div>
+                                    <div className="text-gray-500 text-xs font-bold">
+                                        {completedCount} {t('tables') || 'stolů'}
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
+                            </div>
+                        );
+                    })}
                 </div>
-            )}
-        </div>
+            </div>
+        )
+    }
+        </div >
     );
 };
 

@@ -127,19 +127,22 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
             </>
           )}
 
-          {/* Color Picker */}
+          {/* Color Picker - Expanded to 30 colors */}
           <div>
             <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">{t('worker_color') || 'Barva'}</label>
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-6 gap-2">
               {[
-                '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316',
-                '#f59e0b', '#10b981', '#059669', '#14b8a6', '#06b6d4'
+                '#3b82f6', '#60a5fa', '#2563eb', '#1d4ed8', '#6366f1', '#4f46e5',
+                '#8b5cf6', '#a855f7', '#7c3aed', '#6d28d9', '#d946ef', '#ec4899',
+                '#db2777', '#be185d', '#f43f5e', '#e11d48', '#ef4444', '#f97316',
+                '#ea580c', '#f59e0b', '#d97706', '#eab308', '#ca8a04', '#84cc16',
+                '#22c55e', '#10b981', '#059669', '#14b8a6', '#06b6d4', '#0891b2'
               ].map((c) => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`h-12 rounded-xl transition-all ${color === c ? 'ring-4 ring-white shadow-lg scale-110' : 'hover:scale-105 opacity-70 hover:opacity-100'}`}
+                  className={`h-10 rounded-xl transition-all ${color === c ? 'ring-2 ring-white shadow-lg scale-110' : 'hover:scale-105 opacity-70 hover:opacity-100'}`}
                   style={{ backgroundColor: c }}
                 />
               ))}

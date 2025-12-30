@@ -1,22 +1,11 @@
 // Předefinované barvy pro zaměstnance
 // Vibrantní, dobře rozlišitelné barvy s dobrým kontrastem
 export const WORKER_COLORS = [
-    '#3b82f6', // Electric Blue
-    '#ef4444', // Red
-    '#10b981', // Green
-    '#f59e0b', // Amber
-    '#8b5cf6', // Purple
-    '#ec4899', // Pink
-    '#06b6d4', // Cyan
-    '#f97316', // Orange
-    '#14b8a6', // Teal
-    '#a855f7', // Violet
-    '#84cc16', // Lime
-    '#f43f5e', // Rose
-    '#0ea5e9', // Sky Blue
-    '#eab308', // Yellow
-    '#6366f1', // Indigo
-    '#22c55e', // Emerald
+    '#3b82f6', '#60a5fa', '#2563eb', '#1d4ed8', '#6366f1', '#4f46e5',
+    '#8b5cf6', '#a855f7', '#7c3aed', '#6d28d9', '#d946ef', '#ec4899',
+    '#db2777', '#be185d', '#f43f5e', '#e11d48', '#ef4444', '#f97316',
+    '#ea580c', '#f59e0b', '#d97706', '#eab308', '#ca8a04', '#84cc16',
+    '#22c55e', '#10b981', '#059669', '#14b8a6', '#06b6d4', '#0891b2'
 ];
 
 /**

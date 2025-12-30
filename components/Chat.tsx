@@ -49,14 +49,14 @@ const Chat: React.FC = () => {
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!inputText.trim() || !currentUser?.workerId) return;
+        if (!inputText.trim()) return;
 
         setIsSending(true);
         const newMessage: ChatMessage = {
             id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
             text: inputText.trim(),
-            senderId: currentUser.workerId,
-            senderName: currentUser.name,
+            senderId: currentUser?.workerId || -1, // -1 for Admin/Unknown
+            senderName: currentUser?.name || user?.username || 'Admin',
             timestamp: new Date().toISOString()
         };
 
@@ -122,8 +122,8 @@ const Chat: React.FC = () => {
                                     {/* Bubble */}
                                     <div
                                         className={`px-4 py-3 rounded-2xl text-sm font-medium shadow-lg break-words ${isMe(msg)
-                                                ? 'bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-tr-none'
-                                                : 'bg-white/10 text-gray-100 rounded-tl-none border border-white/5'
+                                            ? 'bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-tr-none'
+                                            : 'bg-white/10 text-gray-100 rounded-tl-none border border-white/5'
                                             }`}
                                     >
                                         {!isMe(msg) && (

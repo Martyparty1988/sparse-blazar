@@ -22,11 +22,11 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
     if (worker) {
       setName(worker.name);
       setHourlyRate(String(worker.hourlyRate));
-      setPassword(worker.password || '');
+      setPassword(worker.password || '1234');
     } else {
       setName('');
       setHourlyRate('0');
-      setPassword('');
+      setPassword('1234');
     }
   }, [worker]);
 
@@ -53,9 +53,11 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
       // For now we assume best effort or that we fetch the new ID.
       // Actually db.workers.add returns the new ID.
       let finalId = worker?.id;
+
       if (!finalId) {
-        const newWorker = await db.workers.where('username').equals(workerData.username!).last();
-        finalId = newWorker?.id;
+        // Find the newly added worker to get its Dexie ID
+        const addedWorker = await db.workers.where('username').equals(workerData.username!).last();
+        finalId = addedWorker?.id;
       }
 
       if (finalId) {

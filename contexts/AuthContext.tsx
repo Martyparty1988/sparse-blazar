@@ -5,7 +5,9 @@ import type { User } from '../types';
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
+  currentUser: any; // Helper for worker data (name, id, etc.)
   login: (user: User) => void;
+  logout: () => void;
   logout: () => void;
 }
 
@@ -31,13 +33,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(userData);
   };
 
+  const currentUser = user ? { workerId: user.workerId, name: user.workerId ? 'Worker' : user.username } : null;
+
   const logout = () => {
     sessionStorage.removeItem('user');
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: !!user, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!user, user, currentUser: user as any, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

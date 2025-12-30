@@ -113,7 +113,7 @@ const ProjectCard: React.FC<{
 
     return (
         <div
-            className={`group relative flex flex-col overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl transition-all duration-500 animate-list-item ${isExpanded ? 'ring-2 ring-[var(--color-accent)]/50 bg-slate-900/60' : 'hover:-translate-y-2 hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.6)]'}`}
+            className="group relative flex flex-col overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl transition-all duration-500 animate-list-item w-full max-w-[100vw]"
             style={{ animationDelay: `${index * 0.07}s` }}
         >
             {/* Glossy Overlay Background */}
@@ -133,26 +133,41 @@ const ProjectCard: React.FC<{
 
                     {isAdmin && (
                         <div className="flex gap-2">
+                            {/* Create Plan / Map Button */}
+                            <Link
+                                to={`/plan?projectId=${project.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-purple-400 hover:bg-purple-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
+                                title={t('field_plan')}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+                            </Link>
+
+                            {/* Sync Button */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); onSync(project) }}
                                 className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-emerald-400 hover:bg-emerald-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
                                 title={t('sync_to_sheets')}
                             >
-                                <ShareIcon className="h-5 w-5" />
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                             </button>
+
+                            {/* Edit Button */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); onEdit(project) }}
                                 className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-blue-300 hover:bg-blue-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
                                 title={t('edit_project')}
                             >
-                                <PencilIcon className="h-5 w-5" />
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                             </button>
+
+                            {/* Delete Button */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); onDelete(project) }}
                                 className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-rose-400 hover:bg-rose-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
                                 title={t('delete_project')}
                             >
-                                <TrashIcon className="h-5 w-5" />
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                             </button>
                         </div>
                     )}
@@ -376,7 +391,7 @@ const Projects: React.FC = () => {
     const filterOptions: ('all' | 'active' | 'completed' | 'on_hold')[] = ['all', 'active', 'completed', 'on_hold'];
 
     return (
-        <div className="space-y-8 md:space-y-12 pb-32">
+        <div className="space-y-8 md:space-y-12 pb-32 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] overflow-x-hidden w-full max-w-[100vw] box-border">
             <div className="md:hidden">
                 <BackButton />
             </div>

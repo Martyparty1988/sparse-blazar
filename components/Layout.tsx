@@ -69,10 +69,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <div className="fixed inset-0 w-full h-full flex flex-col bg-transparent overflow-hidden">
             {/* Header */}
             <header className="flex justify-between items-center h-24 px-6 md:px-12 shrink-0 z-50 w-full">
-                <div className="flex items-center gap-4">
-                    <Link to="/" className="text-3xl font-black italic tracking-tighter text-white hover:opacity-80 transition-opacity">
+                <div className="flex flex-col gap-0.5">
+                    <Link to="/" className="text-2xl md:text-3xl font-black italic tracking-tighter text-white hover:opacity-80 transition-opacity flex items-center gap-2">
                         MST<span className="text-[var(--color-accent)]">.</span>
+                        <span className="hidden md:inline text-lg text-slate-400 font-bold not-italic tracking-normal border-l-2 border-slate-600 pl-3 ml-1">Martyho Solar Tracker</span>
                     </Link>
+                    <div className="hidden md:block text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 ml-1">
+                        Projektový hub pro montáže
+                    </div>
+                </div>
+                <div className="md:hidden">
                     <ConnectionStatusIndicator />
                 </div>
 
@@ -95,40 +101,45 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     ))}
                 </nav>
 
-                <div className="flex items-center gap-3">
-                    <div className="hidden sm:flex bg-black/20 rounded-xl p-1 border border-white/10">
-                        <button
-                            onClick={() => setLanguage('cs')}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${language === 'cs' ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}
-                        >CS</button>
-                        <button
-                            onClick={() => setLanguage('en')}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${language === 'en' ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}
-                        >EN</button>
+                <div className="flex items-center gap-4">
+                    <div className="hidden md:block">
+                        <ConnectionStatusIndicator />
                     </div>
 
-                    {user && (
+                    <div className="flex items-center gap-2 bg-black/20 p-1 rounded-xl border border-white/10">
+                        {/* Language Switcher */}
+                        <button
+                            onClick={() => setLanguage(language === 'cs' ? 'en' : 'cs')}
+                            className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-all font-black text-xs border border-white/5 active:scale-95"
+                            title={t('switch_language')}
+                        >
+                            {language.toUpperCase()}
+                        </button>
+
+                        {/* Logout Button */}
                         <button
                             onClick={logout}
-                            className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-red-400 rounded-xl bg-white/5 border border-white/5 transition-all active:scale-95"
+                            className="h-10 px-4 flex items-center gap-2 rounded-lg bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 border border-rose-500/20 transition-all font-bold text-xs uppercase tracking-wider active:scale-95"
+                            title={t('logout')}
                         >
-                            {t('logout')}
+                            <span>{t('logout')}</span>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                         </button>
-                    )}
+                    </div>
                 </div>
-            </header>
+            </header >
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-12 pb-32 overscroll-contain">
+            < main className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-12 pb-32 overscroll-contain" >
                 <div key={location.pathname} className="max-w-7xl mx-auto w-full">
                     {children}
                 </div>
-            </main>
+            </main >
 
             <BottomNavBar />
 
 
-        </div>
+        </div >
     );
 };
 

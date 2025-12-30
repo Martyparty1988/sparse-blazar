@@ -160,30 +160,40 @@ const Chat: React.FC = () => {
 
             {/* Channels Sidebar */}
             <div className="w-full md:w-64 flex flex-col gap-2 shrink-0 md:h-full overflow-y-auto pb-4">
-                <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest px-2 mb-2">Kanály</h2>
+                <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest px-2 mb-2">Kanály</h2>
 
                 <button
                     onClick={() => setActiveChannelId('general')}
-                    className={`p-4 rounded-2xl text-left transition-all font-bold flex items-center gap-3 ${activeChannelId === 'general'
-                            ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20'
-                            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                    className={`p-3 rounded-xl text-left transition-all font-bold flex items-center gap-3 border ${activeChannelId === 'general'
+                        ? 'bg-[var(--color-primary)] text-white shadow-lg border-[var(--color-primary)]'
+                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border-white/5'
                         }`}
                 >
-                    <span className="text-lg">📢</span> General
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeChannelId === 'general' ? 'bg-white/20' : 'bg-black/20'}`}>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
+                    </div>
+                    <span className="text-sm">General</span>
                 </button>
 
-                {projects?.map(project => (
-                    <button
-                        key={project.id}
-                        onClick={() => setActiveChannelId(`project_${project.id}`)}
-                        className={`p-4 rounded-2xl text-left transition-all font-bold flex items-center gap-3 ${activeChannelId === `project_${project.id}`
-                                ? 'bg-[var(--color-accent)] text-white shadow-lg shadow-[var(--color-accent)]/20'
-                                : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
-                            }`}
-                    >
-                        <span className="text-lg">🏗️</span> #{project.name}
-                    </button>
-                ))}
+                <div className="h-px bg-white/5 my-2 mx-2"></div>
+
+                <div className="flex flex-col gap-2">
+                    {projects?.map(project => (
+                        <button
+                            key={project.id}
+                            onClick={() => setActiveChannelId(`project_${project.id}`)}
+                            className={`p-3 rounded-xl text-left transition-all font-bold flex items-center gap-3 border ${activeChannelId === `project_${project.id}`
+                                ? 'bg-[var(--color-accent)] text-white shadow-lg border-[var(--color-accent)]'
+                                : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border-white/5'
+                                }`}
+                        >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeChannelId === `project_${project.id}` ? 'bg-white/20' : 'bg-black/20'}`}>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            </div>
+                            <span className="text-sm truncate">#{project.name}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Chat Window */}
@@ -197,11 +207,13 @@ const Chat: React.FC = () => {
                 {/* Messages Area */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                     {messages.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-500 opacity-50">
-                            <span className="text-4xl mb-4">💬</span>
-                            <p className="text-sm font-bold uppercase tracking-widest">Zatím žádné zprávy v kanálu</p>
-                            <p className="text-xs">
-                                {activeChannelId === 'general' ? 'General' : activeChannelId}
+                        <div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-60">
+                            <div className="w-32 h-32 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/5">
+                                <svg className="w-16 h-16 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                            </div>
+                            <p className="text-lg font-bold text-slate-400 mb-2">Zatím žádné zprávy</p>
+                            <p className="text-sm font-medium text-slate-600 text-center max-w-xs">
+                                Buďte první, kdo pošle zprávu do kanálu <span className="text-[var(--color-accent)]">#{activeChannelId === 'general' ? 'General' : activeChannelId.replace('project_', '')}</span>
                             </p>
                         </div>
                     ) : (
@@ -219,8 +231,8 @@ const Chat: React.FC = () => {
                                     {/* Bubble */}
                                     <div
                                         className={`px-4 py-3 rounded-2xl text-sm font-medium shadow-lg break-words ${isMe(msg)
-                                                ? 'bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-tr-none'
-                                                : 'bg-white/10 text-gray-100 rounded-tl-none border border-white/5'
+                                            ? 'bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-tr-none'
+                                            : 'bg-white/10 text-gray-100 rounded-tl-none border border-white/5'
                                             }`}
                                     >
                                         {!isMe(msg) && (
@@ -241,24 +253,24 @@ const Chat: React.FC = () => {
                 </div>
 
                 {/* Input Area */}
-                <div className="p-4 bg-black/20 border-t border-white/5 backdrop-blur-md">
-                    <form onSubmit={handleSend} className="flex gap-2">
+                <div className="p-4 bg-black/40 border-t border-white/5 backdrop-blur-md">
+                    <form onSubmit={handleSend} className="flex gap-3">
                         <input
                             type="text"
                             value={inputText}
                             onChange={(e) => setInputText(e.target.value)}
                             placeholder={t('type_message') || "Napište zprávu..."}
-                            className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all font-medium"
+                            className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-slate-500 focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)] transition-all font-medium shadow-inner"
                         />
                         <button
                             type="submit"
                             disabled={!inputText.trim() || isSending}
-                            className="bg-indigo-600 disabled:opacity-50 hover:bg-indigo-500 text-white p-3 rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center aspect-square"
+                            className="bg-[var(--color-accent)] disabled:opacity-50 hover:opacity-90 text-black p-4 rounded-2xl transition-all shadow-lg shadow-[var(--color-accent)]/20 active:scale-95 flex items-center justify-center aspect-square"
                         >
                             {isSending ? (
-                                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <svg className="animate-spin h-6 w-6" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             ) : (
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                <svg className="w-6 h-6 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                             )}
                         </button>
                     </form>

@@ -111,7 +111,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
 
             } else {
                 // Create new project
-                projectId = await db.projects.add(projectData as Project);
+                projectId = (await db.projects.add(projectData as Project)) as number;
 
                 // Add components
                 if (components.length > 0) {
@@ -211,7 +211,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     required
-                                    className="w-full p-5 bg-black/40 text-white placeholder-gray-600 text-lg font-bold rounded-2xl shadow-inner border border-white/10"
+                                    className="w-full p-5 bg-black/40 text-white placeholder-white/70 text-lg font-bold rounded-2xl shadow-inner border border-white/10"
                                     placeholder="e.g. Solar Park Zarasai"
                                 />
                             </div>
@@ -222,7 +222,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     rows={3}
-                                    className="w-full p-5 bg-black/40 text-white placeholder-gray-600 font-bold rounded-2xl shadow-inner border border-white/10"
+                                    className="w-full p-5 bg-black/40 text-white placeholder-white/70 font-bold rounded-2xl shadow-inner border border-white/10"
                                     placeholder="Detailní informace o lokalitě, klientovi..."
                                 />
                             </div>
@@ -238,7 +238,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                                     onChange={(e) => setTableList(e.target.value)}
                                     rows={8}
                                     placeholder="Zadejte čísla stolů oddělená novým řádkem nebo čárkou (např: IT28-1, IT28-2...)"
-                                    className="w-full p-5 bg-black/60 text-white placeholder-gray-600 rounded-2xl shadow-inner border border-white/10 text-sm font-mono custom-scrollbar focus:ring-2 focus:ring-[var(--color-accent)] outline-none"
+                                    className="w-full p-5 bg-black/60 text-white placeholder-white/70 rounded-2xl shadow-inner border border-white/10 text-sm font-mono custom-scrollbar focus:ring-2 focus:ring-[var(--color-accent)] outline-none"
                                 />
                                 <div className="mt-3 flex gap-2 items-start text-[10px] text-slate-400 font-medium leading-relaxed bg-black/20 p-3 rounded-xl">
                                     <span className="text-lg">💡</span>

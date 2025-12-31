@@ -1,6 +1,8 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-admin.initializeApp();
+admin.initializeApp({
+    databaseURL: "https://mst-marty-solar-2025-default-rtdb.europe-west1.firebasedatabase.app"
+});
 
 /**
  * Automatické odeslání push notifikace při nové zprávě v chatu

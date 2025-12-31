@@ -22,9 +22,11 @@ function useMediaQuery(query: string) {
 interface WorkLogFormProps {
     onClose: () => void;
     editRecord?: TimeRecord;
+    initialTableIds?: string[]; // NEW: For logging from Map
+    initialProjectId?: number; // NEW: For logging from Map
 }
 
-const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => {
+const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initialTableIds, initialProjectId }) => {
     const { t } = useI18n();
     const { showToast } = useToast();
     const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -41,8 +43,9 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
     const [taskType, setTaskType] = useState<'panels' | 'construction' | 'cables'>('panels');
 
     // Fields
-    const [projectId, setProjectId] = useState<number | ''>(editRecord ? editRecord.projectId : (savedProjectId ? Number(savedProjectId) : ''));
+    const [projectId, setProjectId] = useState<number | ''>(editRecord ? editRecord.projectId : (initialProjectId ? initialProjectId : (savedProjectId ? Number(savedProjectId) : '')));
     const [workerId, setWorkerId] = useState<number | ''>(editRecord ? editRecord.workerId : (savedWorkerId ? Number(savedWorkerId) : ''));
+    const [tableIds, setTableIds] = useState<string[]>(initialTableIds || []); // NEW
     const [description, setDescription] = useState(editRecord ? editRecord.description || '' : '');
 
     // Time fields
@@ -206,7 +209,8 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
                     projectId: Number(projectId),
                     startTime: new Date(startTime),
                     endTime: new Date(endTime),
-                    description,
+                    description: description || (tableIds.length > 0 ? `Hotové stoly: ${tableIds.join(', ')}` : ''),
+                    tableIds: tableIds.length > 0 ? tableIds : undefined, // NEW
                 };
 
                 let record: TimeRecord;
@@ -294,7 +298,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
             if (firebaseService.isReady) {
                 // Toast handled above per record type usually, or here general success
             } else {
-                showToast(t('saved_successfully') || 'Uloženo (Offline)', 'success');
+                showToast(t('save_success') || 'Uloženo (Offline)', 'success');
             }
             onClose();
 
@@ -462,6 +466,20 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
                         placeholder="Např. hotový stůl 28.1..."
                         className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none text-sm leading-relaxed"
                     />
+                </div>
+            )}
+
+            {/* NEW: Display Selected Tables */}
+            {tableIds.length > 0 && (
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl mt-4">
+                    <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2">Vybrané stoly ({tableIds.length})</h3>
+                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar">
+                        {tableIds.map(id => (
+                            <span key={id} className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-bold ring-1 ring-emerald-500/30">
+                                {id}
+                            </span>
+                        ))}
+                    </div>
                 </div>
             )}
         </div>

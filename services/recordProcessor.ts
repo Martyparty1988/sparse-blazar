@@ -55,9 +55,16 @@ const parseTableCompletionPatterns = (description: string): string[] => {
  * @returns Number of tables updated
  */
 export const processFieldTableDescription = async (record: TimeRecord): Promise<number> => {
-  if (!record.description) return 0;
+  // 1. Try to use structured tableIds if available
+  let tableCodes: string[] = [];
 
-  const tableCodes = parseTableCompletionPatterns(record.description);
+  if (record.tableIds && record.tableIds.length > 0) {
+    tableCodes = record.tableIds;
+  } else if (record.description) {
+    // 2. Fallback to parsing description
+    tableCodes = parseTableCompletionPatterns(record.description);
+  }
+
   if (tableCodes.length === 0) return 0;
 
   let updatedCount = 0;

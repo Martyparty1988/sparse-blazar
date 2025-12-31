@@ -8,6 +8,7 @@ import { getWorkerColor, getInitials } from '../utils/workerColors';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
 import { firebaseService } from '../services/firebaseService';
+import TimeRecordForm from './TimeRecordForm'; // NEW
 
 // --- Improved Table Item ---
 const TableItem = React.memo<{
@@ -212,6 +213,7 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
     // UI State
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
+    const [showWorkLogForm, setShowWorkLogForm] = useState(false); // NEW
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterWorker, setFilterWorker] = useState<number | 'all'>('all');
     const [showLeftSidebar, setShowLeftSidebar] = useState(true);
@@ -534,6 +536,12 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
                     <header><p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">VÝBĚR</p><h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">{selectedIds.size} <span className="text-indigo-500">X</span></h2><button onClick={() => { setSelectedIds(new Set()); setShowRightSidebar(false); }} className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mt-4 hover:text-white transition-all">Zrušit výběr</button></header>
                     <nav className="space-y-4">
                         <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Hromadné akce</label>
+
+                        <button onClick={() => setShowWorkLogForm(true)} className="w-full p-6 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/80 text-white border border-[var(--color-primary)]/20 rounded-3xl transition-all font-black uppercase tracking-widest text-xs flex items-center justify-between shadow-[0_4px_20px_rgba(99,102,241,0.2)]">
+                            <span>{t('log_work')}</span>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </button>
+
                         <button onClick={() => handleBulkAction('complete')} className="w-full p-6 bg-emerald-600/10 hover:bg-emerald-600 text-emerald-500 hover:text-white border border-emerald-500/20 rounded-3xl transition-all font-black uppercase tracking-widest text-xs flex items-center justify-between"><span>Označit hotovo</span><kbd className="px-2 py-1 bg-black/20 rounded text-[10px] opacity-50">C</kbd></button>
                         <button onClick={() => handleBulkAction('pending')} className="w-full p-6 bg-slate-800 hover:bg-rose-600/20 text-slate-400 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 rounded-3xl transition-all font-black uppercase tracking-widest text-xs flex items-center justify-between"><span>Resetovat stav</span><kbd className="px-2 py-1 bg-black/20 rounded text-[10px] opacity-50">DEL</kbd></button>
                     </nav>
@@ -555,6 +563,18 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
                     <div className="w-full h-1.5 bg-white/5 rounded-full mt-3 overflow-hidden"><div className="h-full bg-indigo-500 rounded-full transition-all duration-1000" style={{ width: `${(stats.completed / (stats.total || 1)) * 100}%` }} /></div>
                 </div>
             </aside>
+            {/* Work Log Form Modal */}
+            {showWorkLogForm && (
+                <TimeRecordForm
+                    onClose={() => {
+                        setShowWorkLogForm(false);
+                        setSelectedIds(new Set()); // Optional: clear selection after logging
+                        setShowRightSidebar(false);
+                    }}
+                    initialTableIds={Array.from(selectedIds)}
+                    initialProjectId={projectId}
+                />
+            )}
         </div>
     );
 };

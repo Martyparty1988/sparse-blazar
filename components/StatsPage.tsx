@@ -190,10 +190,10 @@ const StatsPage: React.FC = () => {
             {/* Header Section */}
             <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8">
                 <div className="space-y-4">
-                    <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8] drop-shadow-2xl">
+                    <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8] drop-shadow-2xl" style={{ fontSize: 'clamp(3rem, 10vw, 6rem)' }}>
                         {t('statistics')}<span className="text-cyan-500">.</span>
                     </h1>
-                    <p className="text-sm md:text-xl text-slate-400 font-bold tracking-tight max-w-2xl border-l-4 border-cyan-500 pl-4 py-1 uppercase">
+                    <p className="text-slate-400 font-bold tracking-tight max-w-2xl border-l-4 border-cyan-500 pl-4 py-1 uppercase" style={{ fontSize: 'clamp(14px, 4vw, 18px)' }}>
                         {t('statistics_dashboard_desc') || "Analýza výkonu a technologického postupu."}
                     </p>
                 </div>

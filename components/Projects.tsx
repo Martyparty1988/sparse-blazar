@@ -485,10 +485,10 @@ const Projects: React.FC = () => {
 
             <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div className="space-y-3">
-                    <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8] drop-shadow-2xl">
+                    <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8] drop-shadow-2xl" style={{ fontSize: 'clamp(3rem, 10vw, 6rem)' }}>
                         {t('projects')}<span className="text-[var(--color-accent)]">.</span>
                     </h1>
-                    <p className="text-sm md:text-xl text-slate-400 font-bold tracking-tight max-w-2xl border-l-4 border-[var(--color-accent)] pl-4 py-1">
+                    <p className="text-slate-400 font-bold tracking-tight max-w-2xl border-l-4 border-[var(--color-accent)] pl-4 py-1" style={{ fontSize: 'clamp(14px, 4vw, 18px)' }}>
                         Komplexní přehled výstavby a technologického postupu solárních polí.
                     </p>
                 </div>
@@ -517,9 +517,17 @@ const Projects: React.FC = () => {
                             placeholder={`${t('search')}...`}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-4 py-4 bg-black/30 text-white placeholder-slate-500 border-none rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] transition-all font-bold"
+                            className="w-full pl-12 pr-10 py-4 bg-black/30 text-white placeholder-slate-500 border-none rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] transition-all font-bold"
                         />
                         <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-[var(--color-accent)] transition-colors" />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/10 text-slate-400 hover:text-white hover:bg-white/20 transition-all"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        )}
                     </div>
 
                     <div className="relative group">
@@ -546,9 +554,9 @@ const Projects: React.FC = () => {
                         <button
                             key={status}
                             onClick={() => setStatusFilter(status)}
-                            className={`flex-grow md:flex-grow-0 px-3 py-3 md:px-6 md:py-4 rounded-2xl font-black text-[10px] transition-all border uppercase tracking-widest whitespace-nowrap ${statusFilter === status
-                                ? 'bg-white text-black border-white shadow-[0_0_25px_rgba(255,255,255,0.3)] scale-105 z-10'
-                                : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white'
+                            className={`flex-grow md:flex-grow-0 px-4 py-2 rounded-full font-black text-xs transition-all uppercase tracking-widest whitespace-nowrap ${statusFilter === status
+                                ? 'bg-white text-black border border-white shadow-[0_0_15px_rgba(255,255,255,0.3)] underline decoration-2 decoration-[var(--color-accent)] underline-offset-4'
+                                : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10 hover:text-white'
                                 }`}
                             title={t(status === 'all' ? 'all_statuses' : (status as any))}
                         >

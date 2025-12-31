@@ -53,7 +53,8 @@ export const locales = {
     copied: 'Copied!',
     copy_to_clipboard: 'Copy to clipboard',
     processing: 'Processing...',
-    saved_successfully: 'Saved Successfully',
+    save_success: 'Saved Successfully',
+    save_failed: 'Failed to save.',
 
     // Workers
     workers: 'Workers',
@@ -108,6 +109,13 @@ export const locales = {
     last_activity: 'Last Activity',
     live_active: 'LIVE',
     back_to_projects: 'Back to Projects',
+    confirm_no_tables_warning: 'WARNING: Project has no tables (Field Plan). Create empty project?',
+    table_list_manual: 'Table List (Map Generator)',
+    table_list_help: 'This list will generate the interactive map. Each ID creates a block.',
+    components: 'Components',
+    add_component: 'Add Component',
+    component_name: 'Component Name',
+    no_components: 'No components defined',
 
     // Tables
     add_table: 'Add Table',
@@ -170,8 +178,7 @@ export const locales = {
     share_copy_report: 'Share / Copy Report',
     report_copied_clipboard: 'Report copied! Paste into WhatsApp.',
     report_copy_failed: 'Failed to copy report.',
-    save_success: 'Saved',
-    save_error: 'Error saving.',
+
     attendance: 'Attendance',
     attendance_desc: 'Daily attendance tracking.',
     present: 'Present',
@@ -291,6 +298,12 @@ export const locales = {
     sync_to_sheets: 'Sync to Sheets',
     drive_connected: 'Google Connected',
     drive_not_connected: 'Not Connected',
+    last_entry_loaded: 'Last entry loaded (except time).',
+    repeat_last_entry: 'Repeat Last Entry',
+    hourly_rate_work: 'Hourly Rate Work',
+    work_type_hourly: 'Hourly',
+    work_type_task: 'Task',
+    next: 'Next',
   },
   cs: {
     // Auth & General
@@ -347,6 +360,7 @@ export const locales = {
     copy_to_clipboard: 'Kopírovat do schránky',
     processing: 'Zpracovávám...',
     saved_successfully: 'Uloženo',
+    save_failed: 'Uložení selhalo.',
 
     // Workers
     workers: 'Pracovníci',
@@ -401,6 +415,13 @@ export const locales = {
     last_activity: 'Poslední aktivita',
     live_active: 'ŽIVĚ',
     back_to_projects: 'Zpět na projekty',
+    confirm_no_tables_warning: 'VAROVÁNÍ: Projekt neobsahuje žádné stoly (Field Plan). Vytvořit prázdný projekt?',
+    table_list_manual: 'Seznam stolů (Generátor Mapy)',
+    table_list_help: 'Z tohoto seznamu se vygeneruje interaktivní mapa. Každé ID vytvoří blok.',
+    components: 'Komponenty',
+    add_component: 'Přidat komponentu',
+    component_name: 'Název komponenty',
+    no_components: 'Žádné komponenty',
 
     // Tables
     add_table: 'Přidat stůl',
@@ -584,5 +605,11 @@ export const locales = {
     sync_to_sheets: 'Synchronizovat do Tabulek',
     drive_connected: 'Google připojen',
     drive_not_connected: 'Nepřipojeno',
+    last_entry_loaded: 'Načten poslední záznam (kromě času).',
+    repeat_last_entry: 'Zopakovat poslední',
+    hourly_rate_work: 'Hodinová práce',
+    work_type_hourly: 'Hodinová',
+    work_type_task: 'Úkolová',
+    next: 'Další',
   }
 };

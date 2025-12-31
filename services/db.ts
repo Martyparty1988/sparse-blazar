@@ -171,6 +171,11 @@ export class MSTDatabase extends Dexie {
     dbInstance.version(23).stores({
       dailyReports: '++id, date, projectId, [projectId+date]',
     });
+
+    // Version 24: Add tableIds to records for structured linking
+    dbInstance.version(24).stores({
+      records: '++id, workerId, projectId, startTime, *tableIds',
+    });
   }
 }
 

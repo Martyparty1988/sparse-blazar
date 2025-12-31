@@ -9,6 +9,7 @@ import SplashScreen from './components/SplashScreen';
 import Login from './components/Login';
 import { firebaseService } from './services/firebaseService';
 import { db } from './services/db';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy loading components for performance optimization (Code Splitting)
 const Dashboard = React.lazy(() => import('./components/Dashboard'));
@@ -151,26 +152,28 @@ const App: React.FC = () => {
       <BackupProvider>
         <HashRouter>
           <Layout>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/workers" element={<Workers />} />
-                <Route path="/projects" element={<Projects />} />
-                <Route path="/field-plans" element={<FieldPlans />} />
-                <Route path="/statistics" element={<Statistics />} />
-                <Route path="/stats" element={<StatsPage />} />
-                <Route path="/records" element={<TimeRecords />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/attendance" element={<Attendance />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/tools" element={<ToolManager />} />
-                <Route path="/daily-reports" element={<DailyReports />} />
-                <Route path="/chat" element={<Chat />} />
-                <Route path="/payroll" element={<Payroll />} />
-                <Route path="/import" element={<DataImporter />} />
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/workers" element={<Workers />} />
+                  <Route path="/projects" element={<Projects />} />
+                  <Route path="/field-plans" element={<FieldPlans />} />
+                  <Route path="/statistics" element={<Statistics />} />
+                  <Route path="/stats" element={<StatsPage />} />
+                  <Route path="/records" element={<TimeRecords />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/attendance" element={<Attendance />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/tools" element={<ToolManager />} />
+                  <Route path="/daily-reports" element={<DailyReports />} />
+                  <Route path="/chat" element={<Chat />} />
+                  <Route path="/payroll" element={<Payroll />} />
+                  <Route path="/import" element={<DataImporter />} />
+                  <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
           </Layout>
         </HashRouter>
       </BackupProvider>

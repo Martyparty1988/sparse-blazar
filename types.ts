@@ -32,6 +32,8 @@ export interface TimeRecord {
   startTime: Date;
   endTime: Date;
   description: string;
+  tableIds?: string[]; // NEW: Structured link to field tables
+  projectTaskId?: number; // NEW: Link to a specific task type
 }
 
 export interface User {

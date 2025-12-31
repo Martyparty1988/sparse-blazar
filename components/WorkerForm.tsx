@@ -68,27 +68,27 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
 
     // Bi-directional sync: Update project's workerIds
     if (activeProjects) {
-        for (const project of activeProjects) {
-            const isAssigned = projectIds.includes(project.id!);
-            const wasAssigned = project.workerIds?.includes(finalId!);
+      for (const project of activeProjects) {
+        const isAssigned = projectIds.includes(project.id!);
+        const wasAssigned = project.workerIds?.includes(finalId!);
 
-            if (isAssigned && !wasAssigned) {
-                const newWorkerIds = [...(project.workerIds || []), finalId!];
-                await db.projects.update(project.id!, { workerIds: newWorkerIds });
-                firebaseService.updateRecord('projects', project.id!, { workerIds: newWorkerIds });
-            } else if (!isAssigned && wasAssigned) {
-                const newWorkerIds = project.workerIds?.filter(id => id !== finalId!);
-                await db.projects.update(project.id!, { workerIds: newWorkerIds });
-                firebaseService.updateRecord('projects', project.id!, { workerIds: newWorkerIds });
-            }
+        if (isAssigned && !wasAssigned) {
+          const newWorkerIds = [...(project.workerIds || []), finalId!];
+          await db.projects.update(project.id!, { workerIds: newWorkerIds });
+          firebaseService.updateRecord('projects', project.id!, { workerIds: newWorkerIds });
+        } else if (!isAssigned && wasAssigned) {
+          const newWorkerIds = project.workerIds?.filter(id => id !== finalId!);
+          await db.projects.update(project.id!, { workerIds: newWorkerIds });
+          firebaseService.updateRecord('projects', project.id!, { workerIds: newWorkerIds });
         }
+      }
     }
 
     if (firebaseService.isReady && finalId) {
       firebaseService.upsertRecords('workers', [{ ...workerData, id: finalId }])
         .catch(console.error);
     }
-    
+
     onClose();
   };
 
@@ -96,8 +96,8 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-md p-0 md:p-4 animate-fade-in" onClick={onClose}>
       <div className="w-full max-h-[95vh] md:max-w-lg bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 border-b border-white/10 flex justify-between items-center">
-            <h2 className="text-xl md:text-3xl font-black text-white italic tracking-tighter uppercase">{worker ? t('edit_worker') : t('add_worker')}</h2>
-            <button onClick={onClose} className="p-2 text-gray-400 hover:text-white transition-all bg-white/5 rounded-full"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+          <h2 className="text-xl md:text-3xl font-black text-white italic tracking-tighter uppercase">{worker ? t('edit_worker') : t('add_worker')}</h2>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-white transition-all bg-white/5 rounded-full"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg></button>
         </div>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
           <div>
@@ -106,31 +106,31 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
           </div>
 
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Přiřazené projekty</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('assigned_projects')}</label>
             <div className="flex flex-wrap gap-2 p-3 bg-black/40 rounded-xl border border-white/10">
-                {activeProjects?.map(project => (
-                    <button
-                        key={project.id}
-                        type="button"
-                        onClick={() => handleProjectToggle(project.id!)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border-2 ${projectIds.includes(project.id!) ? 'bg-indigo-500 text-white border-transparent' : 'text-slate-300 border-slate-700 hover:border-indigo-500'}`}>
-                        {project.name}
-                    </button>
-                ))}
+              {activeProjects?.map(project => (
+                <button
+                  key={project.id}
+                  type="button"
+                  onClick={() => handleProjectToggle(project.id!)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border-2 ${projectIds.includes(project.id!) ? 'bg-indigo-500 text-white border-transparent' : 'text-slate-300 border-slate-700 hover:border-indigo-500'}`}>
+                  {project.name}
+                </button>
+              ))}
             </div>
           </div>
 
           {user?.role === 'admin' && (
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Hodinová sazba a ceny za práci</label>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('rates_and_prices')}</label>
               </div>
-              <input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="Hodinová sazba" className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
-              <input type="number" value={panelPrice} onChange={(e) => setPanelPrice(e.target.value)} placeholder="Cena za panel" className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
-              <input type="number" value={stringPrice} onChange={(e) => setStringPrice(e.target.value)} placeholder="Cena za string" className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
-              <input type="number" value={meterPrice} onChange={(e) => setMeterPrice(e.target.value)} placeholder="Cena za metr" className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
+              <input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder={t('hourly_rate')} className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
+              <input type="number" value={panelPrice} onChange={(e) => setPanelPrice(e.target.value)} placeholder={t('panel_price')} className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
+              <input type="number" value={stringPrice} onChange={(e) => setStringPrice(e.target.value)} placeholder={t('string_price')} className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
+              <input type="number" value={meterPrice} onChange={(e) => setMeterPrice(e.target.value)} placeholder={t('meter_price')} className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
               <div className="col-span-2">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Přihlašovací heslo</label>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('password_label')}</label>
                 <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 bg-black/40 text-white rounded-xl border border-white/10" />
               </div>
             </div>
@@ -146,10 +146,10 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
           </div>
 
         </form>
-         <div className="p-6 border-t border-white/10 bg-black/20 flex justify-end gap-4">
-            <button type="button" onClick={onClose} className="px-8 py-3 bg-white/5 text-white font-black rounded-xl hover:bg-white/10 transition-all uppercase tracking-widest text-[10px]">{t('cancel')}</button>
-            <button type="submit" onClick={handleSubmit} className="flex-1 md:flex-none px-10 py-3 bg-white text-black font-black rounded-xl hover:bg-indigo-400 hover:text-white transition-all shadow-lg uppercase tracking-widest text-[10px]">{t('save')}</button>
-          </div>
+        <div className="p-6 border-t border-white/10 bg-black/20 flex justify-end gap-4">
+          <button type="button" onClick={onClose} className="px-8 py-3 bg-white/5 text-white font-black rounded-xl hover:bg-white/10 transition-all uppercase tracking-widest text-[10px]">{t('cancel')}</button>
+          <button type="submit" onClick={handleSubmit} className="flex-1 md:flex-none px-10 py-3 bg-white text-black font-black rounded-xl hover:bg-indigo-400 hover:text-white transition-all shadow-lg uppercase tracking-widest text-[10px]">{t('save')}</button>
+        </div>
       </div>
     </div>
   );

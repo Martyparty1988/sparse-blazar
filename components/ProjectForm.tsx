@@ -21,7 +21,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
     const [status, setStatus] = useState<'active' | 'completed' | 'on_hold'>('active');
     const [workerIds, setWorkerIds] = useState<number[]>([]);
     const allWorkers = useLiveQuery(() => db.workers.toArray(), []);
-    
+
     const [tableList, setTableList] = useState('');
     const [structuredTables, setStructuredTables] = useState<{ id: string, type: TableType }[]>([]);
     const [isTablesProcessed, setIsTablesProcessed] = useState(false);
@@ -99,7 +99,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
             } else {
                 projectId = await db.projects.add(projectData as Project) as number;
             }
-            
+
             await db.fieldTables.where('projectId').equals(projectId).delete();
             const fieldTables: FieldTable[] = structuredTables.map(t => ({ projectId: projectId!, tableId: t.id, tableType: t.type, status: 'pending' }));
             if (fieldTables.length > 0) await db.fieldTables.bulkAdd(fieldTables);
@@ -120,7 +120,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                     <h2 className="text-xl md:text-3xl font-black text-white italic tracking-tighter uppercase">{project ? t('edit_project') : t('add_project')}</h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white transition-all bg-white/5 rounded-full"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                 </div>
-                
+
                 <div className="p-6 overflow-y-auto grow custom-scrollbar space-y-6">
                     <div>
                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Název projektu</label>
@@ -136,22 +136,22 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                     {isTablesProcessed && structuredTables.length > 0 && (
                         <div className="p-4 bg-black/20 rounded-2xl animate-fade-in border border-white/10">
                             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-3">
-                               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest shrink-0">Nastavení typů stolů ({structuredTables.length})</h3>
-                               <div className="flex items-center gap-2 bg-slate-800/50 p-1 rounded-md self-start sm:self-center">
-                                   <span className="text-[9px] uppercase font-bold text-slate-500 px-1">Hromadně:</span>
-                                   <button onClick={() => handleBulkTypeChange('small')} className="px-2 py-0.5 bg-white/10 text-xs rounded hover:bg-indigo-500">S</button>
-                                   <button onClick={() => handleBulkTypeChange('medium')} className="px-2 py-0.5 bg-white/10 text-xs rounded hover:bg-indigo-500">M</button>
-                                   <button onClick={() => handleBulkTypeChange('large')} className="px-2 py-0.5 bg-white/10 text-xs rounded hover:bg-indigo-500">L</button>
-                               </div>
+                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest shrink-0">Nastavení typů stolů ({structuredTables.length})</h3>
+                                <div className="flex items-center gap-2 bg-slate-800/50 p-1 rounded-md self-start sm:self-center">
+                                    <span className="text-[9px] uppercase font-bold text-slate-500 px-1">Hromadně:</span>
+                                    <button onClick={() => handleBulkTypeChange('small')} className="px-2 py-0.5 bg-white/10 text-xs rounded hover:bg-indigo-500" title="1 string">S (1)</button>
+                                    <button onClick={() => handleBulkTypeChange('medium')} className="px-2 py-0.5 bg-white/10 text-xs rounded hover:bg-indigo-500" title="1.5 stringu">M (1.5)</button>
+                                    <button onClick={() => handleBulkTypeChange('large')} className="px-2 py-0.5 bg-white/10 text-xs rounded hover:bg-indigo-500" title="2 stringy">L (2)</button>
+                                </div>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto custom-scrollbar p-1">
                                 {structuredTables.map(table => (
                                     <div key={table.id} className="bg-slate-800 p-2 rounded-lg flex items-center justify-between gap-2">
                                         <span className="text-xs font-bold text-slate-300 truncate pr-1">{table.id}</span>
                                         <select value={table.type} onChange={(e) => handleTableTypeChange(table.id, e.target.value as TableType)} className="bg-black/50 text-white text-xs font-bold border-none rounded p-1 focus:ring-1 focus:ring-indigo-500 shrink-0">
-                                            <option value="small">Malý</option>
-                                            <option value="medium">Střední</option>
-                                            <option value="large">Velký</option>
+                                            <option value="small">Malý (1 str)</option>
+                                            <option value="medium">Střední (1.5 str)</option>
+                                            <option value="large">Velký (2 str)</option>
                                         </select>
                                     </div>
                                 ))}
@@ -171,7 +171,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-white/10 bg-black/20 flex justify-end gap-4">
+                <div
+                    className="p-6 border-t border-white/10 bg-black/20 flex justify-end gap-4"
+                    style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+                >
                     <button type="button" onClick={onClose} className="px-8 py-3 bg-white/5 text-white font-black rounded-xl hover:bg-white/10 transition-all uppercase tracking-widest text-[10px]">Zrušit</button>
                     <button type="submit" onClick={handleSubmit} className="flex-1 md:flex-none px-10 py-3 bg-white text-black font-black rounded-xl hover:bg-indigo-400 hover:text-white transition-all shadow-lg uppercase tracking-widest text-[10px]">Uložit projekt</button>
                 </div>

@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { firebaseService } from '../services/firebaseService';
 import { useToast } from '../contexts/ToastContext';
 import { soundService } from '../services/soundService';
+import RedoIcon from './icons/RedoIcon';
 
 interface WorkLogFormProps {
     onClose: () => void;
@@ -40,6 +41,19 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
 
     // Data
     const projects = useLiveQuery(() => db.projects.where('status').equals('active').toArray());
+
+    // Memoize sorted projects to put the last used one on top
+    const sortedProjects = useMemo(() => {
+        if (!projects) return [];
+        const lastPid = Number(savedProjectId);
+        if (!lastPid) return projects;
+
+        return [...projects].sort((a, b) => {
+            if (a.id === lastPid) return -1;
+            if (b.id === lastPid) return 1;
+            return a.name.localeCompare(b.name);
+        });
+    }, [projects, savedProjectId]);
 
     const toLocalISO = (d: Date) => {
         const tzOffset = d.getTimezoneOffset() * 60000;
@@ -77,6 +91,43 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
             setEndTime(toLocalISO(e));
         }
         soundService.playClick();
+    };
+
+    const handleRepeatLast = async () => {
+        try {
+            const lastRecord = await db.records
+                .where('workerId').equals(workerId)
+                .reverse()
+                .first();
+
+            if (lastRecord) {
+                setProjectId(lastRecord.projectId);
+                setDescription(lastRecord.description);
+                if (lastRecord.tableIds) setTableIds(lastRecord.tableIds);
+
+                // Smart Time: Use yesterday's times but for TODAY
+                const now = new Date();
+                const lastStart = new Date(lastRecord.startTime);
+                const lastEnd = new Date(lastRecord.endTime);
+
+                const newStart = new Date(now);
+                newStart.setHours(lastStart.getHours(), lastStart.getMinutes(), 0, 0);
+
+                const newEnd = new Date(now);
+                newEnd.setHours(lastEnd.getHours(), lastEnd.getMinutes(), 0, 0);
+
+                setStartTime(toLocalISO(newStart));
+                setEndTime(toLocalISO(newEnd));
+
+                showToast("Načten poslední záznam", "info");
+                soundService.playClick();
+            } else {
+                showToast("Žádný předchozí záznam nenalezen", "warning");
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("Chyba při načítání historie", "error");
+        }
     };
 
     const toggleListening = () => {
@@ -169,12 +220,24 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+
+                    {/* Repeat Last Button - Featured for Speed */}
+                    {!initialProjectId && !editRecord && (
+                        <button
+                            onClick={handleRepeatLast}
+                            className="w-full py-4 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/20 mb-2"
+                        >
+                            <RedoIcon className="w-5 h-5" />
+                            <span className="font-black uppercase tracking-widest text-xs">Zopakovat včerejší práci</span>
+                        </button>
+                    )}
+
                     {/* Project Selection */}
                     {!initialProjectId && (
                         <section>
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Vyberte projekt</label>
                             <div className="grid grid-cols-2 gap-2">
-                                {projects?.map(p => (
+                                {sortedProjects?.map(p => (
                                     <button
                                         key={p.id}
                                         onClick={() => setProjectId(p.id!)}

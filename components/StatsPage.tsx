@@ -22,10 +22,18 @@ import type { Project, Worker, FieldTable } from '../types';
 import BackButton from './BackButton';
 
 // Power constants for different table types (in kWp)
+// Based on 1 string = 19.6 kWp (0.0196 MWp)
 const TABLE_POWER = {
-    small: 0.5,   // 0.5 kWp
-    medium: 1.0,  // 1.0 kWp
-    large: 1.5    // 1.5 kWp
+    small: 19.6,   // 1 string
+    medium: 29.4,  // 1.5 strings
+    large: 39.2    // 2 strings
+};
+
+// String constants for different table types (for payment)
+const TABLE_STRINGS = {
+    small: 1,     // 1 string
+    medium: 1.5,  // 1.5 strings
+    large: 2      // 2 strings
 };
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -77,6 +85,15 @@ const StatsPage: React.FC = () => {
             return sum + TABLE_POWER[table.tableType];
         }, 0);
 
+        // Total Strings calculation (for payment)
+        const totalStrings = allFieldTables.reduce((sum, table) => {
+            return sum + TABLE_STRINGS[table.tableType];
+        }, 0);
+
+        const installedStrings = completedTables.reduce((sum, table) => {
+            return sum + TABLE_STRINGS[table.tableType];
+        }, 0);
+
         // Status distribution
         const pendingCount = allFieldTables.filter(t => t.status === 'pending').length;
         const completedCount = completedTables.length;
@@ -86,24 +103,44 @@ const StatsPage: React.FC = () => {
             { name: 'Plán', value: pendingCount, color: '#6b7280' }
         ];
 
-        // Worker performance (tables + kWp)
-        const workerPerformance: { [key: string]: { tables: number; kWp: number; color: string } } = {};
+        // Financials (Earnings & Cost)
+        let totalCost = 0;
+
+        const workerPerformance: Record<string, { tables: number; kWp: number; earnings: number; color: string }> = {};
 
         workers.forEach(w => {
-            workerPerformance[w.name] = {
-                tables: 0,
-                kWp: 0,
-                color: w.color || '#3b82f6'
-            };
+            if (w.name) {
+                workerPerformance[w.name] = {
+                    tables: 0,
+                    kWp: 0,
+                    earnings: 0,
+                    color: w.color || '#3b82f6'
+                };
+            }
         });
 
         completedTables.forEach(table => {
             if (table.assignedWorkers && table.assignedWorkers.length > 0) {
+                const stringsInTable = TABLE_STRINGS[table.tableType];
+                const workerCount = table.assignedWorkers.length;
+
+                // Split logic: If multiple workers, split the string count credit?
+                // Or does each get paid full?
+                // Usually for "Worker Price", it's piecework. If price is defined per worker, 
+                // it implies "I get X for doing Y". If I start sharing Y, I get X/2.
+                // We will use SPLIT logic for financial conservative estimates.
+                const stringsPerWorker = stringsInTable / workerCount;
+                const kwpPerWorker = TABLE_POWER[table.tableType] / workerCount;
+
                 table.assignedWorkers.forEach(workerId => {
                     const worker = workers.find(w => w.id === workerId);
-                    if (worker) {
-                        workerPerformance[worker.name].tables += 1;
-                        workerPerformance[worker.name].kWp += TABLE_POWER[table.tableType];
+                    if (worker && worker.name && workerPerformance[worker.name]) {
+                        workerPerformance[worker.name].tables += (1 / workerCount); // Fractional table count
+                        workerPerformance[worker.name].kWp += kwpPerWorker; // Fractional kWp
+
+                        const earnings = stringsPerWorker * (worker.stringPrice || 0);
+                        workerPerformance[worker.name].earnings += earnings;
+                        totalCost += earnings;
                     }
                 });
             }
@@ -112,7 +149,9 @@ const StatsPage: React.FC = () => {
         const workerPerfData = Object.entries(workerPerformance)
             .map(([name, data]) => ({ name, ...data }))
             .filter(d => d.tables > 0)
-            .sort((a, b) => b.kWp - a.kWp);
+            .sort((a, b) => b.earnings - a.earnings); // Sort by earnings now? Or keep kWp? Let's sort by Earnings for the boss.
+
+        // ... existing daily progress code ...
 
         // Daily progress (last 30 days)
         const dailyProgress: { [key: string]: number } = {};
@@ -177,7 +216,10 @@ const StatsPage: React.FC = () => {
             workTypeProgress,
             totalTables: allFieldTables.length,
             completedCount,
-            pendingCount
+            pendingCount,
+            totalStrings,
+            installedStrings,
+            totalCost
         };
     }, [allFieldTables, workers]);
 
@@ -217,7 +259,7 @@ const StatsPage: React.FC = () => {
             {selectedProjectId && stats ? (
                 <div className="space-y-12 animate-fade-in">
                     {/* KPI Cards: Premium Tiles */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 lg:gap-8">
                         {/* Total Installed kWp */}
                         <div className="group relative overflow-hidden p-8 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/10 hover:scale-[1.02]">
                             <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all"></div>
@@ -242,13 +284,65 @@ const StatsPage: React.FC = () => {
                                 <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden shadow-inner">
                                     <div
                                         className="h-full bg-gradient-to-r from-emerald-600 to-green-500 transition-all duration-1000 ease-out"
-                                        style={{ width: `${(stats.installedKWp / stats.totalKWp) * 100}%` }}
+                                        style={{ width: `${(stats.installedKWp / (stats.totalKWp || 1)) * 100}%` }}
                                     ></div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Active Team */}
+                        {/* Total Cost (Financials) - NEW */}
+                        <div className="group relative overflow-hidden p-8 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/10 hover:scale-[1.02]">
+                            <div className="absolute -top-12 -right-12 w-48 h-48 bg-yellow-500/10 rounded-full blur-3xl group-hover:bg-yellow-500/20 transition-all"></div>
+                            <div className="relative z-10 space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-yellow-500/20 rounded-2xl text-yellow-400 group-hover:bg-yellow-500 group-hover:text-white transition-all">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    </div>
+                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{t('total_cost') || "Náklady práce"}</h3>
+                                </div>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-5xl font-black text-white tracking-tighter italic">
+                                        {stats.totalCost.toFixed(0)}
+                                    </span>
+                                    <span className="text-xl font-black text-yellow-400 tracking-widest uppercase">€</span>
+                                </div>
+                                <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest">
+                                    {t('string_sazba') || "Dle sazby za string"}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Total Strings */}
+                        <div className="group relative overflow-hidden p-8 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/10 hover:scale-[1.02]">
+                            <div className="absolute -top-12 -right-12 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all"></div>
+                            <div className="relative z-10 space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-amber-500/20 rounded-2xl text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                                    </div>
+                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{t('total_strings') || "Celkem stringů"}</h3>
+                                </div>
+                                <div>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-5xl font-black text-white tracking-tighter italic">
+                                            {stats.installedStrings.toFixed(1)}
+                                        </span>
+                                        <span className="text-xl font-black text-amber-500 tracking-widest uppercase">STR</span>
+                                    </div>
+                                    <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest">
+                                        {t('target') || "Cíl"}: <span className="text-white">{stats.totalStrings.toFixed(1)} STR</span>
+                                    </p>
+                                </div>
+                                <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden shadow-inner">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-amber-600 to-yellow-500 transition-all duration-1000 ease-out"
+                                        style={{ width: `${(stats.installedStrings / (stats.totalStrings || 1)) * 100}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Active Team (Moved) */}
                         <div className="group relative overflow-hidden p-8 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/10 hover:scale-[1.02]">
                             <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all"></div>
                             <div className="relative z-10 space-y-4">
@@ -265,11 +359,6 @@ const StatsPage: React.FC = () => {
                                     <span className="text-xl font-black text-blue-400 tracking-widest uppercase">{t('workers')}</span>
                                 </div>
                                 <div className="flex items-center gap-2 mt-2">
-                                    <div className="flex -space-x-2">
-                                        {[1, 2, 3].map(i => (
-                                            <div key={i} className="w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-[8px] font-black text-white uppercase tracking-tighter">?</div>
-                                        ))}
-                                    </div>
                                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                                         {stats.completedCount} {t('tables_completed') || "dokončených stolů"}
                                     </p>
@@ -277,28 +366,9 @@ const StatsPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Average per Day */}
-                        <div className="group relative overflow-hidden p-8 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/10 hover:scale-[1.02]">
-                            <div className="absolute -top-12 -right-12 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all"></div>
-                            <div className="relative z-10 space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-3 bg-purple-500/20 rounded-2xl text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all">
-                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                    </div>
-                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{t('average_daily') || "Průměr za den"}</h3>
-                                </div>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-5xl font-black text-white tracking-tighter italic">
-                                        {stats.avgKWpPerDay.toFixed(1)}
-                                    </span>
-                                    <span className="text-xl font-black text-purple-400 tracking-widest uppercase">kWp/d</span>
-                                </div>
-                                <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest">
-                                    {t('daily_performance_avg') || "Průměrná efektivita dne"}
-                                </p>
-                            </div>
-                        </div>
                     </div>
+
+
 
                     {/* Charts Grid */}
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 lg:gap-10">
@@ -418,6 +488,14 @@ const StatsPage: React.FC = () => {
                                                 radius={[8, 8, 0, 0]}
                                                 barSize={30}
                                             />
+                                            <Bar
+                                                yAxisId="right"
+                                                dataKey="earnings"
+                                                name="€"
+                                                fill="#fbbf24"
+                                                radius={[8, 8, 0, 0]}
+                                                barSize={30}
+                                            />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
@@ -527,8 +605,9 @@ const StatsPage: React.FC = () => {
                     <p className="text-2xl text-gray-300 font-semibold">Vyberte projekt pro zobrazení statistik</p>
                     <p className="text-gray-400 mt-2">Grafy a KPI se zobrazí po výběru projektu</p>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };
 

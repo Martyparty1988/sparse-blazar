@@ -1,5 +1,5 @@
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { BackupProvider } from './contexts/BackupContext';
@@ -41,81 +41,56 @@ const PageLoader = () => (
 
 const App: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
+  const [isSyncing, setIsSyncing] = useState(true);
 
-  if (!isAuthenticated) {
-    // Replaced SplashScreen with direct Login or Splash that redirects to login
-    return <Login />;
-  }
-
-  // Request Notification Permission & Setup Reminders
-  React.useEffect(() => {
-    if (!isAuthenticated) return;
-
-    // Request FCM Permission and Token
-    const setupFCM = async () => {
-      if (user?.workerId) {
-        await firebaseService.requestNotificationPermission(user.workerId);
+  // Initial Sync from Cloud - "Fetch First" Strategy
+  useEffect(() => {
+    const performInitialSync = async () => {
+      if (!isAuthenticated || !firebaseService.isReady) {
+        setIsSyncing(false);
+        return;
       }
-    };
 
-    setupFCM();
-
-    const checkNotifications = async () => {
-      if (Notification.permission !== 'granted') return;
-
-      // Local reminders (Client-side)
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const todayStr = now.toDateString();
-
-      // End of day reminder
-      const lastCheckoutNotif = localStorage.getItem('notif_checkout_date');
-      if (currentHour === 17 && currentMinute < 30 && lastCheckoutNotif !== todayStr) {
-        new Notification("MST - Konec směny?", {
-          body: "Nezapomeň zapsat svou dnešní práci a udělat check-out!",
-          icon: "/icon-192.svg"
-        });
-        localStorage.setItem('notif_checkout_date', todayStr);
-      }
-    };
-
-    const interval = setInterval(checkNotifications, 60000 * 15);
-    checkNotifications();
-
-    return () => clearInterval(interval);
-  }, [isAuthenticated, user?.workerId]);
-
-  // Sync Data on Startup
-  React.useEffect(() => {
-    const syncData = async () => {
-      if (!firebaseService.isReady) return;
-
-      console.log('🔄 Starting initial cloud sync...');
-
+      console.log('🔄 Starting mandatory cloud sync (Fetch First)...');
+      
       try {
-        // 1. Workers
-        const workers = await firebaseService.getData('workers');
+        // 1. Clear local tables to ensure fresh state
+        await Promise.all([
+          db.workers.clear(),
+          db.projects.clear(),
+          db.tools.clear(),
+          db.fieldTables.clear(),
+          db.dailyReports.clear(),
+          db.records.clear(),
+          db.projectTasks.clear()
+        ]);
+
+        // 2. Fetch all data from Firebase
+        const [
+          workers, 
+          projects, 
+          tools, 
+          fieldTables, 
+          dailyReports, 
+          timeRecords, 
+          projectTasks
+        ] = await Promise.all([
+          firebaseService.getData('workers'),
+          firebaseService.getData('projects'),
+          firebaseService.getData('tools'),
+          firebaseService.getData('fieldTables'),
+          firebaseService.getData('dailyReports'),
+          firebaseService.getData('timeRecords'),
+          firebaseService.getData('projectTasks')
+        ]);
+
+        // 3. Populate local DB
         if (workers) await db.workers.bulkPut(Object.values(workers));
-
-        // 2. Projects
-        const projects = await firebaseService.getData('projects');
         if (projects) await db.projects.bulkPut(Object.values(projects));
-
-        // 3. Tools
-        const tools = await firebaseService.getData('tools');
         if (tools) await db.tools.bulkPut(Object.values(tools));
-
-        // 4. Field Tables
-        const fieldTables = await firebaseService.getData('fieldTables');
         if (fieldTables) await db.fieldTables.bulkPut(Object.values(fieldTables));
-
-        // 5. Daily Reports
-        const dailyReports = await firebaseService.getData('dailyReports');
         if (dailyReports) await db.dailyReports.bulkPut(Object.values(dailyReports));
-
-        // 6. Time Records (Map 'timeRecords' -> 'records')
-        const timeRecords = await firebaseService.getData('timeRecords');
+        
         if (timeRecords) {
           const records = Object.values(timeRecords).map((r: any) => ({
             ...r,
@@ -125,10 +100,8 @@ const App: React.FC = () => {
           await db.records.bulkPut(records);
         }
 
-        // 7. Project Tasks
-        const tasks = await firebaseService.getData('projectTasks');
-        if (tasks) {
-          const taskList = Object.values(tasks).map((t: any) => ({
+        if (projectTasks) {
+          const taskList = Object.values(projectTasks).map((t: any) => ({
             ...t,
             completionDate: t.completionDate ? new Date(t.completionDate) : undefined,
             startTime: t.startTime ? new Date(t.startTime) : undefined,
@@ -137,15 +110,37 @@ const App: React.FC = () => {
           await db.projectTasks.bulkPut(taskList);
         }
 
-        console.log('✅ Initial cloud sync completed');
+        console.log('✅ Mandatory cloud sync completed');
       } catch (error) {
-        console.error('Initial sync failed:', error);
+        console.error('❌ Mandatory sync failed:', error);
+      } finally {
+        setIsSyncing(false);
       }
     };
 
-    // Run sync slightly after mount to let UI settle, or immediately
-    syncData();
-  }, []);
+    performInitialSync();
+  }, [isAuthenticated]);
+
+  // Request Notification Permission & Setup FCM
+  useEffect(() => {
+    if (!isAuthenticated || isSyncing) return;
+
+    const setupFCM = async () => {
+      if (user?.workerId) {
+        await firebaseService.requestNotificationPermission(user.workerId);
+      }
+    };
+
+    setupFCM();
+  }, [isAuthenticated, isSyncing, user?.workerId]);
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  if (isSyncing) {
+    return <SplashScreen />;
+  }
 
   return (
     <ToastProvider>

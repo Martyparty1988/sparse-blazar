@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
-import type { Worker } from '../types';
+import type { Worker, Project } from '../types';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
 import { firebaseService } from '../services/firebaseService';
+import { useLiveQuery } from 'dexie-react-hooks';
 
 interface WorkerFormProps {
   worker?: Worker;
@@ -21,6 +21,9 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
   const [meterPrice, setMeterPrice] = useState('0');
   const [password, setPassword] = useState('');
   const [color, setColor] = useState('#3b82f6');
+  const [projectIds, setProjectIds] = useState<number[]>([]);
+
+  const activeProjects = useLiveQuery(() => db.projects.where('status').equals('active').toArray(), []);
 
   useEffect(() => {
     if (worker) {
@@ -31,16 +34,15 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
       setMeterPrice(String(worker.meterPrice || 0));
       setPassword(worker.password || '1234');
       setColor(worker.color || '#3b82f6');
-    } else {
-      setName('');
-      setHourlyRate('0');
-      setPanelPrice('0');
-      setStringPrice('0');
-      setMeterPrice('0');
-      setPassword('1234');
-      setColor('#3b82f6');
+      setProjectIds(worker.projectIds || []);
     }
   }, [worker]);
+
+  const handleProjectToggle = (projectId: number) => {
+    setProjectIds(prev =>
+      prev.includes(projectId) ? prev.filter(id => id !== projectId) : [...prev, projectId]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,181 +55,100 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
       password: password,
       username: name.toLowerCase().replace(/\s/g, ''),
       color: color,
+      projectIds,
       createdAt: worker?.createdAt || new Date(),
     };
 
-    if (worker?.id) {
-      await db.workers.update(worker.id, workerData);
+    let finalId = worker?.id;
+    if (finalId) {
+      await db.workers.update(finalId, workerData);
     } else {
-      await db.workers.add(workerData as Worker);
+      finalId = (await db.workers.add(workerData as Worker)) as number;
     }
 
-    // Sync to Firebase
-    if (firebaseService.isReady) {
-      // Ensure id is present for sync (it should be if we updated, if added we might need to fetch it or rely on uuid if we used one, but here we use auto-increment from Dexie. 
-      // Syncing auto-increment IDs to distributed DB is tricky.
-      // For now we assume best effort or that we fetch the new ID.
-      // Actually db.workers.add returns the new ID.
-      let finalId = worker?.id;
+    // Bi-directional sync: Update project's workerIds
+    if (activeProjects) {
+        for (const project of activeProjects) {
+            const isAssigned = projectIds.includes(project.id!);
+            const wasAssigned = project.workerIds?.includes(finalId!);
 
-      if (!finalId) {
-        // Find the newly added worker to get its Dexie ID
-        const addedWorker = await db.workers.where('username').equals(workerData.username!).last();
-        finalId = addedWorker?.id;
-      }
-
-      if (finalId) {
-        firebaseService.upsertRecords('workers', [{ ...workerData, id: finalId }])
-          .catch(console.error);
-      }
+            if (isAssigned && !wasAssigned) {
+                const newWorkerIds = [...(project.workerIds || []), finalId!];
+                await db.projects.update(project.id!, { workerIds: newWorkerIds });
+                firebaseService.updateRecord('projects', project.id!, { workerIds: newWorkerIds });
+            } else if (!isAssigned && wasAssigned) {
+                const newWorkerIds = project.workerIds?.filter(id => id !== finalId!);
+                await db.projects.update(project.id!, { workerIds: newWorkerIds });
+                firebaseService.updateRecord('projects', project.id!, { workerIds: newWorkerIds });
+            }
+        }
     }
+
+    if (firebaseService.isReady && finalId) {
+      firebaseService.upsertRecords('workers', [{ ...workerData, id: finalId }])
+        .catch(console.error);
+    }
+    
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-0 md:p-4 animate-fade-in">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose}></div>
-      <div className="relative w-full h-full md:h-auto md:max-w-lg p-8 md:p-10 bg-slate-900/90 backdrop-blur-3xl md:rounded-[3rem] shadow-2xl border-none md:border border-white/20 transform transition-all scale-100 overflow-y-auto">
+      <div className="relative w-full h-full md:h-auto md:max-w-lg p-8 md:p-10 bg-slate-900/90 backdrop-blur-3xl md:rounded-[3rem] shadow-2xl border-none md:border border-white/20 transform transition-all scale-100 overflow-y-auto custom-scrollbar">
         <h2 className="text-4xl font-black mb-8 text-white tracking-tighter uppercase italic border-b border-white/10 pb-6">
           {worker ? t('edit_worker') : t('add_worker')}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="name" className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">{t('worker_name')}</label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              autoFocus
-              className="w-full p-5 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10 transition-all"
-              placeholder="e.g. John Doe"
-            />
+            <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} required className="w-full p-5 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10" placeholder="John Doe" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Přiřazené projekty</label>
+            <div className="flex flex-wrap gap-2 p-4 bg-black/40 rounded-2xl border border-white/10">
+                {activeProjects?.map(project => (
+                    <button
+                        key={project.id}
+                        type="button"
+                        onClick={() => handleProjectToggle(project.id!)}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${projectIds.includes(project.id!) ? 'bg-[var(--color-accent)] border-transparent text-white' : 'bg-transparent border-white/10 text-gray-500 hover:border-white/30'}`}
+                    >
+                        {project.name}
+                    </button>
+                ))}
+            </div>
           </div>
 
           {user?.role === 'admin' && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="hourlyRate" className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">{t('hourly_rate') || 'Hodinivo'}</label>
-                  <div className="relative">
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-black">€</span>
-                    <input
-                      type="number"
-                      id="hourlyRate"
-                      value={hourlyRate}
-                      onChange={(e) => setHourlyRate(e.target.value)}
-                      required
-                      step="0.01"
-                      min="0"
-                      className="w-full p-5 pl-10 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10 transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="panelPrice" className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Cena Panel (€/ks)</label>
-                  <div className="relative">
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-black">€</span>
-                    <input
-                      type="number"
-                      id="panelPrice"
-                      value={panelPrice}
-                      onChange={(e) => setPanelPrice(e.target.value)}
-                      required
-                      step="0.01"
-                      min="0"
-                      className="w-full p-5 pl-10 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10 transition-all text-emerald-400"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="stringPrice" className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Cena String (€/ks)</label>
-                  <div className="relative">
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-black">€</span>
-                    <input
-                      type="number"
-                      id="stringPrice"
-                      value={stringPrice}
-                      onChange={(e) => setStringPrice(e.target.value)}
-                      required
-                      step="0.01"
-                      min="0"
-                      className="w-full p-5 pl-10 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10 transition-all text-indigo-400"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="meterPrice" className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Cena Konstrukce (€/m)</label>
-                  <div className="relative">
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-black">€</span>
-                    <input
-                      type="number"
-                      id="meterPrice"
-                      value={meterPrice}
-                      onChange={(e) => setMeterPrice(e.target.value)}
-                      required
-                      step="0.01"
-                      min="0"
-                      className="w-full p-5 pl-10 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10 transition-all text-amber-400"
-                    />
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Hodinová sazba a ceny za práci</label>
               </div>
-
-              <div>
-                <label htmlFor="password" className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">{t('password')} (Login)</label>
-                <input
-                  type="text"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-5 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10 transition-all"
-                  placeholder="Heslo nebo PIN"
-                />
+              <input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="Hodinivo" className="p-4 bg-black/40 text-white rounded-xl border border-white/10" />
+              <input type="number" value={panelPrice} onChange={(e) => setPanelPrice(e.target.value)} placeholder="Cena Panel" className="p-4 bg-black/40 text-white rounded-xl border border-white/10" />
+              <input type="number" value={stringPrice} onChange={(e) => setStringPrice(e.target.value)} placeholder="Cena String" className="p-4 bg-black/40 text-white rounded-xl border border-white/10" />
+              <input type="number" value={meterPrice} onChange={(e) => setMeterPrice(e.target.value)} placeholder="Cena Konstrukce" className="p-4 bg-black/40 text-white rounded-xl border border-white/10" />
+              <div className="col-span-2">
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Přihlašovací heslo</label>
+                <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-4 bg-black/40 text-white rounded-xl border border-white/10" />
               </div>
-            </>
+            </div>
           )}
 
-          {/* Color Picker - Expanded to 30 colors */}
           <div>
-            <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">{t('worker_color') || 'Barva'}</label>
+            <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">{t('worker_color')}</label>
             <div className="grid grid-cols-6 gap-2">
-              {[
-                '#3b82f6', '#60a5fa', '#2563eb', '#1d4ed8', '#6366f1', '#4f46e5',
-                '#8b5cf6', '#a855f7', '#7c3aed', '#6d28d9', '#d946ef', '#ec4899',
-                '#db2777', '#be185d', '#f43f5e', '#e11d48', '#ef4444', '#f97316',
-                '#ea580c', '#f59e0b', '#d97706', '#eab308', '#ca8a04', '#84cc16',
-                '#22c55e', '#10b981', '#059669', '#14b8a6', '#06b6d4', '#0891b2'
-              ].map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className={`h-10 rounded-xl transition-all ${color === c ? 'ring-2 ring-white shadow-lg scale-110' : 'hover:scale-105 opacity-70 hover:opacity-100'}`}
-                  style={{ backgroundColor: c }}
-                />
+              {['#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ef4444', '#f59e0b', '#22c55e', '#10b981', '#06b6d4', '#4f46e5', '#db2777', '#f97316'].map((c) => (
+                <button key={c} type="button" onClick={() => setColor(c)} className={`h-8 rounded-lg ${color === c ? 'ring-2 ring-white scale-110 shadow-lg' : 'opacity-50'}`} style={{ backgroundColor: c }} />
               ))}
             </div>
           </div>
 
-          <div className="flex justify-end gap-4 pt-6 border-t border-white/10">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-8 py-4 bg-white/5 text-white font-black rounded-2xl hover:bg-white/10 transition-colors uppercase tracking-widest text-xs"
-            >
-              {t('cancel')}
-            </button>
-            <button
-              type="submit"
-              className="px-8 py-4 bg-white text-black font-black rounded-2xl hover:bg-[var(--color-accent)] hover:text-white transition-all shadow-xl uppercase tracking-widest text-xs active:scale-95"
-            >
-              {t('save')}
-            </button>
+          <div className="flex justify-end gap-4 pt-6">
+            <button type="button" onClick={onClose} className="px-6 py-3 bg-white/5 text-white font-black rounded-xl uppercase tracking-widest text-[10px]">{t('cancel')}</button>
+            <button type="submit" className="px-8 py-3 bg-white text-black font-black rounded-xl uppercase tracking-widest text-[10px] shadow-xl hover:bg-[var(--color-accent)] hover:text-white transition-all active:scale-95">{t('save')}</button>
           </div>
         </form>
       </div>

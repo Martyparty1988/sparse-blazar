@@ -1,354 +1,18 @@
+
 import React, { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link } from 'react-router-dom';
 import { db } from '../services/db';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { googleSheetsService } from '../services/googleSheetsService';
-import type { Project, SolarTable, ProjectTask } from '../types';
+import type { Project } from '../types';
 import ProjectForm from './ProjectForm';
-import ChartBarIcon from './icons/ChartBarIcon';
 import ProjectTasksModal from './ProjectTasksModal';
 import ConfirmationModal from './ConfirmationModal';
-import MapIcon from './icons/MapIcon';
-import PlusIcon from './icons/PlusIcon';
-import ClockIcon from './icons/ClockIcon';
-import PencilIcon from './icons/PencilIcon';
-import TrashIcon from './icons/TrashIcon';
+import ProjectCard from './ProjectCard'; // Main Card for Desktop
 import SearchIcon from './icons/SearchIcon';
 import WorkersIcon from './icons/WorkersIcon';
-import ShareIcon from './icons/ShareIcon';
-import BackButton from './BackButton';
-
-const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m6 9 6 6 6-6" /></svg>
-);
-
-const TaskProgressRing: React.FC<{ percentage: number }> = ({ percentage }) => {
-    const radius = 18;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-    return (
-        <div className="relative flex items-center justify-center w-14 h-14" title={`${percentage}% dokončeno`}>
-            <svg className="w-full h-full transform -rotate-90">
-                <circle
-                    cx="28"
-                    cy="28"
-                    r={radius}
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="transparent"
-                    className="text-white/5"
-                />
-                <circle
-                    cx="28"
-                    cy="28"
-                    r={radius}
-                    stroke="url(#taskGradient)"
-                    strokeWidth="4"
-                    fill="transparent"
-                    strokeDasharray={circumference}
-                    style={{ strokeDashoffset, transition: 'stroke-dashoffset 1s ease-out' }}
-                    strokeLinecap="round"
-                />
-                <defs>
-                    <linearGradient id="taskGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#8b5cf6" />
-                        <stop offset="100%" stopColor="#d946ef" />
-                    </linearGradient>
-                </defs>
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white font-mono">
-                {percentage}%
-            </span>
-        </div>
-    );
-};
-
-const ProjectCard: React.FC<{
-    project: Project;
-    index: number;
-    isAdmin: boolean;
-    onEdit: (p: Project) => void;
-    onDelete: (p: Project) => void;
-    onManageTasks: (p: Project) => void;
-    onExport: (p: Project) => void;
-}> = ({ project, index, isAdmin, onEdit, onDelete, onManageTasks, onExport }) => {
-    const { t, language } = useI18n();
-    const [isExpanded, setIsExpanded] = useState(false);
-
-    // Live Queries for statistics
-    const tables = useLiveQuery(() => db.solarTables.where('projectId').equals(project.id!).toArray(), [project.id]);
-    const fieldTables = useLiveQuery(() => db.fieldTables.where('projectId').equals(project.id!).toArray(), [project.id]);
-    const tasks = useLiveQuery(() => db.projectTasks.where('projectId').equals(project.id!).toArray(), [project.id]);
-    const workers = useLiveQuery(() => db.workers.toArray());
-
-    const stats = useMemo(() => {
-        const activeTables = (fieldTables && fieldTables.length > 0) ? fieldTables : (tables || []);
-        const totalTables = activeTables.length || 0;
-        const completedTables = activeTables.filter(t => t.status === 'completed').length || 0;
-        const tableProgress = totalTables > 0 ? Math.round((completedTables / totalTables) * 100) : 0;
-
-        const totalTasks = tasks?.length || 0;
-        const completedTasks = tasks?.filter(t => !!t.completionDate).length || 0;
-        const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-        // Breakdown for expansion
-        const breakdown = {
-            panels: {
-                total: tasks?.filter(t => t.taskType === 'panels').length || 0,
-                completed: tasks?.filter(t => t.taskType === 'panels' && t.completionDate).length || 0
-            },
-            construction: {
-                total: tasks?.filter(t => t.taskType === 'construction').length || 0,
-                completed: tasks?.filter(t => t.taskType === 'construction' && t.completionDate).length || 0
-            },
-            cables: {
-                total: tasks?.filter(t => t.taskType === 'cables').length || 0,
-                completed: tasks?.filter(t => t.taskType === 'cables' && t.completionDate).length || 0
-            },
-        };
-
-        const assignedWorkers = Array.from(new Set(tasks?.map(t => t.assignedWorkerId).filter(Boolean)));
-
-        return { totalTables, completedTables, tableProgress, totalTasks, completedTasks, taskProgress, breakdown, assignedWorkers };
-    }, [tables, fieldTables, tasks]);
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'active': return 'from-emerald-400 to-teal-500';
-            case 'completed': return 'from-indigo-400 to-blue-500';
-            case 'on_hold': return 'from-amber-400 to-orange-500';
-            default: return 'from-slate-400 to-slate-500';
-        }
-    };
-
-    return (
-        <div
-            className="group relative flex flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl transition-all duration-500 animate-list-item w-full max-w-[100vw]"
-            style={{ animationDelay: `${index * 0.07}s` }}
-        >
-            {/* Glossy Overlay Background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none"></div>
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[var(--color-primary)] opacity-[0.05] blur-[100px] transition-all duration-700 group-hover:opacity-10 group-hover:scale-125"></div>
-
-            <div className="relative z-10 flex flex-col h-full p-5 md:p-8">
-                {/* Header: Status, Progress Ring & Admin Tools */}
-                <div className="flex flex-col gap-4 mb-6">
-                    <div className="flex items-center justify-between">
-                        <div className={`px-4 py-1.5 rounded-full border border-white/5 bg-black/20 backdrop-blur-md flex items-center gap-2.5 shadow-lg max-w-fit`}>
-                            <div className={`h-2 w-2 rounded-full bg-gradient-to-r ${getStatusColor(project.status)} shadow-[0_0_12px_rgba(255,255,255,0.3)] animate-pulse`}></div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-white/90">{t(project.status as any)}</span>
-                        </div>
-                        <TaskProgressRing percentage={stats.taskProgress} />
-                    </div>
-
-                    {isAdmin && (
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                            {/* Create Plan / Map Button */}
-                            <Link
-                                to={`/field-plans?projectId=${project.id}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex-1 min-w-[3rem] h-12 flex items-center justify-center rounded-2xl bg-white/5 text-purple-400 hover:bg-purple-500 hover:text-white backdrop-blur-md transition-all active:scale-95 border border-white/5 shadow-md"
-                                title={t('field_plan')}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
-                            </Link>
-
-                            {/* Export CSV Button */}
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onExport(project) }}
-                                className="flex-1 min-w-[3rem] h-12 flex items-center justify-center rounded-2xl bg-white/5 text-emerald-400 hover:bg-emerald-500 hover:text-white backdrop-blur-md transition-all active:scale-95 border border-white/5 shadow-md"
-                                title={t('export_csv') || "Exportovat Data"}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            </button>
-
-                            {/* Edit Button */}
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onEdit(project) }}
-                                className="flex-1 min-w-[3rem] h-12 flex items-center justify-center rounded-2xl bg-white/5 text-blue-300 hover:bg-blue-500 hover:text-white backdrop-blur-md transition-all active:scale-95 border border-white/5 shadow-md"
-                                title={t('edit_project')}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                            </button>
-
-                            {/* Delete Button */}
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onDelete(project) }}
-                                className="flex-1 min-w-[3rem] h-12 flex items-center justify-center rounded-2xl bg-white/5 text-rose-400 hover:bg-rose-500 hover:text-white backdrop-blur-md transition-all active:scale-95 border border-white/5 shadow-md"
-                                title={t('delete_project')}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {/* Content: Title & Description */}
-                <div className="mb-6 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-                    <div className="flex items-center justify-between mb-2.5">
-                        <h3 className="text-2xl md:text-3xl font-black tracking-tight text-white group-hover:text-[var(--color-accent)] transition-colors line-clamp-1 italic uppercase">{project.name}</h3>
-                        <ChevronDownIcon className={`w-5 h-5 text-slate-500 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-[var(--color-accent)]' : ''}`} />
-                    </div>
-
-                    <p className={`text-sm font-medium leading-relaxed text-slate-400 transition-all duration-300 ${isExpanded ? '' : 'line-clamp-2 min-h-[3em]'}`}>
-                        {project.description || t('no_data')}
-                    </p>
-
-                    {isExpanded && (
-                        <div className="mt-6 space-y-4 animate-fade-in">
-                            <div className="grid grid-cols-3 gap-2">
-                                <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
-                                    <div className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('panels')}</div>
-                                    <div className="text-lg font-black text-white">{stats.breakdown.panels.total}</div>
-                                </div>
-                                <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
-                                    <div className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('construction')}</div>
-                                    <div className="text-lg font-black text-white">{stats.breakdown.construction.total}</div>
-                                </div>
-                                <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
-                                    <div className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('cables')}</div>
-                                    <div className="text-lg font-black text-white">{stats.breakdown.cables.total}</div>
-                                </div>
-                            </div>
-
-                            <div className="pt-4 border-t border-white/5 space-y-2">
-                                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-600">
-                                    <span>{t('created_at')}</span>
-                                    <span className="text-slate-400">{project.createdAt ? new Date(project.createdAt).toLocaleDateString(language === 'cs' ? 'cs-CZ' : 'en-US') : '-'}</span>
-                                </div>
-                                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-600">
-                                    <span>{t('updated_at')}</span>
-                                    <span className="text-slate-400">{project.updatedAt ? new Date(project.updatedAt).toLocaleDateString(language === 'cs' ? 'cs-CZ' : 'en-US') : '-'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {!isExpanded && stats.totalTasks > 0 && (
-                        <div className="flex gap-2 mt-4 overflow-x-auto no-scrollbar pb-1">
-                            {stats.breakdown.construction.total > 0 && (
-                                <div className="px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[8px] font-black text-amber-500 uppercase flex items-center gap-1.5 shrink-0">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                    K: {stats.breakdown.construction.completed}/{stats.breakdown.construction.total}
-                                </div>
-                            )}
-                            {stats.breakdown.panels.total > 0 && (
-                                <div className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-[8px] font-black text-blue-400 uppercase flex items-center gap-1.5 shrink-0">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                    P: {stats.breakdown.panels.completed}/{stats.breakdown.panels.total}
-                                </div>
-                            )}
-                            {stats.breakdown.cables.total > 0 && (
-                                <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[8px] font-black text-emerald-400 uppercase flex items-center gap-1.5 shrink-0">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                    C: {stats.breakdown.cables.completed}/{stats.breakdown.cables.total}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {!isExpanded && stats.assignedWorkers.length > 0 && (
-                        <div className="flex -space-x-2 mt-4">
-                            {stats.assignedWorkers.slice(0, 5).map(wid => {
-                                const w = workers?.find(worker => worker.id === wid);
-                                if (!w) return null;
-                                return (
-                                    <div
-                                        key={wid}
-                                        className="w-7 h-7 rounded-full border-2 border-slate-900 flex items-center justify-center text-[8px] font-black text-white shadow-lg"
-                                        style={{ backgroundColor: w.color || '#3b82f6' }}
-                                        title={w.name}
-                                    >
-                                        {w.name.substring(0, 1)}
-                                    </div>
-                                );
-                            })}
-                            {stats.assignedWorkers.length > 5 && (
-                                <div className="w-7 h-7 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[8px] font-black text-white">
-                                    +{stats.assignedWorkers.length - 5}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {project.googleSpreadsheetId && !isExpanded && (
-                        <div className="flex items-center gap-2 mt-3 text-[9px] font-black uppercase tracking-[0.1em] text-slate-500 bg-white/5 w-fit px-3 py-1 rounded-full border border-white/5" title={t('last_sync')}>
-                            <ShareIcon className="h-3 w-3 opacity-50" />
-                            <span>{t('last_sync')}: {project.lastSync ? new Date(project.lastSync).toLocaleString() : t('never')}</span>
-                        </div>
-                    )}
-                </div>
-
-                {/* Progress Indicators */}
-                <div className="grid grid-cols-1 gap-4 mb-6">
-                    {/* Tables Progress */}
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                                <div className="w-1 h-3 bg-cyan-500 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.5)]"></div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('tables')}</span>
-                            </div>
-                            <span className="font-mono text-[10px] font-bold text-white bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
-                                {stats.tableProgress}%
-                            </span>
-                        </div>
-                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-black/40 shadow-inner">
-                            <div
-                                className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-cyan-600 to-blue-500 transition-all duration-1000 ease-out"
-                                style={{ width: `${stats.tableProgress}%` }}
-                            ></div>
-                        </div>
-                    </div>
-
-                    {/* Tasks Progress */}
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                                <div className="w-1 h-3 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('tasks')}</span>
-                            </div>
-                            <span className="font-mono text-[10px] font-bold text-white bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
-                                {stats.taskProgress}%
-                            </span>
-                        </div>
-                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-black/40 shadow-inner">
-                            <div
-                                className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 transition-all duration-1000 ease-out"
-                                style={{ width: `${stats.taskProgress}%` }}
-                            ></div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer Actions: Compact Tile Button */}
-                <div className="mt-auto">
-                    <button
-                        onClick={() => onManageTasks(project)}
-                        className="group/btn relative flex items-center justify-between overflow-hidden rounded-2xl bg-indigo-600/10 p-4 backdrop-blur-md transition-all hover:bg-indigo-600/20 active:scale-95 border border-indigo-500/20 shadow-lg w-full"
-                        title={t('tasks')}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-indigo-500/20 rounded-xl group-hover/btn:bg-indigo-500 group-hover/btn:text-white transition-all">
-                                <ClockIcon className="h-5 w-5 text-indigo-400 group-hover/btn:text-white" />
-                            </div>
-                            <span className="text-xs font-black uppercase tracking-widest text-indigo-300 group-hover/btn:text-white">{t('tasks')}</span>
-                        </div>
-                        <div className="flex items-center gap-1 bg-black/20 px-3 py-1 rounded-lg border border-white/5">
-                            <span className="text-[10px] font-bold text-white tracking-widest">{stats.completedTasks}/{stats.totalTasks}</span>
-                        </div>
-                    </button>
-                </div>
-            </div>
-
-            {/* Bottom Accent Bar */}
-            <div className={`h-1.5 w-full bg-gradient-to-r ${getStatusColor(project.status)} opacity-20`}></div>
-        </div>
-    );
-};
+import PlusIcon from './icons/PlusIcon';
 
 const Projects: React.FC = () => {
     const { t } = useI18n();
@@ -357,30 +21,23 @@ const Projects: React.FC = () => {
     const [showForm, setShowForm] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'on_hold'>('all');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'on_hold'>('active');
     const [workerFilter, setWorkerFilter] = useState<number | 'all'>('all');
     const [managingTasksFor, setManagingTasksFor] = useState<Project | null>(null);
     const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
-    const [syncing, setSyncing] = useState(false);
 
     const projects = useLiveQuery(() => db.projects.toArray(), []);
     const workers = useLiveQuery(() => db.workers.toArray(), []);
     const allTasks = useLiveQuery(() => db.projectTasks.toArray(), []);
-    const allAssignments = useLiveQuery(() => db.tableAssignments.toArray(), []);
-    const allTables = useLiveQuery(() => db.solarTables.toArray(), []);
 
     const projectsWithWorker = useMemo(() => {
-        if (workerFilter === 'all' || !allTasks || !allAssignments || !allTables) return null;
+        if (workerFilter === 'all' || !allTasks) return null;
         const projectIds = new Set<number>();
-        allTasks.forEach(task => { if (task.assignedWorkerId === workerFilter) projectIds.add(task.projectId); });
-        const tableProjectMap = new Map<number, number>();
-        allTables.forEach(t => tableProjectMap.set(t.id!, t.projectId));
-        allAssignments.forEach(assignment => {
-            const projectId = tableProjectMap.get(assignment.tableId);
-            if (assignment.workerId === workerFilter && projectId) projectIds.add(projectId);
+        allTasks.forEach(task => {
+            if (task.assignedWorkerId === workerFilter) projectIds.add(task.projectId);
         });
         return projectIds;
-    }, [workerFilter, allTasks, allAssignments, allTables]);
+    }, [workerFilter, allTasks]);
 
     const filteredProjects = useMemo(() => {
         if (!projects) return [];
@@ -401,191 +58,92 @@ const Projects: React.FC = () => {
 
     const handleDelete = async () => {
         if (projectToDelete?.id) {
-            await db.transaction('rw', [db.projects, db.projectTasks, db.solarTables, db.tableAssignments, db.tableStatusHistory], async () => {
+            await db.transaction('rw', [db.projects, db.projectTasks, db.solarTables, db.fieldTables], async () => {
                 await db.projectTasks.where('projectId').equals(projectToDelete.id!).delete();
                 await db.solarTables.where('projectId').equals(projectToDelete.id!).delete();
+                await db.fieldTables.where('projectId').equals(projectToDelete.id!).delete();
                 await db.projects.delete(projectToDelete.id!);
             });
+            showToast('Projekt smazán', 'success');
             setProjectToDelete(null);
         }
     };
 
-    const handleExport = async (project: Project) => {
-        try {
-            // Fetch ALL data for export
-            const [tables, tasks, workers] = await Promise.all([
-                db.solarTables.where('projectId').equals(project.id!).toArray(),
-                db.projectTasks.where('projectId').equals(project.id!).toArray(),
-                db.workers.toArray()
-            ]);
-
-            // Helper to get worker name
-            const getWorkerName = (id?: number) => workers.find(w => w.id === id)?.name || 'Neznámý';
-
-            // CSV Content
-            let csv = "Typ;ID/Popis;Status;Pracovník;Dokončeno;Cena\n";
-
-            // Add Tables
-            tables.forEach(t => {
-                const status = t.status === 'completed' ? 'Dokončeno' : 'Čeká';
-                // For old tables, we might not have 'completedBy', but new FieldTables would (if migrated).
-                // Assuming standard SolarTable structure here which doesn't strictly have completedBy on root always?
-                // Let's check type. SolarTable doesn't have completedBy. 
-                // Wait, we are syncing from FieldTable logic in other places. 
-                // Let's stick to what we have in DB.
-
-                // If using FieldTable (new), we might need to fetch from fieldTables table?
-                // The current ProjectCard uses `db.solarTables`. Let's stick to that for now or check both.
-                // Actually, FieldPlan uses `fieldTables`. We should probably check if project uses fieldTables.
-
-                csv += `Stůl;${t.tableCode};${status};-;-;-\n`;
-            });
-
-            // Add Tasks
-            tasks.forEach(t => {
-                const worker = getWorkerName(t.assignedWorkerId);
-                const date = t.completionDate ? new Date(t.completionDate).toLocaleDateString() : '-';
-                csv += `Úkol;${t.description};${t.completionDate ? 'Hotovo' : 'Přiřazeno'};${worker};${date};${t.price}\n`;
-            });
-
-            // Create and download file
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `${project.name}_export_${new Date().toISOString().slice(0, 10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            showToast(t('export_success') || "Export dokončen", 'success');
-        } catch (error) {
-            console.error("Export failed", error);
-            showToast("Export selhal", 'error');
-        }
-    };
-
-
-
     const filterOptions: ('all' | 'active' | 'completed' | 'on_hold')[] = ['all', 'active', 'completed', 'on_hold'];
 
     return (
-        <div className="space-y-8 md:space-y-12 pb-32 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] overflow-x-hidden w-full max-w-[100vw] box-border">
-            <div className="md:hidden">
-                <BackButton />
-            </div>
-            {syncing && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-                    <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-white/20 flex flex-col items-center gap-4 shadow-2xl">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-accent)]"></div>
-                        <p className="text-white font-black uppercase tracking-widest animate-pulse">Synchronizing with Google Sheets...</p>
-                    </div>
-                </div>
-            )}
-
-            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
-                <div className="space-y-3">
-                    <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8] drop-shadow-2xl" style={{ fontSize: 'clamp(3rem, 10vw, 6rem)' }}>
-                        {t('projects')}<span className="text-[var(--color-accent)]">.</span>
-                    </h1>
-                    <p className="text-slate-400 font-bold tracking-tight max-w-2xl border-l-4 border-[var(--color-accent)] pl-4 py-1" style={{ fontSize: 'clamp(14px, 4vw, 18px)' }}>
-                        Komplexní přehled výstavby a technologického postupu solárních polí.
-                    </p>
-                </div>
-                <div className="flex gap-3 w-full lg:w-auto">
-                    {user?.role === 'admin' && (
-                        <Link to="/statistics" className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-slate-900/50 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all border border-white/10 backdrop-blur-md active:scale-95 shadow-lg text-xs" title={t('statistics')}>
-                            <ChartBarIcon className="w-5 h-5 text-[var(--color-accent)]" />
-                            {t('statistics')}
-                        </Link>
-                    )}
-                    {user?.role === 'admin' && (
-                        <button onClick={handleAdd} className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-[var(--color-accent)] hover:text-white transition-all shadow-[0_15px_40px_rgba(255,255,255,0.15)] active:scale-95 group text-xs" title={t('add_project')}>
-                            <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                            {t('add_project')}
-                        </button>
-                    )}
-                </div>
+        <div className="space-y-6 md:space-y-8 pb-32">
+            {/* Header */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                 <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase">
+                    {t('projects')}
+                </h1>
+                {user?.role === 'admin' && (
+                    <button 
+                        onClick={handleAdd} 
+                        className="flex items-center justify-center gap-2 px-5 py-3 bg-white text-black font-bold text-sm rounded-lg shadow-lg hover:bg-opacity-90 transition-all active:scale-95">
+                        <PlusIcon className="w-5 h-5" />
+                        {t('add_project')}
+                    </button>
+                )}
             </header>
 
             {/* Search and Filter Section */}
-            <div className="flex flex-col xl:flex-row gap-4 p-4 bg-white/[0.03] rounded-[2.5rem] border border-white/10 backdrop-blur-3xl shadow-2xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full xl:w-auto xl:flex-1">
-                    <div className="relative group">
-                        <input
-                            type="text"
-                            placeholder={`${t('search')}...`}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-10 py-4 bg-black/30 text-white placeholder-slate-500 border-none rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] transition-all font-bold"
-                        />
-                        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-[var(--color-accent)] transition-colors" />
-                        {searchTerm && (
-                            <button
-                                onClick={() => setSearchTerm('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/10 text-slate-400 hover:text-white hover:bg-white/20 transition-all"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="relative group">
+            <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                    <input
+                        type="text"
+                        placeholder={`${t('search')}...`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-slate-800 text-white rounded-lg border-2 border-transparent focus:border-indigo-500 focus:ring-0 transition-all"
+                    />
+                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                </div>
+                <div className="flex gap-2">
+                    <div className="relative flex-1 md:flex-none">
                         <select
                             value={workerFilter}
                             onChange={(e) => setWorkerFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                            className="w-full pl-12 pr-10 py-4 bg-black/30 text-white border-none rounded-2xl appearance-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all font-bold cursor-pointer [&>option]:bg-slate-900"
-                            title={t('filter_by_worker')}
+                            className="w-full h-full pl-10 pr-4 py-3 bg-slate-800 text-white rounded-lg appearance-none border-2 border-transparent focus:border-indigo-500 focus:ring-0 transition-all cursor-pointer"
                         >
                             <option value="all">{t('all_workers')}</option>
                             {workers?.map(w => (
                                 <option key={w.id} value={w.id}>{w.name}</option>
                             ))}
                         </select>
-                        <WorkersIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none group-focus-within:text-[var(--color-accent)] transition-colors" />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
+                        <WorkersIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                     </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2 w-full xl:w-auto">
-                    {filterOptions.map((status) => (
-                        <button
-                            key={status}
-                            onClick={() => setStatusFilter(status)}
-                            className={`flex-grow md:flex-grow-0 px-4 py-2 rounded-full font-black text-xs transition-all uppercase tracking-widest whitespace-nowrap ${statusFilter === status
-                                ? 'bg-white text-black border border-white shadow-[0_0_15px_rgba(255,255,255,0.3)] underline decoration-2 decoration-[var(--color-accent)] underline-offset-4'
-                                : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10 hover:text-white'
-                                }`}
-                            title={t(status === 'all' ? 'all_statuses' : (status as any))}
+                    <div className="relative flex-1 md:flex-none">
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value as any)}
+                            className="w-full h-full pl-4 pr-10 py-3 bg-slate-800 text-white rounded-lg appearance-none border-2 border-transparent focus:border-indigo-500 focus:ring-0 transition-all cursor-pointer"
                         >
-                            {t(status === 'all' ? 'all_statuses' : (status as any))}
-                        </button>
-                    ))}
+                            {filterOptions.map(status => (
+                                <option key={status} value={status}>{t(status as any)}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
+            {/* Projects Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredProjects.map((project, idx) => (
                     <ProjectCard
                         key={project.id}
                         project={project}
-                        index={idx}
                         isAdmin={user?.role === 'admin'}
                         onEdit={handleEdit}
                         onDelete={confirmDelete}
                         onManageTasks={setManagingTasksFor}
-                        onExport={handleExport}
                     />
                 ))}
-
-                {filteredProjects.length === 0 && (
-                    <div className="col-span-full py-40 text-center opacity-40">
-                        <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
-                            <SearchIcon className="w-10 h-10 text-slate-500" />
-                        </div>
-                        <p className="text-slate-400 text-2xl font-black uppercase tracking-widest italic">{t('no_data')}</p>
+                 {filteredProjects.length === 0 && (
+                    <div className="col-span-full py-20 text-center text-slate-500">
+                        <SearchIcon className="w-12 h-12 mx-auto mb-4" />
+                        <p className="text-lg font-semibold">{t('no_data')}</p>
                     </div>
                 )}
             </div>
@@ -595,7 +153,7 @@ const Projects: React.FC = () => {
             {projectToDelete && (
                 <ConfirmationModal
                     title={t('delete_project')}
-                    message={`Systém trvale odstraní projekt "${projectToDelete.name}" včetně všech dat o stolech a úkolech. Potvrdit?`}
+                    message={`Opravdu chcete smazat projekt "${projectToDelete.name}"? Tato akce je nevratná.`}
                     onConfirm={handleDelete}
                     onCancel={() => setProjectToDelete(null)}
                 />

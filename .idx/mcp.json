@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "firebase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "firebase-tools@latest",
+        "experimental:mcp",
+        "--only",
+        "auth,firestore"
+      ]
+    }
+  }
+}AIzaSyBiaWEfr_EyGPI2yb6XCDiXuul5udr0X8E

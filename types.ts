@@ -1,15 +1,15 @@
-
 export interface Worker {
   id?: number;
   name: string;
   hourlyRate: number;
-  panelPrice: number;    // NEW: Cena za panel (€/ks)
-  stringPrice: number;   // NEW: Cena za string (€/ks)
-  meterPrice: number;    // NEW: Cena za metr konstrukce (€/m)
-  username?: string; // New: Login username
-  password?: string; // New: Simple password/pin
-  color?: string; // NEW: Barva zaměstnance (hex, např. "#3b82f6")
+  panelPrice: number;
+  stringPrice: number;
+  meterPrice: number;
+  username?: string;
+  password?: string;
+  color?: string;
   createdAt: Date;
+  projectIds?: number[]; // IDs of projects the worker is assigned to
 }
 
 export interface Project {
@@ -17,12 +17,13 @@ export interface Project {
   name: string;
   description?: string;
   status: 'active' | 'completed' | 'on_hold';
-  tables?: string[]; // NEW: Seznam ID stolů (např. ["28", "28.1", "149.1"])
+  tables?: string[];
   planFile?: File;
-  googleSpreadsheetId?: string; // ID of the connected Google Sheet
-  lastSync?: Date; // Timestamp of last sync
+  googleSpreadsheetId?: string;
+  lastSync?: Date;
   createdAt?: Date;
   updatedAt?: Date;
+  workerIds?: number[]; // IDs of workers assigned to the project
 }
 
 export interface TimeRecord {
@@ -32,31 +33,29 @@ export interface TimeRecord {
   startTime: Date;
   endTime: Date;
   description: string;
-  tableIds?: string[]; // NEW: Structured link to field tables
-  projectTaskId?: number; // NEW: Link to a specific task type
+  tableIds?: string[];
+  projectTaskId?: number;
 }
 
 export interface User {
   username: string;
   role: 'user' | 'admin';
-  workerId?: number; // New: Links the logged-in user to a specific worker record
+  workerId?: number;
 }
 
-// NEW: Stůl v plánovém poli (zjednodušený model)
 export interface FieldTable {
   id?: number;
   projectId: number;
-  tableId: string; // ID stolu (např. "28", "28.1", "149.1")
+  tableId: string;
   tableType: 'small' | 'medium' | 'large';
-  status: 'pending' | 'completed' | 'defect'; // Added 'defect'
-  assignedWorkers?: number[]; // ID přiřazených pracovníků (max 2)
+  status: 'pending' | 'completed' | 'defect';
+  assignedWorkers?: number[];
   completedAt?: Date;
-  completedBy?: number; // ID pracovníka, který dokončil
-  defectNotes?: string; // NEW: Poznámka k závadě
-  photos?: string[]; // NEW: Seznam URL fotek (Firebase Storage)
+  completedBy?: number;
+  defectNotes?: string;
+  photos?: string[];
 }
 
-// DEPRECATED: Starý model (ponecháno pro zpětnou kompatibilitu)
 export interface SolarTable {
   id?: number;
   projectId: number;
@@ -73,13 +72,12 @@ export interface TableAssignment {
   workerId: number;
 }
 
-
 export interface PlanMarker {
   id?: number;
   projectId: number;
   workerId: number;
-  x: number; // percentage
-  y: number; // percentage
+  x: number;
+  y: number;
   page: number;
 }
 
@@ -93,7 +91,7 @@ export type AttendanceStatus = 'present' | 'absent' | 'sick' | 'holiday';
 
 export interface DailyLog {
   id?: number;
-  date: string; // YYYY-MM-DD
+  date: string;
   workerId: number;
   status: AttendanceStatus;
   notes: string;
@@ -104,24 +102,17 @@ export interface ProjectTask {
   projectId: number;
   taskType: 'panels' | 'construction' | 'cables';
   description: string;
-
-  // Fields for panels
   panelCount?: number;
   pricePerPanel?: number;
-
-  // Fields for cables
   tableSize?: 'small' | 'medium' | 'large';
-
-  // General fields
-  price: number; // This will be the total price for the task
-  hoursSpent?: number; // NEW: Kolik hodin na tom strávili (pro výpočet efektivity)
+  price: number;
+  hoursSpent?: number;
   assignedWorkerId?: number;
-  tableIds?: string[]; // NEW: Propojení s konkrétními stoly (ID/kódy stolů)
+  tableIds?: string[];
   completionDate?: Date;
-  startTime?: Date; // For efficiency tracking (optional)
-  endTime?: Date;   // For efficiency tracking (optional)
+  startTime?: Date;
+  endTime?: Date;
 }
-
 
 export interface ProjectComponent {
   id?: number;
@@ -168,7 +159,7 @@ export interface Backup {
   timestamp: Date;
   type: 'auto' | 'manual';
   name?: string;
-  data: string; // LZ-compressed JSON string
+  data: string;
   metadata: BackupMetadata;
 }
 
@@ -200,11 +191,11 @@ export type ToolStatus = 'available' | 'borrowed' | 'broken' | 'service' | 'lost
 export interface Tool {
   id?: number;
   name: string;
-  type: string; // e.g., "Drill", "Ladder", "Car"
+  type: string;
   brand?: string;
   serialNumber?: string;
   status: ToolStatus;
-  assignedWorkerId?: number; // Who has it currently
+  assignedWorkerId?: number;
   purchaseDate?: Date;
   notes?: string;
   lastInspection?: Date;
@@ -212,20 +203,20 @@ export interface Tool {
 
 export interface DailyReport {
   id?: number;
-  date: string; // YYYY-MM-DD
+  date: string;
   projectId: number;
-  stringsCompleted: number; // Počet hotových stringů
-  notes: string; // Obecné poznámky (CZ)
-  issues: string; // Problémy (CZ)
-  managerEmail?: string; // Email site managera
-  sentAt?: Date; // Kdy byl report odeslán
+  stringsCompleted: number;
+  notes: string;
+  issues: string;
+  managerEmail?: string;
+  sentAt?: Date;
 }
 
 export interface ChatMessage {
-  id: string; // Firebase Push ID or similar
+  id: string;
   text: string;
-  senderId: number; // Worker ID
-  senderName: string; // Snapshot of name
-  timestamp: string; // ISO String
-  channelId?: string; // NEW: Channel ID (e.g., 'general' or 'project_123')
+  senderId: number;
+  senderName: string;
+  timestamp: string;
+  channelId?: string;
 }

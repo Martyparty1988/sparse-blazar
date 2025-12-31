@@ -1,50 +1,81 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-admin.initializeApp({
-    databaseURL: "https://mst-marty-solar-2025-default-rtdb.europe-west1.firebasedatabase.app"
-});
+admin.initializeApp();
 
 /**
- * Automatické odeslání push notifikace při nové zprávě v chatu
+ * Automatické odeslání push notifikace při nové zprávě v chatu (VYLEPŠENO)
  */
 exports.sendChatNotification = functions.database.ref('/chat/{channelId}/{messageId}')
     .onCreate(async (snapshot, context) => {
         const message = snapshot.val();
         const channelId = context.params.channelId;
 
-        // Ignorovat systémové zprávy
-        if (message.senderId === -1) return null;
+        if (message.senderId === -1) return null; // Ignorovat systémové
 
         const payload = {
             notification: {
-                title: `Nová zpráva: ${message.senderName}`,
+                title: `${message.senderName} (${channelId === 'general' ? 'Global' : 'Chat'})`,
                 body: message.text.length > 100 ? message.text.substring(0, 97) + '...' : message.text,
                 icon: '/icon-192.svg',
-                clickAction: `/#/chat`, // URL kam notifikace vede
+                clickAction: `/#/chat`,
+            },
+            data: {
+                channelId: channelId,
+                senderId: String(message.senderId)
             }
         };
 
-        // Zjistit komu poslat (všichni v kanálu kromě odesílatele)
-        // Pro jednoduchost teď pošleme všem, kdo mají zaregistrovaný fcmToken
+        const tokens = [];
         const workersSnapshot = await admin.database().ref('/workers').once('value');
         const workers = workersSnapshot.val();
+        if (!workers) return null;
 
-        const tokens = [];
-        if (workers) {
-            Object.values(workers).forEach(worker => {
-                // Neposílat odesílateli
-                if (worker.id !== message.senderId && worker.fcmToken) {
-                    tokens.push(worker.fcmToken);
+        const workerList = Object.values(workers);
+
+        if (channelId === 'general') {
+            // Pošli všem s tokenem kromě odesílatele
+            workerList.forEach(w => {
+                if (w.id !== message.senderId && w.fcmToken) tokens.push(w.fcmToken);
+            });
+        } 
+        else if (channelId.startsWith('project_')) {
+            // Pošli jen členům projektu
+            const projectId = parseInt(channelId.replace('project_', ''));
+            const projectSnap = await admin.database().ref(`/projects/${projectId}`).once('value');
+            const project = projectSnap.val();
+            
+            const memberIds = project?.workerIds || [];
+            workerList.forEach(w => {
+                if (memberIds.includes(w.id) && w.id !== message.senderId && w.fcmToken) {
+                    tokens.push(w.fcmToken);
                 }
             });
+        } 
+        else if (channelId.startsWith('dm_')) {
+            // Pošli jen druhému účastníkovi v DM (dm_ID1_ID2)
+            const parts = channelId.split('_');
+            const targetId = parseInt(parts[1]) === message.senderId ? parseInt(parts[2]) : parseInt(parts[1]);
+            
+            const targetWorker = workerList.find(w => w.id === targetId);
+            if (targetWorker && targetWorker.fcmToken) {
+                tokens.push(targetWorker.fcmToken);
+                payload.notification.title = `Soukromá zpráva: ${message.senderName}`;
+            }
         }
 
         if (tokens.length > 0) {
             try {
-                const response = await admin.messaging().sendToDevice(tokens, payload);
-                console.log(`Notifikace odeslána na ${tokens.length} zařízení.`, response);
+                // messaging().sendToDevice je sice deprecated, ale pro Legacy FCM stále funkční. 
+                // Používám novější sendEachForMulticast pro jistotu, pokud je k dispozici.
+                const messages = tokens.map(token => ({
+                    token: token,
+                    notification: payload.notification,
+                    data: payload.data
+                }));
+                await admin.messaging().sendEach(messages);
+                console.log(`✅ Notifikace doručena na ${tokens.length} zařízení v kanálu ${channelId}`);
             } catch (error) {
-                console.error('Chyba při odesílání notifikací:', error);
+                console.error('❌ Chyba při odesílání FCM:', error);
             }
         }
 
@@ -52,40 +83,33 @@ exports.sendChatNotification = functions.database.ref('/chat/{channelId}/{messag
     });
 
 /**
- * Notifikace při změně stavu stolu (např. nahlášení závady)
+ * Notifikace při nahlášení závady na stole
  */
 exports.sendDefectNotification = functions.database.ref('/fieldTables/{tableKey}')
     .onUpdate(async (change, context) => {
         const after = change.after.val();
         const before = change.before.val();
 
-        // Pokud se změnil status na 'defect'
         if (after.status === 'defect' && before.status !== 'defect') {
             const payload = {
                 notification: {
-                    title: `⚠️ Závada na projektu: ${after.projectId}`,
-                    body: `Stůl ${after.tableId} byl nahlášen jako vadný.`,
+                    title: `⚠️ Závada: Projekt ${after.projectId}`,
+                    body: `Stůl ${after.tableId} vyžaduje pozornost!`,
                     icon: '/icon-192.svg'
                 }
             };
 
-            // Poslat adminům
-            const workersSnapshot = await admin.database().ref('/workers').once('value');
-            const workers = workersSnapshot.val();
-            const adminTokens = [];
+            const workersSnap = await admin.database().ref('/workers').once('value');
+            const workers = workersSnap.val();
+            if (!workers) return null;
 
-            if (workers) {
-                Object.values(workers).forEach(worker => {
-                    // Tady by byla logika pro zjištění admina, zatím pošleme všem s tokenem
-                    // Ideálně kontrolovat worker.role === 'admin' pokud to v DB máme
-                    if (worker.fcmToken) {
-                        adminTokens.push(worker.fcmToken);
-                    }
-                });
-            }
+            const tokens = Object.values(workers)
+                .filter(w => w.fcmToken) // V ideálním světě jen adminům
+                .map(w => w.fcmToken);
 
-            if (adminTokens.length > 0) {
-                await admin.messaging().sendToDevice(adminTokens, payload);
+            if (tokens.length > 0) {
+                const messages = tokens.map(token => ({ token: token, notification: payload.notification }));
+                await admin.messaging().sendEach(messages);
             }
         }
         return null;

@@ -1,11 +1,6 @@
-/**
- * MST Data API - Google Apps Script Backend (V2 - Clean)
- * 
- * Tento skript funguje jako databáze pro aplikaci MST.
- * Automaticky vytvoří potřebné listy a poskytuje API pro zápis/čtení.
- */
 
-// Seznam listů, které potřebujeme
+const API_KEY = 'YOUR_SECRET_API_KEY'; // DŮLEŽITÉ: Změňte na váš tajný klíč!
+
 const SHEETS = {
     WORKERS: 'Workers',
     PROJECTS: 'Projects',
@@ -16,21 +11,32 @@ const SHEETS = {
     PROJECT_TASKS: 'ProjectTasks'
 };
 
-// ==========================================
-// 1. HTTP HANDLERS (To, co komunikuje s Appkou)
-// ==========================================
-
 function doGet(e) {
+    if (!isAuthorized(e)) {
+        return createUnauthorizedResponse();
+    }
     return handleRequest(e, 'GET');
 }
 
 function doPost(e) {
+    if (!isAuthorized(e)) {
+        return createUnauthorizedResponse();
+    }
     return handleRequest(e, 'POST');
+}
+
+function isAuthorized(e) {
+    const providedKey = e.parameter.apiKey || (e.postData && e.postData.contents && JSON.parse(e.postData.contents).apiKey);
+    return providedKey === API_KEY;
+}
+
+function createUnauthorizedResponse() {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Invalid API key' }))
+        .setMimeType(ContentService.MimeType.JSON);
 }
 
 function handleRequest(e, method) {
     const lock = LockService.getScriptLock();
-    // Zámek proti souběžným zápisům (max 30s)
     try {
         lock.waitLock(30000);
     } catch (e) {
@@ -38,13 +44,11 @@ function handleRequest(e, method) {
     }
 
     try {
-        // 1. GET = Stáhnout všechna data
         if (method === 'GET') {
             const data = getAllData();
             return createResponse({ success: true, data: data });
         }
 
-        // 2. POST = Zapsat/Smazat data
         if (method === 'POST') {
             if (!e.postData || !e.postData.contents) {
                 return createResponse({ success: false, error: 'No data received' });
@@ -52,7 +56,6 @@ function handleRequest(e, method) {
 
             const payload = JSON.parse(e.postData.contents);
             const action = payload.action;
-
             let resultData;
 
             if (action === 'sync') {
@@ -80,10 +83,6 @@ function createResponse(data) {
         .setMimeType(ContentService.MimeType.JSON);
 }
 
-// ==========================================
-// 2. DATA FUNKCE (Práce s tabulkou)
-// ==========================================
-
 function getSpreadsheet() {
     return SpreadsheetApp.getActiveSpreadsheet();
 }
@@ -92,7 +91,6 @@ function getSheet(name) {
     let sheet = getSpreadsheet().getSheetByName(name);
     if (!sheet) {
         sheet = getSpreadsheet().insertSheet(name);
-        // Vytvoříme základní hlavičku, pokud je list nový
         sheet.appendRow(['id', 'createdAt', 'updatedAt', 'data']);
     }
     return sheet;
@@ -100,23 +98,12 @@ function getSheet(name) {
 
 function getAllData() {
     const result = {};
-    // Projdeme všechny definované listy a stáhneme data
     Object.keys(SHEETS).forEach(key => {
         const sheetName = SHEETS[key];
-        result[key.toLowerCase()] = getSheetData(sheetName); // např. workers: [...]
+        const camelCaseKey = key.charAt(0).toLowerCase() + key.slice(1).replace(/_([a-z])/g, g => g[1].toUpperCase());
+        result[camelCaseKey] = getSheetData(sheetName);
     });
-    // Převedeme klíče na camelCase (FIELD_TABLES -> fieldTables), abychom seděli s frontendem
-    // Pro jednoduchost ale výše používám 'key.toLowerCase()', což může udělat 'field_tables'.
-    // Uděláme to ručně pro jistotu:
-    return {
-        workers: getSheetData(SHEETS.WORKERS),
-        projects: getSheetData(SHEETS.PROJECTS),
-        fieldTables: getSheetData(SHEETS.FIELD_TABLES),
-        timeRecords: getSheetData(SHEETS.TIME_RECORDS),
-        dailyLogs: getSheetData(SHEETS.DAILY_LOGS),
-        tools: getSheetData(SHEETS.TOOLS),
-        projectTasks: getSheetData(SHEETS.PROJECT_TASKS)
-    };
+    return result;
 }
 
 function getSheetData(sheetName) {
@@ -124,7 +111,7 @@ function getSheetData(sheetName) {
     const lastRow = sheet.getLastRow();
     const lastCol = sheet.getLastColumn();
 
-    if (lastRow <= 1 || lastCol === 0) return []; // Jen hlavička nebo prázdno
+    if (lastRow <= 1 || lastCol === 0) return [];
 
     const data = sheet.getRange(1, 1, lastRow, lastCol).getValues();
     const headers = data[0];
@@ -134,8 +121,15 @@ function getSheetData(sheetName) {
         const obj = {};
         headers.forEach((header, index) => {
             let val = row[index];
-            // Ošetření prázdných buněk
             if (val === "") val = null;
+            try {
+                // Pokusí se převést JSON stringy zpět na objekty/pole
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    val = JSON.parse(val);
+                }
+            } catch (e) {
+                // Není to validní JSON, necháme jako string
+            }
             obj[header] = val;
         });
         return obj;
@@ -146,78 +140,48 @@ function upsertData(sheetName, records) {
     if (!records || !records.length) return { updated: 0, inserted: 0 };
 
     const sheet = getSheet(sheetName);
-    const lastRow = sheet.getLastRow();
-
-    // Načteme existující data pro kontrolu ID
-    let existingIds = [];
     let headers = [];
-
-    if (lastRow > 0) {
-        const data = sheet.getDataRange().getValues();
-        headers = data[0];
-        // Zjistíme kde je sloupec 'id'
-        const idIdx = headers.indexOf('id');
-        if (idIdx === -1) {
-            // Pokud chybí ID sloupec, přidáme ho (jen pro jistotu)
-            headers.unshift('id');
-            sheet.insertColumnBefore(1);
-            sheet.getRange(1, 1).setValue('id');
-        }
-
-        // Načteme mapu ID -> číslo řádku
-        // Optimalizace: nečíst celou tabulku, pokud je obří, ale pro < 10000 řádků je to OK.
+    if (sheet.getLastRow() > 0) {
+        headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     } else {
-        // Prázdný list -> vytvoříme hlavičky z prvního záznamu
-        headers = Object.keys(records[0]);
+        headers = Array.from(new Set(records.flatMap(Object.keys)));
         if (!headers.includes('id')) headers.unshift('id');
         sheet.appendRow(headers);
     }
 
-    // Znovu načíst hlavičky a data pro jistotu
-    const freshData = sheet.getDataRange().getValues();
-    const freshHeaders = freshData.length ? freshData[0] : headers;
-    const idColIdx = freshHeaders.indexOf('id');
+    const idColIdx = headers.indexOf('id');
+    const data = sheet.getDataRange().getValues();
+    const idMap = new Map(data.slice(1).map((row, i) => [String(row[idColIdx]), i + 2]));
 
-    // Mapa existujících ID -> Row Index (1-based, ale v poli 0-based offset od headeru)
-    const idMap = new Map();
-    if (freshData.length > 1) {
-        for (let i = 1; i < freshData.length; i++) {
-            const rowId = String(freshData[i][idColIdx]);
-            idMap.set(rowId, i + 1); // Row number v Excelu
-        }
-    }
-
-    let updated = 0;
-    let inserted = 0;
+    const rowsToUpdate = [];
+    const rowsToInsert = [];
 
     records.forEach(record => {
-        const id = String(record.id);
-
-        // Připravit řádek hodnot seřazený podle hlaviček
-        const rowValues = freshHeaders.map(header => {
+        const rowValues = headers.map(header => {
             let val = record[header];
-            if (val === undefined) return "";
-            if (val === null) return "";
-            if (typeof val === 'object') return JSON.stringify(val); // Pro pole a objekty
+            if (val === undefined || val === null) return "";
+            if (typeof val === 'object') return JSON.stringify(val);
             if (val instanceof Date) return val.toISOString();
             return val;
         });
 
-        if (idMap.has(id)) {
-            // UPDATE
-            const rowIndex = idMap.get(id);
-            sheet.getRange(rowIndex, 1, 1, rowValues.length).setValues([rowValues]);
-            updated++;
+        const rowIndex = idMap.get(String(record.id));
+        if (rowIndex) {
+            rowsToUpdate.push({ index: rowIndex, values: rowValues });
         } else {
-            // INSERT
-            sheet.appendRow(rowValues);
-            // Přidáme do mapy pro případ duplicit v rámci jednoho batch requestu
-            inserted++;
-            idMap.set(id, sheet.getLastRow());
+            rowsToInsert.push(rowValues);
         }
     });
 
-    return { updated, inserted };
+    rowsToUpdate.forEach(item => {
+        sheet.getRange(item.index, 1, 1, item.values.length).setValues([item.values]);
+    });
+
+    if (rowsToInsert.length > 0) {
+        sheet.getRange(sheet.getLastRow() + 1, 1, rowsToInsert.length, rowsToInsert[0].length).setValues(rowsToInsert);
+    }
+
+    return { updated: rowsToUpdate.length, inserted: rowsToInsert.length };
 }
 
 function deleteData(sheetName, ids) {
@@ -225,7 +189,7 @@ function deleteData(sheetName, ids) {
 
     const sheet = getSheet(sheetName);
     const data = sheet.getDataRange().getValues();
-    if (data.length <= 1) return { deleted: 0 }; // Empty
+    if (data.length <= 1) return { deleted: 0 };
 
     const headers = data[0];
     const idIdx = headers.indexOf('id');
@@ -234,7 +198,6 @@ function deleteData(sheetName, ids) {
     const idsToDelete = new Set(ids.map(String));
     let deleted = 0;
 
-    // Mažeme odzadu, aby se nerozhodily indexy
     for (let i = data.length - 1; i > 0; i--) {
         const rowId = String(data[i][idIdx]);
         if (idsToDelete.has(rowId)) {
@@ -246,9 +209,16 @@ function deleteData(sheetName, ids) {
     return { deleted };
 }
 
-// ==========================================
-// 3. SETUP (Spusťte ručně jednou)
-// ==========================================
+function syncData(data) {
+    // Implement sync logic - for now, just upsert all data
+    Object.keys(data).forEach(sheetNameKey => {
+        const sheetName = SHEETS[sheetNameKey.toUpperCase().replace(/([A-Z])/g, '_$1')]; // a bit of a hack to convert camelCase back to SNAKE_CASE
+        if (sheetName) {
+            upsertData(sheetName, data[sheetNameKey]);
+        }
+    });
+    return { status: "Sync completed" };
+}
 
 function initializeSheets() {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -256,7 +226,9 @@ function initializeSheets() {
         let sheet = ss.getSheetByName(sheetName);
         if (!sheet) {
             sheet = ss.insertSheet(sheetName);
-            sheet.appendRow(['id', 'createdAt', 'updatedAt']); // Základní pole
+            // Dynamically determine headers from a sample object if possible, or use a default
+            const defaultHeaders = ['id', 'createdAt', 'updatedAt', 'name', 'description', 'status']; 
+            sheet.appendRow(defaultHeaders);
             Logger.log('Vytvořen list: ' + sheetName);
         }
     });

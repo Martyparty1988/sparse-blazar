@@ -73,113 +73,85 @@ const Dashboard: React.FC = () => {
 
   const activeSessionsCount = activeSessions?.length || 0;
 
-  // Mock Weather (In real app, fetch from OpenWeatherMap)
-  const weather = {
-    temp: '22°C',
-    condition: t('condition_sunny'),
-    icon: <svg className="w-8 h-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M16.243 17.657l.707.707M7.757 7.757l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" /></svg>
-  };
-
   return (
-    <div className="space-y-6 md:space-y-8 pb-32 animate-fade-in max-w-7xl mx-auto px-4">
+    <div className="space-y-8 pb-32 animate-fade-in max-w-7xl mx-auto px-4 md:px-0">
 
       {/* Dynamic Header & Command Strip */}
-      <header className="pt-8 md:pt-12">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-          <div className="space-y-2">
-
-            <div className="flex items-center gap-4 flex-wrap">
-              <SyncStatusIndicator />
-              <div className="h-4 w-px bg-white/10 hidden sm:block"></div>
-              <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-[10px]">
-                {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
-              </p>
-            </div>
+      <header className="pt-6 md:pt-12 mb-2">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-4">
+            <SyncStatusIndicator />
+            <div className="h-4 w-px bg-white/10"></div>
+            <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-[10px]">
+              {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
           </div>
-
-          {/* Weather & Chat Quick Glance - REMOVED */}
+          <h1 className="text-3xl font-black text-white italic tracking-tighter uppercase">
+            Dashboard
+          </h1>
         </div>
       </header>
 
-      {/* Hero Analytics & Intelligence */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Main Stats Panel */}
-        <div className="lg:col-span-8 bg-gradient-to-br from-indigo-600/10 to-transparent backdrop-blur-3xl rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group">
-          <div className="absolute -bottom-20 -right-20 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity scale-150 rotate-12">
-            <ChartBarIcon className="w-96 h-96" />
+      {/* Prominent CTA for Mobile */}
+      <section className="md:hidden">
+        <button
+          onClick={() => setIsLoggingWork(true)}
+          className="w-full relative group overflow-hidden rounded-[2rem] bg-indigo-600 p-8 shadow-2xl shadow-indigo-900/50 active:scale-[0.98] transition-all"
+        >
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/20 to-transparent opacity-50"></div>
+          <div className="absolute -right-6 -bottom-6 opacity-20 rotate-12 scale-150 text-black">
+            <ClockIcon className="w-32 h-32" />
           </div>
-
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-12">
-              <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic flex items-center gap-3">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-ping"></div>
-                System Performance
-              </h2>
-              <button onClick={() => navigate('/stats')} className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-white transition-colors">
-                Detailní report →
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
-              <div className="space-y-2">
-                <p className="text-6xl font-black text-white transition-transform hover:scale-110 origin-left cursor-default">{activeProjectsCount}</p>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('active_projects')}</p>
-                  <div className="w-12 h-1 bg-indigo-500/30 rounded-full"></div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-baseline gap-2">
-                  <p className="text-6xl font-black text-indigo-400 transition-transform hover:scale-110 origin-left cursor-default">{activeSessionsCount}</p>
-                  {activeSessionsCount > 0 && <span className="w-3 h-3 bg-indigo-400 rounded-full animate-ping"></span>}
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('on_shift')}</p>
-                  <div className="w-12 h-1 bg-indigo-400/30 rounded-full"></div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-6xl font-black text-emerald-400 transition-transform hover:scale-110 origin-left cursor-default">
-                  {useLiveQuery(() => db.fieldTables.where('status').equals('completed').filter(t => t.completedAt && new Date(t.completedAt).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]).count()) || 0}
-                </p>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('installed_today')}</p>
-                  <div className="w-12 h-1 bg-emerald-500/30 rounded-full"></div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-6xl font-black text-slate-200 transition-transform hover:scale-110 origin-left cursor-default">{workersCount}</p>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('team_size')}</p>
-                  <div className="w-12 h-1 bg-slate-500/30 rounded-full"></div>
-                </div>
-              </div>
-            </div>
+          <div className="relative z-10 flex flex-col items-start">
+            <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest text-white mb-3 shadow-sm border border-white/10">Quick Action</span>
+            <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-none mb-1">Zapsat Práci</h2>
+            <p className="text-indigo-200 text-xs font-bold uppercase tracking-wide opacity-80">Log your daily progress</p>
           </div>
+        </button>
+      </section>
+
+      {/* Hero Analytics - 2 Column Grid for Mobile */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+        <div className="bg-slate-900/60 backdrop-blur-xl p-5 rounded-[2rem] border border-white/5 relative overflow-hidden group shadow-lg">
+          <div className="absolute right-0 top-0 opacity-10 p-4"><ProjectsIcon className="w-12 h-12 rotate-12" /></div>
+          <p className="text-4xl font-black text-white mb-1 group-hover:scale-110 transition-transform origin-left">{activeProjectsCount}</p>
+          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-tight">{t('active_projects')}</p>
+          <div className="w-8 h-1 bg-indigo-500/50 rounded-full mt-3"></div>
         </div>
 
-        {/* Leaderboard Sidebar */}
-        <div className="lg:col-span-4">
-          <Leaderboard />
+        <div className="bg-slate-900/60 backdrop-blur-xl p-5 rounded-[2rem] border border-white/5 relative overflow-hidden group shadow-lg">
+          <div className="absolute right-0 top-0 opacity-10 p-4"><ClockIcon className="w-12 h-12 rotate-12" /></div>
+          <div className="flex items-baseline gap-1">
+            <p className="text-4xl font-black text-indigo-400 mb-1 group-hover:scale-110 transition-transform origin-left">{activeSessionsCount}</p>
+            {activeSessionsCount > 0 && <span className="w-2 h-2 bg-indigo-500 rounded-full animate-ping"></span>}
+          </div>
+          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-tight">{t('on_shift')}</p>
+          <div className="w-8 h-1 bg-indigo-500/50 rounded-full mt-3"></div>
+        </div>
+
+        <div className="bg-slate-900/60 backdrop-blur-xl p-5 rounded-[2rem] border border-white/5 relative overflow-hidden group shadow-lg">
+          <div className="absolute right-0 top-0 opacity-10 p-4 text-emerald-500"><ChartBarIcon className="w-12 h-12 rotate-12" /></div>
+          <p className="text-4xl font-black text-emerald-400 mb-1 group-hover:scale-110 transition-transform origin-left">
+            {useLiveQuery(() => db.fieldTables.where('status').equals('completed').filter(t => t.completedAt && new Date(t.completedAt).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]).count()) || 0}
+          </p>
+          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-tight">{t('installed_today')}</p>
+          <div className="w-8 h-1 bg-emerald-500/50 rounded-full mt-3"></div>
+        </div>
+
+        <div className="bg-slate-900/60 backdrop-blur-xl p-5 rounded-[2rem] border border-white/5 relative overflow-hidden group shadow-lg">
+          <div className="absolute right-0 top-0 opacity-10 p-4"><WorkersIcon className="w-12 h-12 rotate-12" /></div>
+          <p className="text-4xl font-black text-slate-200 mb-1 group-hover:scale-110 transition-transform origin-left">{workersCount}</p>
+          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-tight">{t('team_size')}</p>
+          <div className="w-8 h-1 bg-slate-500/50 rounded-full mt-3"></div>
         </div>
       </section>
 
-      {/* Main Grid Actions */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <ActionTile
-          icon={<ClockIcon className="w-8 h-8" />}
-          label={t('log_work')}
-          desc={t('work_log_desc')}
-          onClick={() => setIsLoggingWork(true)}
-          color="bg-indigo-500"
-        />
+      {/* Main Grid Actions - Tiles */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <ActionTile
           icon={<ProjectsIcon className="w-8 h-8" />}
           label={t('projects')}
-          desc={t('projects_desc')}
+          desc="MANAGEMENT"
           onClick={() => navigate('/projects')}
           color="bg-emerald-500"
           badge={activeProjectsCount > 0 ? activeProjectsCount : undefined}
@@ -187,67 +159,57 @@ const Dashboard: React.FC = () => {
         <ActionTile
           icon={<MapIcon className="w-8 h-8" />}
           label={t('plan')}
-          desc={t('plan_desc')}
+          desc="FIELD MAP"
           onClick={() => navigate('/field-plans')}
           color="bg-cyan-500"
         />
         <ActionTile
           icon={<CalendarIcon className="w-8 h-8" />}
           label={t('attendance')}
-          desc={t('attendance_desc')}
+          desc="HISTORY"
           onClick={() => navigate('/attendance')}
           color="bg-amber-500"
           badge={activeSessionsCount > 0 ? activeSessionsCount : undefined}
         />
         <ActionTile
-          icon={<WrenchIcon className="w-8 h-8" />}
-          label={t('tools')}
-          desc={t('tools_desc')}
-          onClick={() => navigate('/tools')}
-          color="bg-slate-500"
-          badge={toolsCount}
+          icon={<ChatIcon className="w-8 h-8" />}
+          label="Chat"
+          desc="TEAM"
+          onClick={() => navigate('/chat')}
+          color="bg-pink-500"
         />
         <ActionTile
           icon={<ChartBarIcon className="w-8 h-8" />}
-          label={t('statistics')}
-          desc={t('statistics_dashboard_desc')}
+          label="Stats"
+          desc="ANALYTICS"
           onClick={() => navigate('/stats')}
-          color="bg-purple-500"
-        />
-        <ActionTile
-          icon={<DocumentTextIcon className="w-8 h-8" />}
-          label={t('daily_report')}
-          desc={t('daily_reports_desc')}
-          onClick={() => navigate('/daily-reports')}
-          color="bg-orange-500"
+          color="bg-blue-500"
         />
         <ActionTile
           icon={<SettingsIcon className="w-8 h-8" />}
           label={t('settings')}
-          desc={t('settings_desc')}
+          desc="SYSTEM"
           onClick={() => navigate('/settings')}
-          color="bg-gray-500"
+          color="bg-slate-500"
         />
       </section>
 
-      {/* Quick Access Floating Shift Banner (Mobile only) */}
-      {activeSessions.some(s => s.workerId === currentUser?.workerId) && (
-        <div className="fixed bottom-24 left-4 right-4 z-50 p-6 bg-gradient-to-r from-indigo-600 to-blue-700 rounded-3xl shadow-2xl flex items-center justify-between group cursor-pointer animate-fade-in-up" onClick={() => navigate('/attendance')}>
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white">
-              <ClockIcon className="w-5 h-5 animate-spin-slow" />
-            </div>
-            <div>
-              <p className="text-white font-black uppercase tracking-tighter text-sm">Shift is Active</p>
-              <p className="text-white/60 text-[8px] font-bold uppercase tracking-[0.2em]">Logged in as {currentUser?.name}</p>
-            </div>
-          </div>
-          <p className="text-white font-black text-xs">GO TO SHIFT →</p>
-        </div>
-      )}
+      {/* Desktop Only: Leaderboard */}
+      <div className="hidden md:block">
+        <Leaderboard />
+      </div>
 
       {isLoggingWork && (
-        <TimeRecordForm onClose={() => setIsLoggingWork(false)} />
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in user-select-none">
+          <div className="w-full max-w-lg bg-[#0f172a] rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col relative animate-slide-up sm:animate-none">
+            <button onClick={() => setIsLoggingWork(false)} className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-white z-50">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <div className="overflow-y-auto custom-scrollbar flex-1">
+              <TimeRecordForm onClose={() => setIsLoggingWork(false)} />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

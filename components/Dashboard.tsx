@@ -70,6 +70,17 @@ const Dashboard: React.FC = () => {
   const workersCount = useLiveQuery(() => db.workers.count(), [], 0) ?? 0;
   const toolsCount = useLiveQuery(() => db.tools.count(), [], 0) ?? 0;
   const pendingTasksCount = useLiveQuery(() => db.projectTasks.filter(t => !t.completionDate).count(), [], 0) ?? 0;
+  const installedTodayCount = useLiveQuery(() =>
+    db.fieldTables
+      .where('status').equals('completed')
+      .filter(t => {
+        if (!t.completedAt) return false;
+        const compDate = new Date(t.completedAt).toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0];
+        return compDate === today;
+      })
+      .count(),
+    [], 0) ?? 0;
 
   const activeSessionsCount = activeSessions?.length || 0;
 
@@ -132,7 +143,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-slate-900/60 backdrop-blur-xl p-5 rounded-[2rem] border border-white/5 relative overflow-hidden group shadow-lg">
           <div className="absolute right-0 top-0 opacity-10 p-4 text-emerald-500"><ChartBarIcon className="w-12 h-12 rotate-12" /></div>
           <p className="text-4xl font-black text-emerald-400 mb-1 group-hover:scale-110 transition-transform origin-left">
-            {useLiveQuery(() => db.fieldTables.where('status').equals('completed').filter(t => t.completedAt && new Date(t.completedAt).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]).count()) || 0}
+            {installedTodayCount}
           </p>
           <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-tight">{t('installed_today')}</p>
           <div className="w-8 h-1 bg-emerald-500/50 rounded-full mt-3"></div>

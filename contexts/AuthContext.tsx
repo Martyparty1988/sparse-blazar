@@ -1,45 +1,96 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import {
+  onAuthStateChanged,
+  signOut,
+  User as FirebaseUser
+} from 'firebase/auth';
+import { firebaseService } from '../services/firebaseService';
+import { db } from '../services/db';
 import type { User } from '../types';
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  isLoading: boolean;
   user: User | null;
-  currentUser: User | null;
+  currentUser: User | null; // Compatibility with existing code
+  logout: () => Promise<void>;
+  // For legacy support while transitioning
   login: (user: User) => void;
-  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      // Use localStorage for cross-session persistence
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
-    } catch (error) {
-      console.error("Failed to parse user from localStorage", error);
-      localStorage.removeItem('user');
+    if (!firebaseService.isReady) {
+      // If service not ready yet, check local storage for immediate UI feedback?
+      // Actually, better to wait for Firebase.
+      const timer = setTimeout(() => {
+        if (isLoading) setIsLoading(false);
+      }, 2000);
+      return () => clearTimeout(timer);
     }
+
+    const unsubscribe = onAuthStateChanged(firebaseService.getAuth, async (firebaseUser) => {
+      setIsLoading(true);
+      if (firebaseUser) {
+        // Find matching worker in Dexie/Local DB to get role and workerId
+        // Try searching by email or username (simulated as email for now)
+        const email = firebaseUser.email;
+        let worker = await db.workers.where('username').equals(email?.split('@')[0] || '').first();
+
+        // Fallback for admin
+        if (!worker && (email === 'admin@mst.app' || email?.startsWith('admin'))) {
+          const adminUser: User = { username: 'admin', role: 'admin' };
+          setUser(adminUser);
+          localStorage.setItem('user', JSON.stringify(adminUser));
+        } else if (worker) {
+          const userData: User = {
+            username: worker.name,
+            role: (worker as any).role || 'user',
+            workerId: worker.id
+          };
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+        } else {
+          // Auth exists but no worker found - might be a new registration
+          setUser({ username: firebaseUser.displayName || firebaseUser.email || 'User', role: 'user' });
+        }
+      } else {
+        setUser(null);
+        localStorage.removeItem('user');
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = (userData: User) => {
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
+  const logout = async () => {
+    await signOut(firebaseService.getAuth);
+    setUser(null);
+    localStorage.removeItem('user');
   };
 
-  const logout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
+  // Legacy login for manual state setting (if needed)
+  const login = (userData: User) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: !!user, user, currentUser: user as any, login, logout }}>
+    <AuthContext.Provider value={{
+      isAuthenticated: !!user,
+      isLoading,
+      user,
+      currentUser: user,
+      login,
+      logout
+    }}>
       {children}
     </AuthContext.Provider>
   );

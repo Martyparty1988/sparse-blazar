@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow any authenticated user to read and write to all collections
+    // In a prod app, we'd restrict this further, but for MST v4.5 we'll keep it simple
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Allow workers to be read/written by authenticated users
+    match /workers/{workerId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

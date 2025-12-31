@@ -20,7 +20,8 @@ import {
     writeBatch
 } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
-import { getDatabase, ref, onValue, Database } from 'firebase/database';
+import { getDatabase, ref, onValue, off, set, Database } from 'firebase/database';
+import { getAuth, Auth } from 'firebase/auth';
 import { db } from './db'; // Import Dexie instance
 
 const firebaseConfig = {
@@ -43,6 +44,7 @@ class FirebaseService {
     private app: FirebaseApp;
     private db: Firestore;
     private rtdb: Database;
+    private auth: Auth;
     private messaging: Messaging | null = null;
     public isInitialized = false;
     public isOnline = false;
@@ -56,6 +58,8 @@ class FirebaseService {
                 localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
             });
             this.rtdb = getDatabase(this.app);
+            this.auth = getAuth(this.app);
+
             if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
                 try { this.messaging = getMessaging(this.app); } catch (e) { console.warn('Messaging not supported'); }
             }
@@ -70,6 +74,54 @@ class FirebaseService {
     }
 
     public get isReady() { return this.isInitialized && this.db !== null; }
+    public get getAuth() { return this.auth; }
+
+    public subscribe(path: string, callback: (data: any) => void) {
+        if (!this.rtdb) return () => { };
+        const dbRef = ref(this.rtdb, path);
+        onValue(dbRef, (snapshot) => {
+            callback(snapshot.val());
+        });
+        return () => off(dbRef);
+    }
+
+    public unsubscribe(path: string) {
+        if (!this.rtdb) return;
+        off(ref(this.rtdb, path));
+    }
+
+    public async setData(path: string, data: any): Promise<SyncResult> {
+        if (!this.rtdb) return { success: false, error: 'RTDB not ready' };
+        try {
+            await set(ref(this.rtdb, path), data);
+            return { success: true };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    public async requestMessagingPermission(workerId: number) {
+        if (!this.messaging) return null;
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                const token = await getToken(this.messaging, {
+                    vapidKey: 'BM6F-pXyU3R_5e7H8u1X2zR_L6VqW6X0H_Z0z2X0W_z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z' // Use real VAPID key if possible, or omit if default works
+                });
+
+                if (token) {
+                    console.log('FCM Token:', token);
+                    // Update worker in RTDB and Firestore
+                    await this.setData(`workers/${workerId}`, { id: workerId, fcmToken: token });
+                    await this.updateRecord('workers', String(workerId), { fcmToken: token });
+                    return token;
+                }
+            }
+        } catch (error) {
+            console.error('Permission/Token error:', error);
+        }
+        return null;
+    }
 
     private setupForegroundMessageListener() {
         if (this.messaging) {

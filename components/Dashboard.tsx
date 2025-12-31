@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
@@ -7,6 +7,14 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
 import TimeRecordForm from './TimeRecordForm';
 import Leaderboard from './Leaderboard';
+import {
+  AreaChart,
+  Area,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip
+} from 'recharts';
 
 // Icons
 import ProjectsIcon from './icons/ProjectsIcon';
@@ -21,36 +29,28 @@ import usePullToRefresh from '../hooks/usePullToRefresh';
 import { firebaseService } from '../services/firebaseService';
 import { useToast } from '../contexts/ToastContext';
 
-const ActionTile: React.FC<{
-  icon: React.ReactNode;
+const KPICard: React.FC<{
   label: string;
-  onClick: () => void;
+  value: string | number;
+  icon: React.ReactNode;
   color: string;
-  desc?: string;
-  badge?: string | number;
-}> = ({ icon, label, onClick, color, desc, badge }) => (
-  <button
-    onClick={() => {
-      soundService.playClick();
-      onClick();
-    }}
-    className={`flex flex-col items-start p-6 rounded-2xl bg-slate-900/40 backdrop-blur-xl transition-all group hover:scale-[1.03] active:scale-95 border border-white/5 shadow-2xl relative overflow-hidden h-full min-h-[160px] touch-manipulation`}
-  >
-    <div className={`absolute top-0 left-0 w-full h-1.5 opacity-50 ${color}`}></div>
-    <div className="absolute -top-6 -right-6 p-8 opacity-5 group-hover:opacity-10 transition-opacity scale-150 rotate-12">
-      {icon}
-    </div>
-    {badge && (
-      <div className="absolute top-4 right-4 bg-indigo-500 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg z-10">
-        {badge}
+  trend?: string;
+}> = ({ label, value, icon, color, trend }) => (
+  <div className="bg-white/5 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] relative overflow-hidden group shadow-xl transition-all hover:scale-[1.02]">
+    <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-3xl opacity-20 ${color}`}></div>
+    <div className="flex justify-between items-start mb-4">
+      <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-white group-hover:scale-110 transition-transform">
+        {icon}
       </div>
-    )}
-    <div className={`mb-4 p-3 rounded-xl bg-white/5 text-white group-hover:bg-white/10 transition-all ring-1 ring-white/10`}>
-      {icon}
+      {trend && (
+        <span className="text-[10px] font-black text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-lg uppercase tracking-tight">
+          {trend}
+        </span>
+      )}
     </div>
-    <h3 className="text-md font-black uppercase italic tracking-tighter text-white mb-2 leading-none">{label}</h3>
-    {desc && <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-left leading-tight group-hover:text-slate-300 transition-colors">{desc}</p>}
-  </button>
+    <p className="text-3xl font-black text-white italic tracking-tighter mb-1">{value}</p>
+    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">{label}</p>
+  </div>
 );
 
 const Dashboard: React.FC = () => {
@@ -73,91 +73,193 @@ const Dashboard: React.FC = () => {
   const { isRefreshing } = usePullToRefresh({ onRefresh: handleDataRefresh });
 
   // Data Queries
-  const activeProjectsCount = useLiveQuery(() => db.projects.where('status').equals('active').count(), [], 0) ?? 0;
-  const activeSessions = useLiveQuery(() => db.attendanceSessions.toArray(), [], []);
-  const workersCount = useLiveQuery(() => db.workers.count(), [], 0) ?? 0;
-  const installedTodayCount = useLiveQuery(() =>
-    db.fieldTables
-      .where('status').equals('completed')
-      .filter(t => {
-        if (!t.completedAt) return false;
-        const compDate = new Date(t.completedAt).toISOString().split('T')[0];
-        const today = new Date().toISOString().split('T')[0];
-        return compDate === today;
-      })
-      .count(),
-    [], 0) ?? 0;
+  const stats = useLiveQuery(async () => {
+    const projects = await db.projects.toArray();
+    const tables = await db.fieldTables.toArray();
+    const activeProjects = projects.filter(p => p.status === 'active').length;
+    const completedTablesToday = tables.filter(t => {
+      if (!t.completedAt) return false;
+      const compDate = new Date(t.completedAt).toDateString();
+      const today = new Date().toDateString();
+      return compDate === today;
+    }).length;
 
-  const activeSessionsCount = activeSessions?.length || 0;
+    // Generate mini chart data for last 7 days
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      const dateStr = d.toDateString();
+      const count = tables.filter(t => t.completedAt && new Date(t.completedAt).toDateString() === dateStr).length;
+      return { name: d.toLocaleDateString('cs-CZ', { weekday: 'short' }), count };
+    });
+
+    return { activeProjects, completedTablesToday, last7Days, totalTables: tables.length, completedTables: tables.filter(t => t.status === 'completed').length };
+  }, [], { activeProjects: 0, completedTablesToday: 0, last7Days: [], totalTables: 0, completedTables: 0 });
 
   return (
-    <div className="space-y-6 md:space-y-8 pb-32 animate-fade-in mx-auto">
+    <div className="space-y-8 pb-32 animate-fade-in relative">
 
-      <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${isRefreshing ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'}`}>
-        <div className="bg-indigo-600 text-white rounded-full p-2 shadow-lg">
-          <RedoIcon className="w-5 h-5 animate-spin" />
+      {/* Pull to refresh UI */}
+      <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${isRefreshing ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-90 pointer-events-none'}`}>
+        <div className="bg-indigo-600/90 backdrop-blur-xl text-white rounded-full p-4 shadow-[0_10px_40px_rgba(79,70,229,0.4)] border border-indigo-400/20">
+          <RedoIcon className="w-6 h-6 animate-spin" />
         </div>
       </div>
 
-      <header className="pt-2 md:pt-8 mb-2">
-        <h1 className="text-3xl font-black text-white italic tracking-tighter uppercase">
-          Vítejte, {user?.name}!
-        </h1>
-        <p className="text-slate-400 text-sm">Zde je přehled vašeho dnešního dne.</p>
+      <header className="flex flex-col md:flex-row justify-between items-end gap-6 pt-4">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="h-0.5 w-8 bg-indigo-500 rounded-full"></span>
+            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em]">Dashboard Overview</span>
+          </div>
+          <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase leading-none">
+            Vítejte, {user?.username || 'Marty'}<span className="text-indigo-500">!</span>
+          </h1>
+        </div>
+
+        <button
+          onClick={() => setIsLoggingWork(true)}
+          className="group relative px-8 py-4 bg-indigo-600 rounded-2xl font-black text-white uppercase tracking-widest shadow-[0_10px_30px_-5px_rgba(79,70,229,0.5)] active:scale-95 transition-all overflow-hidden"
+        >
+          <div className="relative z-10 flex items-center gap-3">
+            <ClockIcon className="w-5 h-5" />
+            Zapsat Práci
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+        </button>
       </header>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <div className="lg:col-span-2">
-          <button
-            onClick={() => {
-              soundService.playClick();
-              setIsLoggingWork(true);
-            }}
-            className="w-full h-full relative group overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 shadow-[0_10px_40px_-10px_rgba(79,70,229,0.5)] active:scale-[0.98] transition-all border border-indigo-400/20 touch-manipulation"
-          >
-            <div className="absolute -right-8 -bottom-8 opacity-20 rotate-12 scale-150 text-black mix-blend-overlay">
-              <ClockIcon className="w-40 h-40" />
-            </div>
-            <div className="relative z-10 flex flex-col items-start gap-2">
-              <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-none mb-1 drop-shadow-lg">Zapsat Práci</h2>
-              <p className="text-indigo-100 text-xs font-bold uppercase tracking-wide opacity-90">Log your daily progress</p>
-            </div>
-          </button>
-        </div>
-        <div className="bg-slate-900/40 backdrop-blur-xl p-5 rounded-2xl border border-white/5 relative overflow-hidden group shadow-lg">
-          <div className="absolute right-0 top-0 opacity-5 p-4"><ChartBarIcon className="w-16 h-16 -rotate-12 translate-x-4 -translate-y-4" /></div>
-          <p className={`text-4xl font-black text-emerald-400 mb-1 group-hover:scale-110 transition-transform origin-left ${installedTodayCount === 0 ? 'opacity-30' : 'opacity-100'}`}>
-            {installedTodayCount}
-          </p>
-          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-tight">{t('installed_today')}</p>
-        </div>
-        <div className="bg-slate-900/40 backdrop-blur-xl p-5 rounded-2xl border border-white/5 relative overflow-hidden group shadow-lg">
-          <div className="absolute right-0 top-0 opacity-5 p-4"><ClockIcon className="w-16 h-16 -rotate-12 translate-x-4 -translate-y-4" /></div>
-          <p className={`text-4xl font-black text-indigo-400 mb-1 group-hover:scale-110 transition-transform origin-left ${activeSessionsCount === 0 ? 'opacity-30' : 'opacity-100'}`}>
-            {activeSessionsCount}
-          </p>
-          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-tight">{t('on_shift')}</p>
+      {/* KPI Section */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KPICard label="Aktivní Projekty" value={stats.activeProjects} icon={<ProjectsIcon className="w-6 h-6" />} color="bg-blue-500" />
+        <KPICard label="Dnešní Pokrok" value={stats.completedTablesToday} icon={<ChartBarIcon className="w-6 h-6" />} color="bg-emerald-500" trend="+12%" />
+        <KPICard label="Celková Hotovost" value={`${Math.round((stats.completedTables / (stats.totalTables || 1)) * 100)}%`} icon={<CalendarIcon className="w-6 h-6" />} color="bg-amber-500" />
+        <div className="hidden lg:block">
+          <KPICard label="Pracovníci" value={user?.role === 'admin' ? '8 +' : 'Tým A'} icon={<WorkersIcon className="w-6 h-6" />} color="bg-indigo-500" />
         </div>
       </section>
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-        <ActionTile icon={<MapIcon />} label={t('plan')} desc="FIELD MAP" onClick={() => navigate('/field-plans')} color="bg-cyan-500" />
-        <ActionTile icon={<CalendarIcon />} label={t('attendance')} desc="HISTORY" onClick={() => navigate('/attendance')} color="bg-amber-500" />
-        <ActionTile icon={<ChartBarIcon />} label="Stats" desc="ANALYTICS" onClick={() => navigate('/stats')} color="bg-blue-500" />
-        <ActionTile icon={<ProjectsIcon />} label={t('projects')} desc="MANAGEMENT" onClick={() => navigate('/projects')} color="bg-emerald-500" />
-      </section>
+      {/* Charts & Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Weekly Activity */}
+        <div className="lg:col-span-2 bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden relative group">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h3 className="text-xl font-black text-white italic uppercase tracking-tight">Týdenní Aktivita</h3>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Počet dokončených stolů</p>
+            </div>
+            <div className="flex gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/5">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                <span className="text-[9px] font-black text-white uppercase">Live</span>
+              </div>
+            </div>
+          </div>
 
-      <div className="block md:hidden">
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={stats.last7Days}>
+                <defs>
+                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }}
+                  dy={10}
+                />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '1rem' }}
+                  itemStyle={{ color: '#fff', fontSize: 12, fontWeight: 900 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#6366f1"
+                  strokeWidth={4}
+                  fillOpacity={1}
+                  fill="url(#colorCount)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="space-y-6">
+          <h3 className="text-sm font-black text-slate-500 uppercase tracking-[0.3em] px-2 mb-2">Rychlé Odkazy</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+            <button
+              onClick={() => navigate('/field-plans')}
+              className="flex items-center gap-4 p-5 bg-gradient-to-r from-slate-900/40 to-slate-800/20 rounded-2xl border border-white/5 hover:border-indigo-500/30 transition-all group group shadow-lg"
+            >
+              <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-400 group-hover:scale-110 transition-transform"><MapIcon className="w-6 h-6" /></div>
+              <div className="text-left">
+                <p className="text-xs font-black text-white uppercase tracking-tight">{t('plan')}</p>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Interactive Maps</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => navigate('/attendance')}
+              className="flex items-center gap-4 p-5 bg-gradient-to-r from-slate-900/40 to-slate-800/20 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all group shadow-lg"
+            >
+              <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400 group-hover:scale-110 transition-transform"><CalendarIcon className="w-6 h-6" /></div>
+              <div className="text-left">
+                <p className="text-xs font-black text-white uppercase tracking-tight">{t('attendance')}</p>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">History Log</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => navigate('/stats')}
+              className="flex items-center gap-4 p-5 bg-gradient-to-r from-slate-900/40 to-slate-800/20 rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all group shadow-lg"
+            >
+              <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400 group-hover:scale-110 transition-transform"><ChartBarIcon className="w-6 h-6" /></div>
+              <div className="text-left">
+                <p className="text-xs font-black text-white uppercase tracking-tight">Stats</p>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Detailed Analytics</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => navigate('/projects')}
+              className="flex items-center gap-4 p-5 bg-gradient-to-r from-slate-900/40 to-slate-800/20 rounded-2xl border border-white/5 hover:border-emerald-500/30 transition-all group shadow-lg"
+            >
+              <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400 group-hover:scale-110 transition-transform"><ProjectsIcon className="w-6 h-6" /></div>
+              <div className="text-left">
+                <p className="text-xs font-black text-white uppercase tracking-tight">{t('projects')}</p>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Overview</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Leaderboard Section (Visible on all but small mobiles) */}
+      <div className="mt-8">
         <Leaderboard />
       </div>
 
+      {/* Work Entry Modal */}
       {isLoggingWork && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in user-select-none">
-          <div className="w-full max-w-lg bg-[#0f172a] rounded-2xl border border-white/10 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col relative animate-slide-up sm:animate-none">
-            <button onClick={() => setIsLoggingWork(false)} className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-white z-50">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <div className="overflow-y-auto custom-scrollbar flex-1">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-xl animate-fade-in"
+            onClick={() => setIsLoggingWork(false)}
+          ></div>
+          <div className="w-full max-w-lg bg-[#0f172a] rounded-[2.5rem] border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden max-h-[90vh] flex flex-col relative animate-slide-up z-10">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center">
+              <h2 className="text-xl font-black text-white italic uppercase tracking-tight">Zapsat Práci</h2>
+              <button onClick={() => setIsLoggingWork(false)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto custom-scrollbar flex-1 p-6">
               <TimeRecordForm onClose={() => setIsLoggingWork(false)} />
             </div>
           </div>

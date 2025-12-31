@@ -55,6 +55,15 @@ export const locales = {
     processing: 'Processing...',
     save_success: 'Saved Successfully',
     save_failed: 'Failed to save.',
+    dont_have_account: "Don't have an account?",
+    already_have_account: 'Already have an account?',
+    reset_password: 'Reset Password',
+    reset_password_desc: 'Enter your email to receive a reset link.',
+    send_reset_link: 'Send Reset Link',
+    reset_link_sent: 'Reset link sent!',
+    back_to_login: 'Back to Login',
+    email: 'Email',
+    invalid_email: 'Invalid email address.',
 
     // Workers
     workers: 'Workers',
@@ -371,6 +380,15 @@ export const locales = {
     processing: 'Zpracovávám...',
     saved_successfully: 'Uloženo',
     save_failed: 'Uložení selhalo.',
+    dont_have_account: 'Nemáte účet?',
+    already_have_account: 'Již máte účet?',
+    reset_password: 'Zapomenuté heslo',
+    reset_password_desc: 'Zadejte svůj email pro obnovu hesla.',
+    send_reset_link: 'Odeslat odkaz',
+    reset_link_sent: 'Odkaz byl odeslán!',
+    back_to_login: 'Zpět na přihlášení',
+    email: 'Email',
+    invalid_email: 'Neplatná emailová adresa.',
 
     // Workers
     workers: 'Pracovníci',

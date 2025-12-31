@@ -39,15 +39,15 @@ const PageLoader = () => (
 );
 
 const App: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const [isSyncing, setIsSyncing] = useState(true);
 
   useEffect(() => {
     const performInitialSync = async () => {
       if (!isAuthenticated || !firebaseService.isReady) {
-          // If firebase is not ready, wait a bit and retry, but don't block forever
-          setTimeout(() => setIsSyncing(false), 1000);
-          return;
+        // If firebase is not ready, wait a bit and retry, but don't block forever
+        setTimeout(() => setIsSyncing(false), 1000);
+        return;
       }
       setIsSyncing(true);
       try {
@@ -65,11 +65,12 @@ const App: React.FC = () => {
     };
 
     if (isAuthenticated) {
-        performInitialSync();
+      performInitialSync();
     }
 
   }, [isAuthenticated]);
 
+  if (authLoading) return <SplashScreen />;
   if (!isAuthenticated) return <Login />;
   if (isSyncing) return <SplashScreen />;
 
@@ -81,7 +82,7 @@ const App: React.FC = () => {
             <ErrorBoundary>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
-                   <Route path="/" element={user?.role === 'admin' ? <Dashboard /> : <Navigate to="/my-tasks" />} />
+                  <Route path="/" element={user?.role === 'admin' ? <Dashboard /> : <Navigate to="/my-tasks" />} />
                   <Route path="/my-tasks" element={<MyTasks />} />
                   <Route path="/workers" element={<Workers />} />
                   <Route path="/projects" element={<Projects />} />

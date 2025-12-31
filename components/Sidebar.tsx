@@ -32,69 +32,89 @@ const Sidebar: React.FC = () => {
     ];
 
     const adminItems = [
-         { to: "/settings", title: t('settings'), icon: <SettingsIcon />, roles: ['admin'] },
-         { to: "/payroll", title: "Mzdy", icon: <BrainIcon />, roles: ['admin'] },
+        { to: "/settings", title: t('settings'), icon: <SettingsIcon />, roles: ['admin'] },
+        { to: "/payroll", title: "Mzdy", icon: <BrainIcon />, roles: ['admin'] },
     ];
 
     const getVisibleItems = (items: any[]) => items.filter(item => item.roles.includes(user?.role || 'user'));
 
     return (
-        <aside className="hidden md:flex flex-col w-64 bg-[#111324] text-white fixed h-full">
-            <div className="flex items-center justify-center h-16 border-b border-white/5">
-                 <Link to="/" className="text-2xl font-black italic tracking-tighter text-white">MST<span className="text-[var(--color-accent)]">.</span></Link>
+        <aside className="hidden md:flex flex-col w-72 bg-[#020617]/95 backdrop-blur-3xl text-white fixed h-full border-r border-white/5 shadow-[20px_0_40px_rgba(0,0,0,0.5)] z-[100]">
+            <div className="flex flex-col items-center justify-center py-10 border-b border-white/5 relative overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-indigo-500/20 blur-3xl rounded-full"></div>
+                <Link to="/" className="relative z-10 group">
+                    <h1 className="text-4xl font-black italic tracking-tighter text-white group-hover:scale-110 transition-transform duration-300">
+                        MST<span className="text-indigo-500">.</span>
+                    </h1>
+                </Link>
+                <div className="mt-2 text-[9px] font-black text-slate-500 uppercase tracking-[0.4em] opacity-40">Solar Tracker Pro</div>
             </div>
-            <nav className="flex-1 px-4 py-4 space-y-2">
-                <p className="px-4 pt-4 pb-2 text-xs font-bold text-slate-400 uppercase">Hlavní</p>
-                {getVisibleItems(navItems).map(item => (
-                    <NavLink
-                        key={item.to}
-                        to={item.to}
-                        end // Use end for exact matching on "/"
-                        className={({ isActive }) =>
-                            `flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                                isActive
-                                    ? 'bg-[var(--color-primary)]/80 text-white shadow-lg'
-                                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                            }`
-                        }
-                    >
-                        <div className="w-6 h-6 mr-3">{item.icon}</div>
-                        <span>{item.title}</span>
-                    </NavLink>
-                ))}
-                
-                {user?.role === 'admin' && (
-                    <>
-                        <p className="px-4 pt-4 pb-2 text-xs font-bold text-slate-400 uppercase">Administrace</p>
-                        {getVisibleItems(adminItems).map(item => (
+
+            <nav className="flex-1 px-6 py-8 space-y-6 overflow-y-auto custom-scrollbar">
+                <div>
+                    <p className="px-2 mb-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] opacity-60">Menu</p>
+                    <div className="space-y-1">
+                        {getVisibleItems(navItems).map(item => (
                             <NavLink
                                 key={item.to}
                                 to={item.to}
+                                end={item.to === "/"}
                                 className={({ isActive }) =>
-                                    `flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                                        isActive
-                                            ? 'bg-[var(--color-primary)]/80 text-white shadow-lg'
-                                            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                    `group flex items-center px-4 py-3 text-sm font-black uppercase tracking-tight rounded-2xl transition-all duration-300 ${isActive
+                                        ? 'bg-gradient-to-r from-indigo-600/20 to-indigo-600/10 text-white border border-indigo-500/30 shadow-[0_4px_20px_rgba(79,70,229,0.15)] ring-1 ring-white/10'
+                                        : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
                                     }`
                                 }
                             >
-                                <div className="w-6 h-6 mr-3">{item.icon}</div>
+                                <div className={`w-6 h-6 mr-3 transition-transform duration-300 group-hover:scale-110`}>{item.icon}</div>
                                 <span>{item.title}</span>
+                                {item.to === "/" && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>}
                             </NavLink>
                         ))}
-                    </>
-                )}
-            </nav>
-            <div className="px-4 py-4 border-t border-white/5">
-                <div className="flex items-center">
-                    <div className="w-10 h-10 rounded-full bg-slate-600 mr-3">
-                        {/* You can add user avatar here */}
-                    </div>
-                    <div>
-                        <p className="text-sm font-semibold text-white">{user?.name}</p>
-                        <button onClick={logout} className="text-xs text-slate-400 hover:text-red-500">Odhlásit se</button>
                     </div>
                 </div>
+
+                {user?.role === 'admin' && (
+                    <div>
+                        <p className="px-2 mb-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] opacity-60">Admin</p>
+                        <div className="space-y-1">
+                            {getVisibleItems(adminItems).map(item => (
+                                <NavLink
+                                    key={item.to}
+                                    to={item.to}
+                                    className={({ isActive }) =>
+                                        `group flex items-center px-4 py-3 text-sm font-black uppercase tracking-tight rounded-2xl transition-all duration-300 ${isActive
+                                            ? 'bg-gradient-to-r from-emerald-600/20 to-emerald-600/10 text-white border border-emerald-500/30'
+                                            : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                                        }`
+                                    }
+                                >
+                                    <div className={`w-6 h-6 mr-3 transition-transform duration-300 group-hover:scale-110`}>{item.icon}</div>
+                                    <span>{item.title}</span>
+                                </NavLink>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </nav>
+
+            <div className="px-6 py-8 border-t border-white/5 bg-white/5 backdrop-blur-md">
+                <div className="flex items-center p-3 rounded-2xl bg-black/40 border border-white/5">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center mr-4 shadow-xl border border-white/10 ring-2 ring-indigo-500/20">
+                        <span className="text-xl font-black italic">{user?.username?.[0]?.toUpperCase() || 'U'}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black uppercase italic tracking-tighter text-white truncate">{user?.username || 'Guest'}</p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{user?.role || 'User'}</p>
+                    </div>
+                </div>
+                <button
+                    onClick={logout}
+                    className="w-full mt-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-slate-500 hover:text-red-400 transition-colors flex items-center justify-center gap-2 hover:bg-red-500/5 rounded-xl border border-transparent hover:border-red-500/20"
+                >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Odhlásit se
+                </button>
             </div>
         </aside>
     );

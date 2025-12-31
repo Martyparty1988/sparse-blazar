@@ -15,6 +15,12 @@ class SoundService {
             this.audioContext.resume();
         }
     }
+    
+    private vibrate(duration: number = 10) {
+        if (typeof window.navigator.vibrate === 'function') {
+            window.navigator.vibrate(duration);
+        }
+    }
 
     setMuted(muted: boolean) {
         this.isMuted = muted;
@@ -22,6 +28,7 @@ class SoundService {
 
     // Příjemný "cink" pro zprávu
     playMessageReceived() {
+        this.vibrate(20);
         if (this.isMuted || !this.audioContext) return;
         this.ensureContext();
 
@@ -44,6 +51,7 @@ class SoundService {
 
     // Pozitivní "akord" pro úspěch
     playSuccess() {
+        this.vibrate(50);
         if (this.isMuted || !this.audioContext) return;
         this.ensureContext();
 
@@ -74,6 +82,7 @@ class SoundService {
 
     // Krátké haptické "kliknutí" (zvuk)
     playClick() {
+        this.vibrate(10);
         if (this.isMuted || !this.audioContext) return;
         this.ensureContext();
 

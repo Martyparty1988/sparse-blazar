@@ -1,18 +1,21 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
+import { firebaseService } from '../services/firebaseService';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import usePullToRefresh from '../hooks/usePullToRefresh';
 import type { Project } from '../types';
 import ProjectForm from './ProjectForm';
 import ProjectTasksModal from './ProjectTasksModal';
 import ConfirmationModal from './ConfirmationModal';
-import ProjectCard from './ProjectCard'; // Main Card for Desktop
+import ProjectCard from './ProjectCard';
 import SearchIcon from './icons/SearchIcon';
 import WorkersIcon from './icons/WorkersIcon';
 import PlusIcon from './icons/PlusIcon';
+import RedoIcon from './icons/RedoIcon';
 
 const Projects: React.FC = () => {
     const { t } = useI18n();
@@ -29,6 +32,18 @@ const Projects: React.FC = () => {
     const projects = useLiveQuery(() => db.projects.toArray(), []);
     const workers = useLiveQuery(() => db.workers.toArray(), []);
     const allTasks = useLiveQuery(() => db.projectTasks.toArray(), []);
+    
+    const handleDataRefresh = useCallback(async () => {
+        try {
+            await firebaseService.syncAll();
+            showToast('Data byla obnovena', 'success');
+        } catch (error) {
+            console.error("Failed to refresh data:", error);
+            showToast('Nepodařilo se obnovit data', 'error');
+        }
+    }, [showToast]);
+
+    const { isRefreshing } = usePullToRefresh({ onRefresh: handleDataRefresh });
 
     const projectsWithWorker = useMemo(() => {
         if (workerFilter === 'all' || !allTasks) return null;
@@ -73,6 +88,12 @@ const Projects: React.FC = () => {
 
     return (
         <div className="space-y-6 md:space-y-8 pb-32">
+             <div className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${isRefreshing ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'}`}>
+                <div className="bg-indigo-600 text-white rounded-full p-2 shadow-lg">
+                    <RedoIcon className="w-5 h-5 animate-spin" />
+                </div>
+            </div>
+
             {/* Header */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                  <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase">

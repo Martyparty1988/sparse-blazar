@@ -8,12 +8,11 @@ import Layout from './components/Layout';
 import SplashScreen from './components/SplashScreen';
 import Login from './components/Login';
 import { firebaseService } from './services/firebaseService';
-import { db } from './services/db';
 import ErrorBoundary from './components/ErrorBoundary';
 
-// Lazy loading components
+// Lazy loading components remain the same
 const Dashboard = React.lazy(() => import('./components/Dashboard'));
-const MyTasks = React.lazy(() => import('./components/MyTasks')); // NEW
+const MyTasks = React.lazy(() => import('./components/MyTasks'));
 const Workers = React.lazy(() => import('./components/Workers'));
 const Projects = React.lazy(() => import('./components/Projects'));
 const Settings = React.lazy(() => import('./components/Settings'));
@@ -35,7 +34,7 @@ const PageLoader = () => (
       <div className="absolute inset-0 border-4 border-[var(--color-primary)]/30 rounded-full"></div>
       <div className="absolute inset-0 border-4 border-[var(--color-accent)] rounded-full border-t-transparent animate-spin"></div>
     </div>
-    <p className="text-white/60 text-sm font-black uppercase tracking-widest animate-pulse">Načítám...</p>
+    <p className="text-white/60 text-sm font-black uppercase tracking-widest animate-pulse">Synchronizuji...</p>
   </div>
 );
 
@@ -46,38 +45,29 @@ const App: React.FC = () => {
   useEffect(() => {
     const performInitialSync = async () => {
       if (!isAuthenticated || !firebaseService.isReady) {
-        setIsSyncing(false);
-        return;
+          // If firebase is not ready, wait a bit and retry, but don't block forever
+          setTimeout(() => setIsSyncing(false), 1000);
+          return;
       }
+      setIsSyncing(true);
       try {
-        await Promise.all([
-          db.workers.clear(), db.projects.clear(), db.tools.clear(), 
-          db.fieldTables.clear(), db.dailyReports.clear(), 
-          db.records.clear(), db.projectTasks.clear()
-        ]);
-        const [w, p, t, ft, dr, tr, pt] = await Promise.all([
-          firebaseService.getData('workers'), firebaseService.getData('projects'),
-          firebaseService.getData('tools'), firebaseService.getData('fieldTables'),
-          firebaseService.getData('dailyReports'), firebaseService.getData('timeRecords'),
-          firebaseService.getData('projectTasks')
-        ]);
-        if (w) await db.workers.bulkPut(Object.values(w));
-        if (p) await db.projects.bulkPut(Object.values(p));
-        if (t) await db.tools.bulkPut(Object.values(t));
-        if (ft) await db.fieldTables.bulkPut(Object.values(ft));
-        if (dr) await db.dailyReports.bulkPut(Object.values(dr));
-        if (tr) {
-          const records = Object.values(tr).map((r: any) => ({ ...r, startTime: new Date(r.startTime), endTime: new Date(r.endTime) }));
-          await db.records.bulkPut(records);
+        // Use the new incremental sync method
+        const syncResult = await firebaseService.synchronize();
+        if (!syncResult.success) {
+          console.error('Initial sync failed:', syncResult.error);
+          // Optional: Show a toast to the user
         }
-        if (pt) {
-          const taskList = Object.values(pt).map((task: any) => ({ ...task, completionDate: task.completionDate ? new Date(task.completionDate) : undefined, startTime: task.startTime ? new Date(task.startTime) : undefined, endTime: task.endTime ? new Date(task.endTime) : undefined }));
-          await db.projectTasks.bulkPut(taskList);
-        }
-      } catch (error) { console.error('Initial sync failed:', error); }
-      finally { setIsSyncing(false); }
+      } catch (error) {
+        console.error('Initial sync exception:', error);
+      } finally {
+        setIsSyncing(false);
+      }
     };
-    performInitialSync();
+
+    if (isAuthenticated) {
+        performInitialSync();
+    }
+
   }, [isAuthenticated]);
 
   if (!isAuthenticated) return <Login />;
@@ -91,8 +81,7 @@ const App: React.FC = () => {
             <ErrorBoundary>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
-                  {/* Redirect workers to my-tasks, admins to dashboard */}
-                  <Route path="/" element={user?.role === 'admin' ? <Dashboard /> : <Navigate to="/my-tasks" />} />
+                   <Route path="/" element={user?.role === 'admin' ? <Dashboard /> : <Navigate to="/my-tasks" />} />
                   <Route path="/my-tasks" element={<MyTasks />} />
                   <Route path="/workers" element={<Workers />} />
                   <Route path="/projects" element={<Projects />} />

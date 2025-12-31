@@ -27,7 +27,10 @@ const BottomNavBar: React.FC = () => {
     const visibleItems = navItems.filter(item => item.roles.includes(user?.role || 'user'));
 
     return (
-        <nav className="fixed bottom-0 left-0 z-50 w-full bg-[#1a1d37]/95 backdrop-blur-xl border-t border-white/5 md:hidden pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        <nav
+            className="fixed bottom-0 left-0 z-[100] w-full bg-[#1a1d37]/95 backdrop-blur-xl border-t border-white/5 md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all glass-card"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
             <div className="flex justify-around items-center px-2 py-4">
                 {visibleItems.map(item => (
                     <NavLink
@@ -68,9 +71,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const dateStr = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
 
     return (
-        <div className="fixed inset-0 w-full h-full flex flex-col bg-transparent overflow-hidden">
+        <div className="fixed inset-0 w-full h-[100dvh] flex flex-col bg-transparent overflow-hidden supports-[height:100dvh]:h-[100dvh]">
             {/* Header - Notch & Dynamic Island Friendly */}
-            <header className="fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top)] bg-[#1a1d37]/80 backdrop-blur-md border-b border-white/5 shadow-sm transition-all">
+            <header
+                className="fixed top-0 left-0 right-0 z-[100] bg-[#1a1d37]/80 backdrop-blur-md border-b border-white/5 shadow-sm transition-all"
+                style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+            >
                 <div className="flex justify-between items-center h-16 px-6">
                     {/* Left: Online Status + Logo */}
                     <div className="flex items-center gap-3">
@@ -96,7 +102,17 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto custom-scrollbar pt-[calc(4rem+env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom))] px-6 md:px-12 overscroll-contain">
+            <main
+                className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-12 overscroll-contain"
+                style={{
+                    paddingTop: 'calc(4rem + env(safe-area-inset-top, 0px))',
+                    paddingBottom: 'calc(8rem + env(safe-area-inset-bottom, 0px))',
+                    paddingLeft: 'env(safe-area-inset-left, 0px)',
+                    paddingRight: 'env(safe-area-inset-right, 0px)',
+                    marginLeft: 'env(safe-area-inset-left, 0px)',
+                    marginRight: 'env(safe-area-inset-right, 0px)'
+                }}
+            >
                 <div key={location.pathname} className="max-w-7xl mx-auto w-full h-full">
                     {children}
                 </div>

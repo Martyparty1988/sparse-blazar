@@ -216,7 +216,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
 
                 <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                     <h2 className="text-xl font-black text-white uppercase italic tracking-tight">Rychlý zápis práce</h2>
-                    <button onClick={onClose} className="p-2 text-slate-400 hover:text-white transition-colors"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                    <button onClick={() => { soundService.playClick(); onClose(); }} className="p-2 text-slate-400 hover:text-white transition-colors"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
@@ -240,7 +240,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                                 {sortedProjects?.map(p => (
                                     <button
                                         key={p.id}
-                                        onClick={() => setProjectId(p.id!)}
+                                        onClick={() => { soundService.playClick(); setProjectId(p.id!); }}
                                         className={`p-3 rounded-xl text-xs font-bold transition-all border text-left truncate ${projectId === p.id ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'}`}
                                     >
                                         {p.name}
@@ -254,9 +254,9 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                     <section className="space-y-3">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Rychlá volba času</label>
                         <div className="flex gap-2">
-                            <button onClick={() => handleQuickTime('full_day')} className="flex-1 py-3 px-2 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black uppercase rounded-xl border border-white/5 transition-all">Celý den (7-15:30)</button>
-                            <button onClick={() => handleQuickTime('half_day')} className="flex-1 py-3 px-2 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black uppercase rounded-xl border border-white/5 transition-all">Půlden (7-11:00)</button>
-                            <button onClick={() => handleQuickTime('now')} className="flex-1 py-3 px-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-indigo-500/20 transition-all">Právě teď</button>
+                            <button onClick={() => { soundService.playClick(); handleQuickTime('full_day'); }} className="flex-1 py-3 px-2 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black uppercase rounded-xl border border-white/5 transition-all touch-manipulation">Celý den (7-15:30)</button>
+                            <button onClick={() => { soundService.playClick(); handleQuickTime('half_day'); }} className="flex-1 py-3 px-2 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black uppercase rounded-xl border border-white/5 transition-all touch-manipulation">Půlden (7-11:00)</button>
+                            <button onClick={() => { soundService.playClick(); handleQuickTime('now'); }} className="flex-1 py-3 px-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-indigo-500/20 transition-all touch-manipulation">Právě teď</button>
                         </div>
                     </section>
 
@@ -299,9 +299,9 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                     style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
                 >
                     <button
-                        onClick={handleSubmit}
+                        onClick={(e) => { soundService.playClick(); handleSubmit(e); }}
                         disabled={isSending || !projectId}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-[0.98] transition-all disabled:opacity-30"
+                        className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-[0.98] transition-all disabled:opacity-30 touch-manipulation"
                     >
                         {isSending ? 'Ukládám...' : 'Uložit záznam'}
                     </button>

@@ -109,8 +109,11 @@ const Dashboard: React.FC = () => {
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <div className="lg:col-span-2">
           <button
-            onClick={() => setIsLoggingWork(true)}
-            className="w-full h-full relative group overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 shadow-[0_10px_40px_-10px_rgba(79,70,229,0.5)] active:scale-[0.98] transition-all border border-indigo-400/20"
+            onClick={() => {
+              soundService.playClick();
+              setIsLoggingWork(true);
+            }}
+            className="w-full h-full relative group overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 shadow-[0_10px_40px_-10px_rgba(79,70,229,0.5)] active:scale-[0.98] transition-all border border-indigo-400/20 touch-manipulation"
           >
             <div className="absolute -right-8 -bottom-8 opacity-20 rotate-12 scale-150 text-black mix-blend-overlay">
               <ClockIcon className="w-40 h-40" />

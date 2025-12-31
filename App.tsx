@@ -11,8 +11,9 @@ import { firebaseService } from './services/firebaseService';
 import { db } from './services/db';
 import ErrorBoundary from './components/ErrorBoundary';
 
-// Lazy loading components for performance optimization (Code Splitting)
+// Lazy loading components
 const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const MyTasks = React.lazy(() => import('./components/MyTasks')); // NEW
 const Workers = React.lazy(() => import('./components/Workers'));
 const Projects = React.lazy(() => import('./components/Projects'));
 const Settings = React.lazy(() => import('./components/Settings'));
@@ -28,7 +29,6 @@ const DailyReports = React.lazy(() => import('./components/DailyReports'));
 const Chat = React.lazy(() => import('./components/Chat'));
 const Payroll = React.lazy(() => import('./components/Payroll'));
 
-// Loading Fallback Component
 const PageLoader = () => (
   <div className="flex flex-col items-center justify-center h-full min-h-[50vh] animate-fade-in">
     <div className="relative w-16 h-16 mb-4">
@@ -43,104 +43,45 @@ const App: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const [isSyncing, setIsSyncing] = useState(true);
 
-  // Initial Sync from Cloud - "Fetch First" Strategy
   useEffect(() => {
     const performInitialSync = async () => {
       if (!isAuthenticated || !firebaseService.isReady) {
         setIsSyncing(false);
         return;
       }
-
-      console.log('🔄 Starting mandatory cloud sync (Fetch First)...');
-      
       try {
-        // 1. Clear local tables to ensure fresh state
         await Promise.all([
-          db.workers.clear(),
-          db.projects.clear(),
-          db.tools.clear(),
-          db.fieldTables.clear(),
-          db.dailyReports.clear(),
-          db.records.clear(),
-          db.projectTasks.clear()
+          db.workers.clear(), db.projects.clear(), db.tools.clear(), 
+          db.fieldTables.clear(), db.dailyReports.clear(), 
+          db.records.clear(), db.projectTasks.clear()
         ]);
-
-        // 2. Fetch all data from Firebase
-        const [
-          workers, 
-          projects, 
-          tools, 
-          fieldTables, 
-          dailyReports, 
-          timeRecords, 
-          projectTasks
-        ] = await Promise.all([
-          firebaseService.getData('workers'),
-          firebaseService.getData('projects'),
-          firebaseService.getData('tools'),
-          firebaseService.getData('fieldTables'),
-          firebaseService.getData('dailyReports'),
-          firebaseService.getData('timeRecords'),
+        const [w, p, t, ft, dr, tr, pt] = await Promise.all([
+          firebaseService.getData('workers'), firebaseService.getData('projects'),
+          firebaseService.getData('tools'), firebaseService.getData('fieldTables'),
+          firebaseService.getData('dailyReports'), firebaseService.getData('timeRecords'),
           firebaseService.getData('projectTasks')
         ]);
-
-        // 3. Populate local DB
-        if (workers) await db.workers.bulkPut(Object.values(workers));
-        if (projects) await db.projects.bulkPut(Object.values(projects));
-        if (tools) await db.tools.bulkPut(Object.values(tools));
-        if (fieldTables) await db.fieldTables.bulkPut(Object.values(fieldTables));
-        if (dailyReports) await db.dailyReports.bulkPut(Object.values(dailyReports));
-        
-        if (timeRecords) {
-          const records = Object.values(timeRecords).map((r: any) => ({
-            ...r,
-            startTime: new Date(r.startTime),
-            endTime: new Date(r.endTime)
-          }));
+        if (w) await db.workers.bulkPut(Object.values(w));
+        if (p) await db.projects.bulkPut(Object.values(p));
+        if (t) await db.tools.bulkPut(Object.values(t));
+        if (ft) await db.fieldTables.bulkPut(Object.values(ft));
+        if (dr) await db.dailyReports.bulkPut(Object.values(dr));
+        if (tr) {
+          const records = Object.values(tr).map((r: any) => ({ ...r, startTime: new Date(r.startTime), endTime: new Date(r.endTime) }));
           await db.records.bulkPut(records);
         }
-
-        if (projectTasks) {
-          const taskList = Object.values(projectTasks).map((t: any) => ({
-            ...t,
-            completionDate: t.completionDate ? new Date(t.completionDate) : undefined,
-            startTime: t.startTime ? new Date(t.startTime) : undefined,
-            endTime: t.endTime ? new Date(t.endTime) : undefined
-          }));
+        if (pt) {
+          const taskList = Object.values(pt).map((task: any) => ({ ...task, completionDate: task.completionDate ? new Date(task.completionDate) : undefined, startTime: task.startTime ? new Date(task.startTime) : undefined, endTime: task.endTime ? new Date(task.endTime) : undefined }));
           await db.projectTasks.bulkPut(taskList);
         }
-
-        console.log('✅ Mandatory cloud sync completed');
-      } catch (error) {
-        console.error('❌ Mandatory sync failed:', error);
-      } finally {
-        setIsSyncing(false);
-      }
+      } catch (error) { console.error('Initial sync failed:', error); }
+      finally { setIsSyncing(false); }
     };
-
     performInitialSync();
   }, [isAuthenticated]);
 
-  // Request Notification Permission & Setup FCM
-  useEffect(() => {
-    if (!isAuthenticated || isSyncing) return;
-
-    const setupFCM = async () => {
-      if (user?.workerId) {
-        await firebaseService.requestNotificationPermission(user.workerId);
-      }
-    };
-
-    setupFCM();
-  }, [isAuthenticated, isSyncing, user?.workerId]);
-
-  if (!isAuthenticated) {
-    return <Login />;
-  }
-
-  if (isSyncing) {
-    return <SplashScreen />;
-  }
+  if (!isAuthenticated) return <Login />;
+  if (isSyncing) return <SplashScreen />;
 
   return (
     <ToastProvider>
@@ -150,7 +91,9 @@ const App: React.FC = () => {
             <ErrorBoundary>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
+                  {/* Redirect workers to my-tasks, admins to dashboard */}
+                  <Route path="/" element={user?.role === 'admin' ? <Dashboard /> : <Navigate to="/my-tasks" />} />
+                  <Route path="/my-tasks" element={<MyTasks />} />
                   <Route path="/workers" element={<Workers />} />
                   <Route path="/projects" element={<Projects />} />
                   <Route path="/field-plans" element={<FieldPlans />} />

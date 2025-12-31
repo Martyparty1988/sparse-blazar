@@ -218,6 +218,30 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
     const [showRightSidebar, setShowRightSidebar] = useState(false);
     const [contextMenu, setContextMenu] = useState<{ table: FieldTable, x: number, y: number } | null>(null);
     const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+    const [isInitializing, setIsInitializing] = useState(false);
+
+    // Auto-initialize tables if missing
+    useEffect(() => {
+        const initTables = async () => {
+            if (!tables || tables.length > 0 || isInitializing) return;
+
+            const project = await db.projects.get(projectId);
+            if (project && project.tables && project.tables.length > 0) {
+                console.log(`Initializing fieldTables for project ${projectId}...`);
+                setIsInitializing(true);
+                const newTables: FieldTable[] = project.tables.map(tableId => ({
+                    projectId,
+                    tableId,
+                    tableType: 'medium',
+                    status: 'pending',
+                    assignedWorkers: []
+                }));
+                await db.fieldTables.bulkAdd(newTables);
+                setIsInitializing(false);
+            }
+        };
+        initTables();
+    }, [projectId, tables, isInitializing]);
 
     // Default to list view on mobile
     useEffect(() => {
@@ -410,7 +434,7 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
     };
 
     return (
-        <div className="fixed inset-0 top-24 bottom-0 flex overflow-hidden bg-slate-950 font-sans">
+        <div className="relative w-full h-[80vh] min-h-[600px] flex overflow-hidden bg-slate-950 font-sans rounded-[2.5rem] border border-white/10 shadow-3xl">
             <aside className={`transition-all duration-300 h-full border-r border-white/5 bg-slate-900/50 backdrop-blur-xl shrink-0 flex flex-col ${showLeftSidebar ? 'w-80' : 'w-0 overflow-hidden'}`}>
                 <div className="p-8 grow space-y-10 custom-scrollbar overflow-y-auto">
                     <header>
@@ -449,7 +473,7 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
             </aside>
             <main ref={containerRef} onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} className="canvas-area flex-1 relative bg-[radial-gradient(circle_at_50%_40%,_#1e293b_0%,_#020617_100%)] overflow-hidden">
                 {/* View Mode Toggle (Mobile) */}
-                <div className="absolute top-6 left-20 z-50 flex gap-2 md:hidden">
+                <div className="absolute top-6 left-6 z-50 flex gap-2 md:hidden">
                     <button onClick={() => setViewMode('map')} className={`p-3 rounded-xl border transition-all ${viewMode === 'map' ? 'bg-indigo-500 text-white border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 'bg-slate-900/80 text-gray-400 border-white/10 backdrop-blur-md'}`}>
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
                     </button>

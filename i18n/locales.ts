@@ -98,6 +98,11 @@ export const locales = {
     all_projects: 'All Projects',
     project_not_found: 'Project "{name}" not found.',
     multiple_projects_found: 'Multiple projects found matching "{name}".',
+    field_plans: 'Field Plans',
+    no_field_plans: 'No Field Plans',
+    create_project_with_tables: 'Create a project with a list of tables to see the field plan.',
+    change_project: 'Change Project',
+    tables: 'Tables',
     project_required_error: 'Please select a project.',
     project_health: 'Project Health',
     last_activity: 'Last Activity',
@@ -105,7 +110,6 @@ export const locales = {
     back_to_projects: 'Back to Projects',
 
     // Tables
-    tables: 'Tables',
     add_table: 'Add Table',
     edit_table: 'Edit Table',
     delete_table_title: 'Delete Table',
@@ -384,6 +388,11 @@ export const locales = {
     all_projects: 'Všechny projekty',
     project_not_found: 'Projekt "{name}" nebyl nalezen.',
     multiple_projects_found: 'Nalezeno více projektů odpovídajících "{name}".',
+    field_plans: 'Plánová pole',
+    no_field_plans: 'Žádná plánová pole',
+    create_project_with_tables: 'Vytvořte projekt se seznamem stolů pro zobrazení plánového pole.',
+    change_project: 'Změnit projekt',
+    tables: 'stolů',
     project_required_error: 'Prosím vyberte projekt.',
     project_health: 'Zdraví projektu',
     last_activity: 'Poslední aktivita',
@@ -391,7 +400,6 @@ export const locales = {
     back_to_projects: 'Zpět na projekty',
 
     // Tables
-    tables: 'Stoly',
     add_table: 'Přidat stůl',
     edit_table: 'Upravit stůl',
     delete_table_title: 'Smazat stůl',

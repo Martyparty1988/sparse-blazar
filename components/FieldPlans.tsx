@@ -75,54 +75,67 @@ const FieldPlans: React.FC = () => {
                 </h1>
             </header>
 
-            {/* Project Selector */}
-            <div className="bg-white/[0.03] rounded-3xl border border-white/10 backdrop-blur-3xl shadow-2xl p-6">
-                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-4">
-                    {t('select_project') || 'Vyberte projekt'}
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {projects.map(project => {
-                        const isSelected = project.id === selectedProjectId;
-                        const tableCount = project.tables?.length || 0;
+            {/* Project Selector - Hide if project is selected to maximize map space */}
+            {!selectedProjectId ? (
+                <div className="bg-white/[0.03] rounded-3xl border border-white/10 backdrop-blur-3xl shadow-2xl p-6 animate-fade-in">
+                    <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-4">
+                        {t('select_project') || 'Vyberte projekt'}
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {projects.map(project => {
+                            const isSelected = project.id === selectedProjectId;
+                            const tableCount = project.tables?.length || 0;
 
-                        return (
-                            <button
-                                key={project.id}
-                                onClick={() => setSelectedProjectId(project.id!)}
-                                className={`p-6 rounded-2xl transition-all text-left ${isSelected
-                                    ? 'bg-white/10 border-2 border-[var(--color-accent)] shadow-lg'
-                                    : 'bg-white/5 border-2 border-transparent hover:bg-white/10'
-                                    }`}
-                            >
-                                <div className="flex items-start justify-between mb-3">
-                                    <h3 className="text-xl font-black text-white uppercase tracking-tight line-clamp-1">
-                                        {project.name}
-                                    </h3>
-                                    {isSelected && (
-                                        <div className="text-[var(--color-accent)]">
-                                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                            </svg>
+                            return (
+                                <button
+                                    key={project.id}
+                                    onClick={() => setSelectedProjectId(project.id!)}
+                                    className={`p-6 rounded-2xl transition-all text-left ${isSelected
+                                        ? 'bg-white/10 border-2 border-[var(--color-accent)] shadow-lg'
+                                        : 'bg-white/5 border-2 border-transparent hover:bg-white/10'
+                                        }`}
+                                >
+                                    <div className="flex items-start justify-between mb-3">
+                                        <h3 className="text-xl font-black text-white uppercase tracking-tight line-clamp-1">
+                                            {project.name}
+                                        </h3>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <div className="px-3 py-1 bg-black/30 rounded-lg border border-white/10">
+                                            <span className="text-white font-bold">{tableCount}</span>
+                                            <span className="text-gray-500 ml-1">{t('tables') || 'stolů'}</span>
                                         </div>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                    <div className="px-3 py-1 bg-black/30 rounded-lg border border-white/10">
-                                        <span className="text-white font-bold">{tableCount}</span>
-                                        <span className="text-gray-500 ml-1">{t('tables') || 'stolů'}</span>
+                                        <div className={`px-3 py-1 rounded-lg border ${project.status === 'active' ? 'bg-green-500/20 border-green-500/30 text-green-400' :
+                                            project.status === 'completed' ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' :
+                                                'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'
+                                            }`}>
+                                            <span className="text-xs font-bold uppercase">{t(project.status as any)}</span>
+                                        </div>
                                     </div>
-                                    <div className={`px-3 py-1 rounded-lg border ${project.status === 'active' ? 'bg-green-500/20 border-green-500/30 text-green-400' :
-                                        project.status === 'completed' ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' :
-                                            'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'
-                                        }`}>
-                                        <span className="text-xs font-bold uppercase">{t(project.status as any)}</span>
-                                    </div>
-                                </div>
-                            </button>
-                        );
-                    })}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
+            ) : (
+                <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 animate-fade-in mb-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-500/30">
+                            <span className="text-xl">📍</span>
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Aktivní projekt</p>
+                            <h2 className="text-xl font-black text-white uppercase italic tracking-tighter">{selectedProject?.name}</h2>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setSelectedProjectId(null)}
+                        className="px-6 py-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95"
+                    >
+                        {t('change_project') || 'Změnit projekt'}
+                    </button>
+                </div>
+            )}
 
             {/* Field Plan View */}
             {selectedProjectId && (

@@ -55,8 +55,24 @@
       --space-6: 24px;
       --space-8: 32px;
       --space-10: 40px;
+      --space-10: 40px;
       --space-12: 48px;
+
+      /* Safe Area Variables */
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
     }
+
+    /* Utility classes for Safe Areas */
+    .pt-safe { padding-top: var(--safe-top); }
+    .pb-safe { padding-bottom: var(--safe-bottom); }
+    .pl-safe { padding-left: var(--safe-left); }
+    .pr-safe { padding-right: var(--safe-right); }
+    
+    /* Ensure content doesn't get hidden behind bottom nav */
+    .pb-nav-mobile { padding-bottom: calc(4rem + var(--safe-bottom)); }
 
     [data-theme="stellar"] {
       --bg-gradient: radial-gradient(circle at 50% 0%, #4c1d95 0%, #2e1065 40%, #020617 100%);

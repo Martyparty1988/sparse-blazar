@@ -6,49 +6,47 @@ import DashboardIcon from './icons/DashboardIcon';
 import ProjectsIcon from './icons/ProjectsIcon';
 import SettingsIcon from './icons/SettingsIcon';
 import ClockIcon from './icons/ClockIcon';
-import BrainIcon from './icons/BrainIcon';
+
 import ChatIcon from './icons/ChatIcon';
 import ConnectionStatusIndicator from './ConnectionStatusIndicator';
+import FloatingActionMenu from './FloatingActionMenu';
 
 const BottomNavBar: React.FC = () => {
     const { t } = useI18n();
     const { user } = useAuth();
 
     const navItems = [
-        { to: "/", title: t('dashboard'), icon: <DashboardIcon className="w-7 h-7" />, roles: ['admin', 'user'] },
-        { to: "/projects", title: t('projects'), icon: <ProjectsIcon className="w-7 h-7" />, roles: ['admin', 'user'] },
-        { to: "/chat", title: "Chat", icon: <ChatIcon className="w-7 h-7" />, roles: ['admin', 'user'] },
-        { to: "/records", title: t('work_log'), icon: <ClockIcon className="w-7 h-7" />, roles: ['admin', 'user'] },
-        { to: "/settings", title: t('settings'), icon: <SettingsIcon className="w-7 h-7" />, roles: ['admin'] },
+        { to: "/", title: t('dashboard'), icon: <DashboardIcon className="w-6 h-6" />, roles: ['admin', 'user'] },
+        { to: "/projects", title: t('projects'), icon: <ProjectsIcon className="w-6 h-6" />, roles: ['admin', 'user'] },
+        { to: "/chat", title: "Chat", icon: <ChatIcon className="w-6 h-6" />, roles: ['admin', 'user'] },
+        { to: "/records", title: t('work_log'), icon: <ClockIcon className="w-6 h-6" />, roles: ['admin', 'user'] },
+        { to: "/settings", title: t('settings'), icon: <SettingsIcon className="w-6 h-6" />, roles: ['admin'] },
     ];
 
     const visibleItems = navItems.filter(item => item.roles.includes(user?.role || 'user'));
 
     return (
-        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md md:hidden">
-            <div className="glass-card rounded-[3rem] px-2 py-3 flex justify-around items-center shadow-[0_30px_70px_rgba(0,0,0,0.7)] border-white/20">
+        <nav className="fixed bottom-0 left-0 z-50 w-full bg-[#020617]/90 backdrop-blur-xl border-t border-white/10 md:hidden pb-[env(safe-area-inset-bottom)]">
+            <div className="flex justify-around items-center px-2 py-3">
                 {visibleItems.map(item => (
                     <NavLink
                         key={item.to}
                         to={item.to}
                         className={({ isActive }) =>
-                            `relative flex flex-col items-center justify-center p-6 rounded-[2.5rem] transition-all duration-300 touch-manipulation ${isActive
-                                ? 'bg-white/15 text-[var(--color-accent)] scale-105 shadow-[0_0_20px_rgba(56,189,248,0.3)]'
-                                : 'text-slate-400 hover:text-white active:scale-95'
+                            `flex flex-col items-center justify-center w-full py-1 gap-1 transition-all duration-300 touch-manipulation ${isActive
+                                ? 'text-[var(--color-accent)]'
+                                : 'text-slate-500 hover:text-slate-300'
                             }`
                         }
                     >
                         {({ isActive }) => (
                             <>
-                                <div className={`transition-all duration-300 ${isActive ? 'scale-110' : 'scale-100'}`}>
+                                <div className={`transition-all duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]' : 'scale-100'}`}>
                                     {item.icon}
                                 </div>
-                                {isActive && (
-                                    <>
-                                        <span className="absolute -bottom-0.5 w-2 h-2 bg-[var(--color-accent)] rounded-full shadow-[0_0_15px_rgba(56,189,248,0.8)] animate-pulse"></span>
-                                        <span className="absolute inset-0 bg-gradient-to-t from-[var(--color-accent)]/20 to-transparent rounded-[2.5rem] opacity-50"></span>
-                                    </>
-                                )}
+                                <span className={`text-[10px] font-bold uppercase tracking-wide ${isActive ? 'opacity-100' : 'opacity-70'}`}>
+                                    {item.title}
+                                </span>
                             </>
                         )}
                     </NavLink>
@@ -135,6 +133,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </main>
 
             <BottomNavBar />
+            <FloatingActionMenu />
 
 
         </div>

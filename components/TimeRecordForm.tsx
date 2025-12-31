@@ -347,23 +347,10 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
         </div>
     );
 
-    // Krok 1: CO (Typ práce)
+    // Krok 1: CO (Typ práce) - Note: Main switch is now at the top
     const renderStep1 = () => (
         <div className="space-y-6 animate-fade-in">
-            <div className="flex p-1 rounded-2xl bg-black/40 border border-white/5 relative">
-                <div
-                    className="absolute top-1 bottom-1 rounded-xl bg-[var(--color-primary)] shadow-lg transition-all duration-300 ease-out"
-                    style={{
-                        left: '4px',
-                        width: 'calc(50% - 4px)',
-                        transform: workType === 'task' ? 'translateX(100%)' : 'translateX(0)'
-                    }}
-                ></div>
-                <button type="button" onClick={() => setWorkType('hourly')} className="relative z-10 flex-1 py-3 text-xs font-black uppercase tracking-wider text-center transition-colors text-white">{t('hourly_rate_work')}</button>
-                <button type="button" onClick={() => setWorkType('task')} className="relative z-10 flex-1 py-3 text-xs font-black uppercase tracking-wider text-center transition-colors text-white">{t('task_based_work')}</button>
-            </div>
-
-            {workType === 'task' && (
+            {workType === 'task' ? (
                 <div>
                     <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{t('task_type')}</label>
                     <select value={taskType} onChange={e => setTaskType(e.target.value as any)} className="w-full p-4 bg-white/5 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-[var(--color-accent)] outline-none font-bold text-sm [&>option]:bg-slate-900">
@@ -371,6 +358,16 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord }) => 
                         <option value="panels">{t('panels')}</option>
                         <option value="construction">{t('construction')}</option>
                     </select>
+                </div>
+            ) : (
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-center gap-4">
+                    <div className="p-3 bg-[var(--color-primary)]/20 rounded-xl text-[var(--color-primary)]">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <div className="text-sm font-bold text-white mb-0.5">{t('hourly_rate_work')}</div>
+                        <div className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Standardní měření času</div>
+                    </div>
                 </div>
             )}
         </div>

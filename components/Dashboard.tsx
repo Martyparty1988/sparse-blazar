@@ -14,7 +14,6 @@ import ClockIcon from './icons/ClockIcon';
 import MapIcon from './icons/MapIcon';
 import CalendarIcon from './icons/CalendarIcon';
 import PlusIcon from './icons/PlusIcon';
-import BrainIcon from './icons/BrainIcon';
 import ChartBarIcon from './icons/ChartBarIcon';
 import WrenchIcon from './icons/WrenchIcon';
 import DocumentTextIcon from './icons/DocumentTextIcon';
@@ -74,18 +73,6 @@ const Dashboard: React.FC = () => {
 
   const activeSessionsCount = activeSessions?.length || 0;
 
-  // AI Insights Logic
-  const aiInsight = useMemo(() => {
-    const hours = new Date().getHours();
-    let greeting = t('ai_greeting', { name: currentUser?.name || user?.username || 'Admin' }).replace('{name}', currentUser?.name || user?.username || 'Admin');
-
-    // Custom logic for summary
-    let summary = t('ai_summary_fine');
-    if (pendingTasksCount > 10) summary = t('ai_summary_issue');
-
-    return { greeting, summary };
-  }, [currentUser, user, t, pendingTasksCount]);
-
   // Mock Weather (In real app, fetch from OpenWeatherMap)
   const weather = {
     temp: '22°C',
@@ -100,9 +87,7 @@ const Dashboard: React.FC = () => {
       <header className="pt-8 md:pt-12">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="space-y-2">
-            <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter italic leading-none flex items-baseline gap-2">
-              MST<span className="text-indigo-500">.</span>CORE
-            </h1>
+
             <div className="flex items-center gap-4 flex-wrap">
               <SyncStatusIndicator />
               <div className="h-4 w-px bg-white/10 hidden sm:block"></div>
@@ -112,29 +97,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* AI & Weather Quick Glance */}
-          <div className="flex items-center gap-4">
-            <div className="flex bg-slate-900/60 backdrop-blur-xl border border-white/5 rounded-3xl p-4 gap-6 shadow-2xl items-center">
-              <div className="flex items-center gap-4 pr-6 border-r border-white/10">
-                <div className="p-3 bg-amber-500/10 rounded-2xl animate-pulse">
-                  {weather.icon}
-                </div>
-                <div>
-                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{t('weather')}</p>
-                  <p className="text-xl font-black text-white italic">{weather.temp} <span className="text-[10px] text-slate-500 not-italic ml-1">{weather.condition}</span></p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 group cursor-pointer" onClick={() => navigate('/chat')}>
-                <div className="p-3 bg-indigo-500/10 rounded-2xl group-hover:bg-indigo-500 group-hover:text-white transition-all text-indigo-400">
-                  <BrainIcon className="w-8 h-8" />
-                </div>
-                <div className="max-w-[200px] hidden sm:block">
-                  <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{t('ai_mistr')}</p>
-                  <p className="text-[11px] font-bold text-slate-300 leading-tight line-clamp-2">{aiInsight.greeting}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Weather & Chat Quick Glance - REMOVED */}
         </div>
       </header>
 

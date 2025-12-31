@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -129,11 +129,14 @@ const Login: React.FC<LoginProps> = ({ onBack }) => {
             username: regUsername,
             password: regPassword,
             hourlyRate: 0,
+            panelPrice: 0,
+            stringPrice: 0,
+            meterPrice: 0,
             createdAt: new Date()
         };
 
         try {
-            const id = await db.workers.add(newWorkerData as Worker);
+            const id = await db.workers.add(newWorkerData as Worker) as number;
             login({ username: regName, role: 'user', workerId: id });
         } catch (err) {
             console.error(err);

@@ -217,6 +217,15 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
     const [showLeftSidebar, setShowLeftSidebar] = useState(true);
     const [showRightSidebar, setShowRightSidebar] = useState(false);
     const [contextMenu, setContextMenu] = useState<{ table: FieldTable, x: number, y: number } | null>(null);
+    const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+
+    // Default to list view on mobile
+    useEffect(() => {
+        if (window.innerWidth < 768) {
+            setViewMode('list');
+            setShowLeftSidebar(false);
+        }
+    }, []);
 
     // Zoom/Pan State
     const [zoom, setZoom] = useState(1);
@@ -332,6 +341,25 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
         if (containerRef.current) containerRef.current.style.cursor = 'default';
     };
 
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (e.touches.length === 1 && (e.target as HTMLElement).classList.contains('canvas-area')) {
+            isDragging.current = true;
+            startPos.current = { x: e.touches[0].clientX - offset.x, y: e.touches[0].clientY - offset.y };
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging.current || e.touches.length !== 1) return;
+        setOffset({
+            x: e.touches[0].clientX - startPos.current.x,
+            y: e.touches[0].clientY - startPos.current.y
+        });
+    };
+
+    const handleTouchEnd = () => {
+        isDragging.current = false;
+    };
+
     const handleBulkAction = async (action: string, data?: any) => {
         const ids = Array.from(selectedIds).map(Number);
         if (ids.length === 0) return;
@@ -419,18 +447,63 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
                     <p className="text-[10px] font-bold text-slate-500">Shift + Click: Výběr rozsahu</p>
                 </div>
             </aside>
-            <main ref={containerRef} onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} className="canvas-area flex-1 relative bg-[radial-gradient(circle_at_50%_40%,_#1e293b_0%,_#020617_100%)] overflow-hidden">
-                <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: `${50 * zoom}px ${50 * zoom}px`, transform: `translate(${offset.x % (50 * zoom)}px, ${offset.y % (50 * zoom)}px)` }} />
-                <div className="absolute p-20 pointer-events-none" style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${100 * zoom}px, 1fr))`, width: '3000px', gap: `${15 * zoom}px`, transition: isDragging.current ? 'none' : 'transform 0.1s ease-out' }}>
-                    {filteredTables.map(table => (
-                        <div key={table.id} className="pointer-events-auto">
-                            <TableItem table={table} zoom={zoom} workers={workers || []} isSelected={selectedIds.has(table.id!.toString())} completedWorker={table.status === 'completed' ? workers?.find(w => w.id === table.completedBy) : null} assignedWorkers={table.assignedWorkers?.map(id => workers?.find(w => w.id === id)).filter(Boolean) as Worker[]} tasks={tasks?.filter(t => t.tableIds?.includes(table.tableId)) || []} onToggle={handleToggleSelect} onContextMenu={(e, t) => setContextMenu({ table: t, x: e.clientX, y: e.clientY })} />
-                        </div>
-                    ))}
+            <main ref={containerRef} onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} className="canvas-area flex-1 relative bg-[radial-gradient(circle_at_50%_40%,_#1e293b_0%,_#020617_100%)] overflow-hidden">
+                {/* View Mode Toggle (Mobile) */}
+                <div className="absolute top-6 left-20 z-50 flex gap-2 md:hidden">
+                    <button onClick={() => setViewMode('map')} className={`p-3 rounded-xl border transition-all ${viewMode === 'map' ? 'bg-indigo-500 text-white border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 'bg-slate-900/80 text-gray-400 border-white/10 backdrop-blur-md'}`}>
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                    </button>
+                    <button onClick={() => setViewMode('list')} className={`p-3 rounded-xl border transition-all ${viewMode === 'list' ? 'bg-indigo-500 text-white border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 'bg-slate-900/80 text-gray-400 border-white/10 backdrop-blur-md'}`}>
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </button>
                 </div>
+
+                {viewMode === 'map' ? (
+                    <>
+                        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: `${50 * zoom}px ${50 * zoom}px`, transform: `translate(${offset.x % (50 * zoom)}px, ${offset.y % (50 * zoom)}px)` }} />
+                        <div className="absolute p-20 pointer-events-none" style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${100 * zoom}px, 1fr))`, width: '3000px', gap: `${15 * zoom}px`, transition: isDragging.current ? 'none' : 'transform 0.1s ease-out' }}>
+                            {filteredTables.map(table => (
+                                <div key={table.id} className="pointer-events-auto">
+                                    <TableItem table={table} zoom={zoom} workers={workers || []} isSelected={selectedIds.has(table.id!.toString())} completedWorker={table.status === 'completed' ? workers?.find(w => w.id === table.completedBy) : null} assignedWorkers={table.assignedWorkers?.map(id => workers?.find(w => w.id === id)).filter(Boolean) as Worker[]} tasks={tasks?.filter(t => t.tableIds?.includes(table.tableId)) || []} onToggle={handleToggleSelect} onContextMenu={(e, t) => setContextMenu({ table: t, x: e.clientX, y: e.clientY })} />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="absolute right-6 top-6 px-4 py-2 bg-slate-900/80 backdrop-blur-3xl border border-white/10 rounded-xl text-[10px] font-black text-white uppercase tracking-widest z-50 pointer-events-none hidden md:block">Zoom: {Math.round(zoom * 100)}%</div>
+                        {contextMenu && <ContextMenu table={contextMenu.table} x={contextMenu.x} y={contextMenu.y} workers={workers || []} onClose={() => setContextMenu(null)} onAction={(action, data) => { setContextMenu(null); if (action === 'detail') onTableClick?.(contextMenu.table); else if (action === 'assign') { setSelectedIds(new Set([contextMenu.table.id!.toString()])); handleBulkAction('assign', data); } else { setSelectedIds(new Set([contextMenu.table.id!.toString()])); handleBulkAction(action); } }} />}
+                    </>
+                ) : (
+                    <div className="absolute inset-0 overflow-y-auto px-4 pt-24 pb-32 space-y-3 custom-scrollbar bg-slate-950">
+                        {filteredTables.map(table => {
+                            const statusColor = table.status === 'completed' ? 'bg-emerald-500' : table.status === 'defect' ? 'bg-rose-500' : (table.assignedWorkers?.length ? 'bg-amber-500' : 'bg-slate-700');
+                            return (
+                                <div key={table.id} onClick={() => onTableClick?.(table)} className="bg-slate-900/80 border border-white/10 rounded-2xl p-5 flex items-center justify-between shadow-lg active:scale-[0.98] transition-all">
+                                    <div className="flex items-center gap-5">
+                                        <div className={`w-2 h-16 rounded-full ${statusColor} shadow-[0_0_15px_rgba(255,255,255,0.1)]`}></div>
+                                        <div>
+                                            <h3 className="text-2xl font-black text-white italic tracking-tighter mb-1">{table.tableId}</h3>
+                                            <div className={`inline-flex px-2 py-0.5 rounded-md text-[10px] uppercase font-black tracking-widest ${table.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : table.status === 'defect' ? 'bg-rose-500/20 text-rose-400' : (table.assignedWorkers?.length ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400')}`}>
+                                                {table.status === 'completed' ? 'HOTOVO' : table.status === 'defect' ? 'ZÁVADA' : (table.assignedWorkers?.length ? 'V PROCESU' : 'ČEKÁ')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center -space-x-3 pl-4">
+                                        {table.assignedWorkers?.map(wid => {
+                                            const w = workers?.find(wk => wk.id === wid);
+                                            if (!w) return null;
+                                            return <div key={wid} className="w-10 h-10 rounded-full border-2 border-slate-900 flex items-center justify-center font-bold text-white text-xs shadow-lg relative z-10" style={{ backgroundColor: getWorkerColor(wid, w.color, workers || []) }}>{getInitials(w.name)}</div>
+                                        })}
+                                        {(!table.assignedWorkers || table.assignedWorkers.length === 0) && <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-600"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></div>}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                        {filteredTables.length === 0 && (
+                            <div className="text-center py-20 text-slate-500 font-bold uppercase tracking-widest opacity-50">Žádné stoly k zobrazení</div>
+                        )}
+                    </div>
+                )}
+
                 <button onClick={() => setShowLeftSidebar(!showLeftSidebar)} className="absolute left-6 top-6 w-12 h-12 bg-slate-900 border border-white/10 rounded-2xl flex items-center justify-center text-white shadow-2xl hover:bg-slate-800 transition-all z-50"><svg className={`w-6 h-6 transition-transform ${showLeftSidebar ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg></button>
-                <div className="absolute right-6 top-6 px-4 py-2 bg-slate-900/80 backdrop-blur-3xl border border-white/10 rounded-xl text-[10px] font-black text-white uppercase tracking-widest z-50">Zoom: {Math.round(zoom * 100)}%</div>
-                {contextMenu && <ContextMenu table={contextMenu.table} x={contextMenu.x} y={contextMenu.y} workers={workers || []} onClose={() => setContextMenu(null)} onAction={(action, data) => { setContextMenu(null); if (action === 'detail') onTableClick?.(contextMenu.table); else if (action === 'assign') { setSelectedIds(new Set([contextMenu.table.id!.toString()])); handleBulkAction('assign', data); } else { setSelectedIds(new Set([contextMenu.table.id!.toString()])); handleBulkAction(action); } }} />}
             </main>
             <aside className={`transition-all duration-300 h-full border-l border-white/5 bg-slate-900/80 backdrop-blur-3xl shrink-0 flex flex-col ${showRightSidebar ? 'w-80' : 'w-0 overflow-hidden'}`}>
                 <div className="p-8 grow space-y-10 overflow-y-auto custom-scrollbar">

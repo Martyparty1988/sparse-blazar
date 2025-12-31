@@ -38,10 +38,9 @@ const BottomNavBar: React.FC = () => {
                         key={item.to}
                         to={item.to}
                         className={({ isActive }) =>
-                            `group flex flex-col items-center justify-center w-full gap-1 transition-all duration-300 touch-manipulation min-h-[56px] ${
-                                isActive
-                                    ? 'text-white'
-                                    : 'text-slate-500 hover:text-slate-300'
+                            `group flex flex-col items-center justify-center w-full gap-1 transition-all duration-300 touch-manipulation min-h-[56px] ${isActive
+                                ? 'text-white'
+                                : 'text-slate-500 hover:text-slate-300'
                             }`
                         }
                     >
@@ -79,9 +78,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#1a1d37]/80 backdrop-blur-md border-b border-white/5 shadow-sm"
                     style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
                 >
-                     <div className="flex justify-between items-center h-16 px-6">
+                    <div
+                        className="flex justify-between items-center h-16 px-6"
+                        style={{
+                            paddingLeft: 'calc(1.5rem + env(safe-area-inset-left, 0px))',
+                            paddingRight: 'calc(1.5rem + env(safe-area-inset-right, 0px))'
+                        }}
+                    >
                         <div className="flex items-center gap-3">
-                             <span className="text-xl font-black italic tracking-tighter text-white">MST<span className="text-[var(--color-accent)]">.</span></span>
+                            <span className="text-xl font-black italic tracking-tighter text-white">MST<span className="text-[var(--color-accent)]">.</span></span>
                         </div>
                         <ConnectionStatusIndicator />
                     </div>
@@ -90,7 +95,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 {/* Main Content Area */}
                 <main
                     className="flex-1 overflow-y-auto custom-scrollbar p-6 overscroll-contain"
-                     style={{
+                    style={{
                         paddingTop: 'calc(4.5rem + env(safe-area-inset-top, 0px))',
                         paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))',
                         paddingLeft: 'calc(1.5rem + env(safe-area-inset-left, 0px))',
@@ -105,7 +110,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 {/* Bottom Nav for mobile */}
                 <BottomNavBar />
 
-                 {/* Floating Action Menu - visible on mobile */}
+                {/* Floating Action Menu - visible on mobile */}
                 <div className="md:hidden">
                     <FloatingActionMenu />
                 </div>

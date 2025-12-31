@@ -26,11 +26,11 @@ import { db } from './db'; // Import Dexie instance
 const firebaseConfig = {
     apiKey: "AIzaSyC0wgEBrqvx4Uge7upoSqZXFkSwXKb9hqE",
     authDomain: "mst-marty-solar-2025.firebaseapp.com",
+    databaseURL: "https://mst-marty-solar-2025-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "mst-marty-solar-2025",
     storageBucket: "mst-marty-solar-2025.firebasestorage.app",
     messagingSenderId: "706935785372",
-    appId: "1:706935785372:web:0f21a739f8acbeb3e2ea59",
-    databaseURL: "https://mst-marty-solar-2025-default-rtdb.europe-west1.firebasedatabase.app"
+    appId: "1:706935785372:web:ccb7e109ba3eccd7e2ea59"
 };
 
 export interface SyncResult {
@@ -70,6 +70,16 @@ class FirebaseService {
     }
 
     public get isReady() { return this.isInitialized && this.db !== null; }
+
+    private setupForegroundMessageListener() {
+        if (this.messaging) {
+            onMessage(this.messaging, (payload) => {
+                console.log('Foreground Message received: ', payload);
+                // In foreground, we can just show a toast or rely on UI updates
+                // But typically we don't show a system notification
+            });
+        }
+    }
 
     private setupConnectivityListener() {
         const connectedRef = ref(this.rtdb, ".info/connected");
@@ -121,7 +131,7 @@ class FirebaseService {
 
             await db.transaction('rw', Object.values(collectionsToSync), async () => {
                 const syncPromises = Object.entries(collectionsToSync).map(async ([name, table]) => {
-                    const q = lastSyncDate 
+                    const q = lastSyncDate
                         ? query(collection(this.db, name), where("updatedAt", ">", Timestamp.fromDate(lastSyncDate)))
                         : collection(this.db, name);
 
@@ -142,7 +152,7 @@ class FirebaseService {
                         }
                         recordsToUpsert.push(record);
                     });
-                    
+
                     if (recordsToUpsert.length > 0) {
                         await table.bulkPut(recordsToUpsert);
                         totalSynced += recordsToUpsert.length;
@@ -212,7 +222,7 @@ class FirebaseService {
             return { success: true };
         } catch (error: any) { return { success: false, error: error.message }; }
     }
-    
+
     // ... other methods from original file (getData, setData, etc.)
 
 }

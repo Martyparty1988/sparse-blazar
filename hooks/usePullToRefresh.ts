@@ -14,7 +14,7 @@ const usePullToRefresh = (options: UsePullToRefreshOptions) => {
     const handleRefresh = useCallback(async () => {
         const now = Date.now();
         if (now - lastRefresh < debounceTime) return;
-        
+
         setIsRefreshing(true);
         setLastRefresh(now);
         try {
@@ -28,16 +28,28 @@ const usePullToRefresh = (options: UsePullToRefreshOptions) => {
     useEffect(() => {
         let startY = 0;
         let isPulling = false;
+        // Target the main scrollable area defined in Layout.tsx
+        const scrollContainer = document.querySelector('main') || window;
 
-        const handleTouchStart = (e: TouchEvent) => {
-            if (window.scrollY === 0) { // Only when at the top of the page
+        const handleTouchStart = (e: any) => {
+            // Check scrollTop of the container, or scrollY if it's the window
+            const scrollTop = 'scrollTop' in scrollContainer ? scrollContainer.scrollTop : window.scrollY;
+
+            if (scrollTop === 0) { // Only when at the top
                 startY = e.touches[0].clientY;
                 isPulling = true;
             }
         };
 
-        const handleTouchMove = (e: TouchEvent) => {
+        const handleTouchMove = (e: any) => {
             if (!isPulling) return;
+
+            // If we scrolled down during the pull, cancel
+            const scrollTop = 'scrollTop' in scrollContainer ? scrollContainer.scrollTop : window.scrollY;
+            if (scrollTop > 0) {
+                isPulling = false;
+                return;
+            }
 
             const currentY = e.touches[0].clientY;
             const diff = currentY - startY;
@@ -52,6 +64,8 @@ const usePullToRefresh = (options: UsePullToRefreshOptions) => {
             isPulling = false;
         };
 
+        // We need to attach to the container if possible, but touch events often bubble. 
+        // Attaching to window is usually safer for capturing swipes, but we must check scrollTop of the CONTAINER.
         window.addEventListener('touchstart', handleTouchStart, { passive: true });
         window.addEventListener('touchmove', handleTouchMove, { passive: true });
         window.addEventListener('touchend', handleTouchEnd, { passive: true });

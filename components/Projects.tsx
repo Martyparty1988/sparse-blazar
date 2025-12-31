@@ -32,7 +32,7 @@ const Projects: React.FC = () => {
     const projects = useLiveQuery(() => db.projects.toArray(), []);
     const workers = useLiveQuery(() => db.workers.toArray(), []);
     const allTasks = useLiveQuery(() => db.projectTasks.toArray(), []);
-    
+
     const handleDataRefresh = useCallback(async () => {
         try {
             await firebaseService.syncAll();
@@ -87,26 +87,51 @@ const Projects: React.FC = () => {
     const filterOptions: ('all' | 'active' | 'completed' | 'on_hold')[] = ['all', 'active', 'completed', 'on_hold'];
 
     return (
-        <div className="space-y-6 md:space-y-8 pb-32">
-             <div className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${isRefreshing ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'}`}>
+        <div className="space-y-12 pb-32">
+            <div className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${isRefreshing ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'}`}>
                 <div className="bg-indigo-600 text-white rounded-full p-2 shadow-lg">
                     <RedoIcon className="w-5 h-5 animate-spin" />
                 </div>
             </div>
 
-            {/* Header */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                 <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase">
-                    {t('projects')}
-                </h1>
-                {user?.role === 'admin' && (
-                    <button 
-                        onClick={handleAdd} 
-                        className="flex items-center justify-center gap-2 px-5 py-3 bg-white text-black font-bold text-sm rounded-lg shadow-lg hover:bg-opacity-90 transition-all active:scale-95">
-                        <PlusIcon className="w-5 h-5" />
-                        {t('add_project')}
-                    </button>
-                )}
+            <header className="space-y-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                    <div className="space-y-2">
+                        <h1 className="text-7xl font-black text-white italic tracking-tighter uppercase leading-[0.8]">
+                            {t('projects')}
+                        </h1>
+                        <p className="text-xl text-slate-500 font-bold tracking-tight">
+                            Správa a monitoring solárních parků.
+                        </p>
+                    </div>
+                    {user?.role === 'admin' && (
+                        <button
+                            onClick={handleAdd}
+                            className="group relative w-full md:w-auto overflow-hidden px-10 py-5 bg-white text-black font-black uppercase tracking-[0.2em] text-xs rounded-full hover:bg-indigo-600 hover:text-white transition-all duration-500 shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
+                        >
+                            <div className="relative z-10 flex items-center justify-center gap-3">
+                                <PlusIcon className="w-5 h-5" />
+                                {t('add_project')}
+                            </div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        </button>
+                    )}
+                </div>
+
+                {/* Project Overview Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                        { label: 'Aktivní', value: projects?.filter(p => p.status === 'active').length || 0, color: 'text-emerald-500' },
+                        { label: 'Dokončeno', value: projects?.filter(p => p.status === 'completed').length || 0, color: 'text-indigo-400' },
+                        { label: 'Celkový výkon', value: '4.2 MWp', color: 'text-amber-500' },
+                        { label: 'Realizace', value: '88%', color: 'text-white' }
+                    ].map((stat, i) => (
+                        <div key={i} className="glass-card p-6 rounded-[2rem] border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
+                            <p className={`text-3xl font-black italic tracking-tighter ${stat.color}`}>{stat.value}</p>
+                        </div>
+                    ))}
+                </div>
             </header>
 
             {/* Search and Filter Section */}
@@ -161,7 +186,7 @@ const Projects: React.FC = () => {
                         onManageTasks={setManagingTasksFor}
                     />
                 ))}
-                 {filteredProjects.length === 0 && (
+                {filteredProjects.length === 0 && (
                     <div className="col-span-full py-20 text-center text-slate-500">
                         <SearchIcon className="w-12 h-12 mx-auto mb-4" />
                         <p className="text-lg font-semibold">{t('no_data')}</p>
@@ -171,15 +196,17 @@ const Projects: React.FC = () => {
 
             {showForm && <ProjectForm project={selectedProject} onClose={() => setShowForm(false)} />}
             {managingTasksFor && <ProjectTasksModal project={managingTasksFor} onClose={() => setManagingTasksFor(null)} />}
-            {projectToDelete && (
-                <ConfirmationModal
-                    title={t('delete_project')}
-                    message={`Opravdu chcete smazat projekt "${projectToDelete.name}"? Tato akce je nevratná.`}
-                    onConfirm={handleDelete}
-                    onCancel={() => setProjectToDelete(null)}
-                />
-            )}
-        </div>
+            {
+                projectToDelete && (
+                    <ConfirmationModal
+                        title={t('delete_project')}
+                        message={`Opravdu chcete smazat projekt "${projectToDelete.name}"? Tato akce je nevratná.`}
+                        onConfirm={handleDelete}
+                        onCancel={() => setProjectToDelete(null)}
+                    />
+                )
+            }
+        </div >
     );
 };
 

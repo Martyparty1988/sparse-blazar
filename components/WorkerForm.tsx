@@ -93,62 +93,134 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-md p-0 md:p-4 animate-fade-in" onClick={onClose}>
-      <div className="w-full max-h-[95vh] md:max-w-lg bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b border-white/10 flex justify-between items-center">
-          <h2 className="text-xl md:text-3xl font-black text-white italic tracking-tighter uppercase">{worker ? t('edit_worker') : t('add_worker')}</h2>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-white transition-all bg-white/5 rounded-full"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-[#020617]/90 backdrop-blur-xl p-0 md:p-4 animate-fade-in" onClick={onClose}>
+      <div className="w-full max-h-[95vh] md:max-w-xl bg-[#0a0c1a] rounded-t-[3rem] md:rounded-[3rem] shadow-[0_0_100px_rgba(99,102,241,0.1)] border border-white/5 flex flex-col overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
+
+        {/* Modal Header */}
+        <div className="px-8 py-8 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent flex justify-between items-center">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">
+              {worker ? 'Upravit člena' : 'Nový člen'}
+            </h2>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Nastavení montážního týmu</p>
+          </div>
+          <button onClick={onClose} className="p-3 text-slate-500 hover:text-white transition-all bg-white/5 rounded-2xl hover:rotate-90 duration-300">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
         </div>
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-          <div>
-            <label htmlFor="name" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('worker_name')}</label>
-            <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} required className="w-full p-4 bg-black/40 text-white text-lg font-bold rounded-xl border border-white/10" placeholder="John Doe" />
-          </div>
 
-          <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('assigned_projects')}</label>
-            <div className="flex flex-wrap gap-2 p-3 bg-black/40 rounded-xl border border-white/10">
-              {activeProjects?.map(project => (
-                <button
-                  key={project.id}
-                  type="button"
-                  onClick={() => handleProjectToggle(project.id!)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border-2 ${projectIds.includes(project.id!) ? 'bg-indigo-500 text-white border-transparent' : 'text-slate-300 border-slate-700 hover:border-indigo-500'}`}>
-                  {project.name}
-                </button>
-              ))}
+        {/* Form Content */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+
+          <div className="space-y-6">
+            <div className="group relative">
+              <label htmlFor="name" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">{t('worker_name')}</label>
+              <input
+                type="text"
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full px-6 py-5 bg-black/40 text-white text-lg font-bold rounded-3xl border border-white/5 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none"
+                placeholder="Např. Roman Novák"
+              />
             </div>
-          </div>
 
-          {user?.role === 'admin' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('rates_and_prices')}</label>
+            <div className="space-y-3">
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 ml-1">{t('assigned_projects')}</label>
+              <div className="flex flex-wrap gap-2 p-5 bg-black/40 rounded-3xl border border-white/5">
+                {activeProjects?.length === 0 ? (
+                  <p className="text-[10px] font-bold text-slate-600 uppercase italic">Žádné aktivní projekty</p>
+                ) : (
+                  activeProjects?.map(project => (
+                    <button
+                      key={project.id}
+                      type="button"
+                      onClick={() => handleProjectToggle(project.id!)}
+                      className={`group relative flex items-center gap-2 px-4 py-2 rounded-2xl text-[11px] font-black uppercase tracking-tight transition-all duration-300 border ${projectIds.includes(project.id!)
+                        ? 'bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-600/20'
+                        : 'bg-white/5 text-slate-400 border-white/5 hover:border-indigo-500/30'}`}>
+                      {project.name}
+                      {projectIds.includes(project.id!) && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>}
+                    </button>
+                  ))
+                )}
               </div>
-              <input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder={t('hourly_rate')} className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
-              <input type="number" value={panelPrice} onChange={(e) => setPanelPrice(e.target.value)} placeholder={t('panel_price')} className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
-              <input type="number" value={stringPrice} onChange={(e) => setStringPrice(e.target.value)} placeholder={t('string_price')} className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
-              <input type="number" value={meterPrice} onChange={(e) => setMeterPrice(e.target.value)} placeholder={t('meter_price')} className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
-              <div className="col-span-2">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('password_label')}</label>
-                <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 bg-black/40 text-white rounded-xl border border-white/10" />
+            </div>
+
+            {user?.role === 'admin' && (
+              <div className="space-y-6 pt-6 border-t border-white/5">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-px flex-1 bg-white/5"></div>
+                  <span className="text-[9px] font-black text-indigo-500/50 uppercase tracking-[0.3em]">Finanční nastavení</span>
+                  <div className="h-px flex-1 bg-white/5"></div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { id: 'rate', label: 'Hodinová sazba (€)', val: hourlyRate, set: setHourlyRate },
+                    { id: 'panel', label: 'Cena / Panel (€)', val: panelPrice, set: setPanelPrice },
+                    { id: 'string', label: 'Cena / String (€)', val: stringPrice, set: setStringPrice },
+                    { id: 'meter', label: 'Cena / Metr (€)', val: meterPrice, set: setMeterPrice }
+                  ].map(f => (
+                    <div key={f.id} className="space-y-2">
+                      <label className="block text-[8px] font-black text-slate-600 uppercase tracking-widest ml-4">{f.label}</label>
+                      <input
+                        type="number"
+                        value={f.val}
+                        onChange={(e) => f.set(e.target.value)}
+                        className="w-full px-5 py-3.5 bg-black/40 text-white font-black rounded-2xl border border-white/5 focus:border-emerald-500/50 transition-all outline-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4">
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">{t('password_label')}</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-6 py-4 bg-black/40 text-white font-bold rounded-3xl border border-white/5 focus:border-indigo-500/50 outline-none"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="pt-6 border-t border-white/5">
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 ml-1">{t('worker_color')}</label>
+              <div className="flex flex-wrap gap-3 p-5 bg-black/40 rounded-[2.5rem] border border-white/5">
+                {['#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ef4444', '#f59e0b', '#22c55e', '#10b981', '#06b6d4', '#4f46e5', '#db2777', '#f97316'].map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    className={`h-10 w-10 rounded-2xl ${color === c ? 'ring-4 ring-white ring-offset-4 ring-offset-[#0a0c1a] scale-110 shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'opacity-40 hover:opacity-100'} transition-all duration-300`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
               </div>
             </div>
-          )}
-
-          <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('worker_color')}</label>
-            <div className="grid grid-cols-6 gap-2 p-3 bg-black/40 rounded-xl border border-white/10">
-              {['#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ef4444', '#f59e0b', '#22c55e', '#10b981', '#06b6d4', '#4f46e5', '#db2777', '#f97316'].map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)} className={`h-8 rounded-lg ${color === c ? 'ring-2 ring-offset-2 ring-offset-slate-800 ring-white scale-105 shadow-lg' : 'opacity-60 hover:opacity-100'} transition-all`} style={{ backgroundColor: c }} />
-              ))}
-            </div>
           </div>
-
         </form>
-        <div className="p-6 border-t border-white/10 bg-black/20 flex justify-end gap-4">
-          <button type="button" onClick={onClose} className="px-8 py-3 bg-white/5 text-white font-black rounded-xl hover:bg-white/10 transition-all uppercase tracking-widest text-[10px]">{t('cancel')}</button>
-          <button type="submit" onClick={handleSubmit} className="flex-1 md:flex-none px-10 py-3 bg-white text-black font-black rounded-xl hover:bg-indigo-400 hover:text-white transition-all shadow-lg uppercase tracking-widest text-[10px]">{t('save')}</button>
+
+        {/* Modal Footer */}
+        <div className="p-8 border-t border-white/5 bg-white/[0.01] flex flex-col md:flex-row gap-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-10 py-5 bg-white/5 text-slate-400 font-black rounded-[2rem] hover:bg-white/10 hover:text-white transition-all uppercase tracking-widest text-[11px]"
+          >
+            {t('cancel')}
+          </button>
+          <button
+            type="submit"
+            onClick={handleSubmit}
+            className="flex-1 px-12 py-5 bg-white text-black font-black rounded-[2rem] hover:bg-indigo-600 hover:text-white transition-all shadow-[0_15px_30px_rgba(255,255,255,0.1)] uppercase tracking-[0.2em] text-[11px]"
+          >
+            {t('save')}
+          </button>
         </div>
       </div>
     </div>

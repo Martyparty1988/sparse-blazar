@@ -17,7 +17,8 @@ import {
     where,
     Timestamp,
     WriteBatch,
-    writeBatch
+    writeBatch,
+    serverTimestamp
 } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
 import { getDatabase, ref, onValue, off, set, Database } from 'firebase/database';
@@ -31,7 +32,7 @@ const firebaseConfig = {
     projectId: "mst-marty-solar-2025",
     storageBucket: "mst-marty-solar-2025.firebasestorage.app",
     messagingSenderId: "706935785372",
-    appId: "1:706935785372:web:ccb7e109ba3eccd7e2ea59"
+    appId: "1:706935785372:web:0f21a739f8acbeb3e2ea59"
 };
 
 export interface SyncResult {
@@ -100,7 +101,7 @@ class FirebaseService {
         }
     }
 
-    public async requestMessagingPermission(workerId: number) {
+    public async requestNotificationPermission(workerId?: number) {
         if (!this.messaging) return null;
         try {
             const permission = await Notification.requestPermission();
@@ -296,8 +297,5 @@ class FirebaseService {
     // ... other methods from original file (getData, setData, etc.)
 
 }
-
-// Helper to get server-side timestamp
-import { serverTimestamp } from 'firebase/firestore';
 
 export const firebaseService = new FirebaseService();

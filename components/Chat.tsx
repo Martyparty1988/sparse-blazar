@@ -64,7 +64,7 @@ const Chat: React.FC = () => {
 
     useEffect(() => {
         if (currentUser?.workerId) {
-            firebaseService.requestMessagingPermission(currentUser.workerId);
+            firebaseService.requestNotificationPermission(currentUser.workerId);
         }
     }, [currentUser?.workerId]);
 
@@ -227,7 +227,7 @@ const Chat: React.FC = () => {
                     {/* Notification Enable Button */}
                     {Notification.permission !== 'granted' && (
                         <button
-                            onClick={() => currentUser?.workerId && firebaseService.requestMessagingPermission(currentUser.workerId)}
+                            onClick={() => currentUser?.workerId && firebaseService.requestNotificationPermission(currentUser.workerId)}
                             className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 rounded-lg border border-indigo-500/30 text-[10px] font-black uppercase hover:bg-indigo-600 transition-all hover:text-white"
                         >
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>

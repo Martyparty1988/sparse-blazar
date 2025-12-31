@@ -25,28 +25,6 @@ const Settings: React.FC = () => {
     const { showToast } = useToast();
     const [isResetting, setIsResetting] = useState(false);
 
-    // Cloud Sync State (Google Drive)
-    const [clientId, setClientId] = useState('');
-    const [isDriveConnected, setIsDriveConnected] = useState(false);
-    const [cloudBackups, setCloudBackups] = useState<any[]>([]);
-    const [loadingDrive, setLoadingDrive] = useState(false);
-
-    useEffect(() => {
-        // Google Drive initialization
-        const storedId = localStorage.getItem('google_drive_client_id');
-        if (storedId) setClientId(storedId);
-        // Attempt silent auth if client ID exists
-        if (storedId) {
-            googleDriveService.setClientId(storedId);
-            googleDriveService.init().then(() => {
-                if (googleDriveService.isLoggedIn) {
-                    setIsDriveConnected(true);
-                    loadCloudBackups();
-                }
-            }).catch(console.error);
-        }
-    }, []);
-
     const handleClearAll = async () => {
         await db.transaction('rw', db.tables, async () => {
             for (const table of db.tables) await table.clear();
@@ -54,163 +32,124 @@ const Settings: React.FC = () => {
         window.location.reload();
     };
 
-    const handleConnectDrive = async () => {
-        if (!clientId) {
-            showToast('Please enter a Client ID', 'error');
-            return;
-        }
-        setLoadingDrive(true);
-        try {
-            googleDriveService.setClientId(clientId);
-            await googleDriveService.init();
-            await googleDriveService.signIn();
-            setIsDriveConnected(true);
-            showToast(t('drive_connected'), 'success');
-            loadCloudBackups();
-        } catch (error) {
-            console.error(error);
-            showToast('Failed to connect to Drive. Check console.', 'error');
-        } finally {
-            setLoadingDrive(false);
-        }
-    };
-
-    const handleDisconnectDrive = async () => {
-        await googleDriveService.signOut();
-        setIsDriveConnected(false);
-        setCloudBackups([]);
-        showToast('Odpojeno', 'info');
-    };
-
-    const loadCloudBackups = async () => {
-        try {
-            const files = await googleDriveService.listBackups();
-            setCloudBackups(files || []);
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
-    const handleUploadToCloud = async () => {
-        setLoadingDrive(true);
-        try {
-            const backupId = await createBackup('manual');
-            const backup = await db.backups.get(backupId);
-            if (backup) {
-                const fileName = `mst_backup_${new Date().toISOString().split('T')[0]}.json`;
-                await googleDriveService.uploadFile(fileName, JSON.stringify(backup));
-                showToast('Backup uploaded to Drive', 'success');
-                loadCloudBackups();
-            }
-        } catch (error) {
-            console.error(error);
-            showToast('Failed to upload', 'error');
-        } finally {
-            setLoadingDrive(false);
-        }
-    };
-
-    const handleRestoreFromCloud = async (fileId: string) => {
-        if (!window.confirm(t('restore_confirm_message'))) return;
-        setLoadingDrive(true);
-        try {
-            const content = await googleDriveService.downloadFile(fileId);
-            const file = new File([content], "cloud_backup.json", { type: "application/json" });
-            await importBackup(file, 'replace');
-            showToast(t('backup_restored'), 'success');
-        } catch (error) {
-            console.error(error);
-            showToast('Failed to restore', 'error');
-        } finally {
-            setLoadingDrive(false);
-        }
-    };
-
     const SettingsSection: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen = false }) => (
-        <details className="group p-6 md:p-8 bg-slate-900/40 backdrop-blur-3xl rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden" open={defaultOpen}>
-            <summary className="text-2xl md:text-3xl font-black text-white uppercase tracking-widest cursor-pointer list-none flex items-center justify-between outline-none [&::-webkit-details-marker]:hidden">
-                <span className="flex items-center gap-3">{title}</span>
-                <svg className="w-8 h-8 transform group-open:rotate-180 transition-transform duration-300 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
+        <details className="group p-8 bg-[#0a0c1a]/60 backdrop-blur-3xl rounded-[3rem] border border-white/5 shadow-2xl relative overflow-hidden transition-all" open={defaultOpen}>
+            <summary className="text-2xl font-black text-white italic uppercase tracking-tighter cursor-pointer list-none flex items-center justify-between outline-none">
+                <span className="flex items-center gap-4">
+                    <div className="w-1.5 h-8 bg-indigo-500 rounded-full" />
+                    {title}
+                </span>
+                <svg className="w-8 h-8 transform group-open:rotate-180 transition-transform duration-500 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
             </summary>
-            <div className="mt-8 animate-fade-in">
+            <div className="mt-10 animate-fade-in px-2">
                 {children}
             </div>
         </details>
     );
 
     return (
-        <div className="pb-12">
-            <div className="md:hidden">
+        <div className="pb-24 max-w-6xl mx-auto px-4">
+            <div className="md:hidden mb-8">
                 <BackButton />
             </div>
-            <h1 className="text-6xl font-black mb-12 text-white [text-shadow:0_4px_12px_rgba(0,0,0,0.5)] italic uppercase tracking-tighter underline decoration-[var(--color-accent)] decoration-8">
-                {t('settings')}
-            </h1>
 
+            <header className="mb-16 space-y-4">
+                <h1 className="text-7xl font-black text-white italic uppercase tracking-tighter leading-none">
+                    NASTAVENÍ<span className="text-indigo-500">.</span>
+                </h1>
+                <p className="text-slate-500 font-bold uppercase tracking-[0.3em] ml-2">Konfigurace systému a správa dat</p>
+                <div className="h-2 w-32 bg-indigo-600 rounded-full ml-2 shadow-[0_4px_20px_rgba(79,70,229,0.5)]" />
+            </header>
 
-            <div className="space-y-8 max-w-5xl">
-
-
-
-                {/* Local Backup Section */}
-                {user?.role === 'admin' && (
-                    <SettingsSection title={t('backup_restore')}>
-                        <BackupManager />
-                    </SettingsSection>
-                )}
-
-                <SettingsSection title={t('language')}>
-                    <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-10">
+                {/* Language Section */}
+                <SettingsSection title={t('language')} defaultOpen>
+                    <div className="grid grid-cols-2 gap-6">
                         {(['cs', 'en'] as const).map(lang => (
                             <button
                                 key={lang}
-                                onClick={() => setLanguage(lang)}
-                                className={`p-6 rounded-2xl font-black text-2xl transition-all border-4 ${language === lang ? 'bg-indigo-600 border-white text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                                onClick={() => { setLanguage(lang); showToast(lang === 'cs' ? 'Jazyk změněn' : 'Language changed', 'success'); }}
+                                className={`group relative h-32 rounded-[2.5rem] transition-all overflow-hidden border-2 ${language === lang
+                                    ? 'bg-white text-black border-white shadow-2xl'
+                                    : 'bg-black/40 border-white/5 text-slate-500 hover:border-white/20 hover:bg-white/5'}`}
                             >
-                                {lang.toUpperCase()}
+                                <div className="relative z-10 flex flex-col items-center justify-center gap-1">
+                                    <span className="text-3xl font-black">{lang.toUpperCase()}</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">{lang === 'cs' ? 'Čeština' : 'English'}</span>
+                                </div>
+                                {language === lang && (
+                                    <div className="absolute top-4 right-6 animate-pulse">
+                                        <div className="w-3 h-3 bg-indigo-500 rounded-full" />
+                                    </div>
+                                )}
                             </button>
                         ))}
                     </div>
                 </SettingsSection>
 
-                <SettingsSection title="Oznámení">
-                    <div className="space-y-4">
-                        <p className="text-slate-400 text-sm font-bold uppercase tracking-wide">
-                            Stav: {Notification.permission === 'granted' ? '✅ Povoleno' : Notification.permission === 'denied' ? '❌ Zakázáno' : '⏳ Čeká na svolení'}
-                        </p>
-                        <div className="flex flex-wrap gap-4">
+                {/* Notifications Section */}
+                <SettingsSection title="Oznámení" defaultOpen>
+                    <div className="bg-black/40 p-10 rounded-[2.5rem] border border-white/5 space-y-10">
+                        <div className="flex items-center justify-between flex-wrap gap-6">
+                            <div className="space-y-2">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Aktuální stav</p>
+                                <h3 className={`text-2xl font-black italic tracking-tighter uppercase ${Notification.permission === 'granted' ? 'text-emerald-500' : 'text-slate-400'}`}>
+                                    {Notification.permission === 'granted' ? 'Aktivní' : Notification.permission === 'denied' ? 'Zakázáno' : 'Čeká se'}
+                                </h3>
+                            </div>
+
                             <button
                                 onClick={async () => {
                                     const token = await firebaseService.requestNotificationPermission(user?.workerId);
                                     if (token) {
                                         showToast('Oznámení povolena!', 'success');
-                                        new Notification("MST - Test", { body: "Testovací oznámení funguje!" });
+                                        new Notification("MST System", { body: "Oznámení byla úspěšně aktivována." });
                                     } else {
-                                        showToast('Nepodařilo se povolit oznámení', 'error');
+                                        showToast('Povolte oznámení v prohlížeči', 'error');
                                     }
                                 }}
-                                className="px-8 py-4 bg-indigo-600 border-2 border-white/20 font-black rounded-2xl hover:bg-indigo-700 text-white transition-all shadow-lg text-lg uppercase tracking-tighter"
+                                className="group relative px-10 py-5 bg-white text-black font-black rounded-[2rem] hover:scale-105 transition-all active:scale-95 shadow-2xl flex items-center gap-4"
                             >
-                                Povolit / Testovat oznámení
+                                <span className="uppercase tracking-widest text-xs">Povolit & Testovat</span>
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                             </button>
                         </div>
-                        <p className="text-xs text-slate-500 font-medium">Tip: Pokud vám oznámení nechodí, zkontrolujte nastavení prohlížeče nebo iOS/Android nastavení systému.</p>
+
+                        <div className="p-6 bg-white/[0.03] rounded-3xl border border-white/5 flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </div>
+                            <p className="text-slate-400 text-xs font-bold leading-relaxed">
+                                Push notifikace vám umožní dostávat okamžitá upozornění na nové zprávy v chatu a přiřazené úkoly i když nemáte aplikaci otevřenou.
+                            </p>
+                        </div>
                     </div>
                 </SettingsSection>
 
-                {/* Data Management - Admin Only */}
+                {/* Team & Data - Admin Only */}
                 {user?.role === 'admin' && (
-                    <SettingsSection title={t('data_management')}>
-                        <div className="flex flex-wrap gap-4">
-                            <button
-                                onClick={() => setIsResetting(true)}
-                                className="flex-1 min-w-[200px] px-8 py-4 bg-red-600/20 text-red-400 border-2 border-red-500/50 font-black rounded-2xl hover:bg-red-600 hover:text-white transition-all shadow-lg text-lg uppercase tracking-tighter flex items-center justify-center gap-3"
-                            >
-                                <TrashIcon className="w-6 h-6" />
-                                {t('reset_app_title')}
-                            </button>
-                        </div>
-                    </SettingsSection>
+                    <>
+                        <SettingsSection title={t('backup_restore')}>
+                            <BackupManager />
+                        </SettingsSection>
+
+                        <SettingsSection title={t('data_management')}>
+                            <div className="bg-rose-500/5 p-10 rounded-[2.5rem] border border-rose-500/10 space-y-8">
+                                <div className="space-y-2">
+                                    <h3 className="text-xl font-black text-rose-500 italic uppercase">Destruktivní zóna</h3>
+                                    <p className="text-slate-500 text-sm font-bold opacity-60">Smazání veškerých lokálních dat v tomto zařízení. Akce je nevratná.</p>
+                                </div>
+
+                                <button
+                                    onClick={() => setIsResetting(true)}
+                                    className="w-full md:w-auto px-10 py-5 bg-rose-600 text-white font-black rounded-3xl hover:bg-rose-700 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-4 group"
+                                >
+                                    <TrashIcon className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                                    <span className="uppercase tracking-widest text-xs">{t('reset_app_title')}</span>
+                                </button>
+                            </div>
+                        </SettingsSection>
+                    </>
                 )}
             </div>
 
@@ -218,7 +157,7 @@ const Settings: React.FC = () => {
                 <ConfirmationModal
                     title={t('reset_app_title')}
                     message={t('reset_app_confirm')}
-                    confirmLabel="RESET"
+                    confirmLabel="POTVRDIT RESET"
                     onConfirm={handleClearAll}
                     onCancel={() => setIsResetting(false)}
                     variant="danger"

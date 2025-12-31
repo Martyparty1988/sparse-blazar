@@ -24,51 +24,67 @@ const WorkerCard: React.FC<{
 
   return (
     <div
-      className="group glass-card rounded-3xl p-6 border border-white/10 hover:border-[var(--color-accent)]/30 transition-all flex items-center justify-between animate-list-item"
+      className="group glass-card rounded-[2.5rem] p-4 md:p-6 border border-white/5 hover:border-indigo-500/30 transition-all duration-500 flex flex-col gap-6 animate-list-item bg-white/[0.02] hover:bg-white/[0.05]"
       style={{ animationDelay: `${index * 0.05}s` }}
     >
-      <div className="flex items-center gap-6">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-lg group-hover:rotate-3 transition-transform" style={{ backgroundColor: worker.color || 'var(--color-accent)' }}>
-          {worker.name.charAt(0)}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-5">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-2xl font-black text-white shadow-2xl group-hover:scale-105 transition-transform duration-500" style={{ backgroundColor: worker.color || '#6366f1' }}>
+              {worker.name.substring(0, 2).toUpperCase()}
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-4 border-[#0a0c1a]"></div>
+          </div>
+          <div>
+            <h3 className="text-xl font-black text-white italic tracking-tighter uppercase leading-none">{worker.name}</h3>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mt-2">Montážní četa</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-xl font-black text-white italic tracking-tight">{worker.name}</h3>
-          {isAdmin && (
-            <div className="mt-2 space-y-1">
-              <p className="text-gray-400 font-black text-[10px] uppercase tracking-widest leading-none">
-                {t('hourly_rate') || 'Hodinivo'}: <span className="text-white">€{Number(worker.hourlyRate || 0).toFixed(2)}</span>
-              </p>
-              <div className="flex flex-wrap gap-x-3 gap-y-1">
-                <p className="text-emerald-500 font-bold text-[9px] uppercase tracking-tighter">
-                  Panel: <span className="text-white">€{Number(worker.panelPrice || 0).toFixed(2)}</span>
-                </p>
-                <p className="text-indigo-400 font-bold text-[9px] uppercase tracking-tighter">
-                  Cable: <span className="text-white">€{Number(worker.stringPrice || 0).toFixed(2)}</span>
-                </p>
-                <p className="text-amber-500 font-bold text-[9px] uppercase tracking-tighter">
-                  Const: <span className="text-white">€{Number(worker.meterPrice || 0).toFixed(2)}</span>
-                </p>
+
+        {isAdmin && (
+          <div className="flex gap-1">
+            <button
+              onClick={() => onEdit(worker)}
+              className="p-3 text-slate-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all"
+            >
+              <PencilIcon className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onDelete(worker)}
+              className="p-3 text-slate-500 hover:text-pink-500 hover:bg-pink-500/5 rounded-2xl transition-all"
+            >
+              <TrashIcon className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {isAdmin && (
+        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/5">
+          <div className="bg-black/20 p-3 rounded-2xl">
+            <span className="block text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Hodinová sazba</span>
+            <span className="text-sm font-black text-white italic tracking-tighter">€{Number(worker.hourlyRate || 0).toFixed(2)}</span>
+          </div>
+          <div className="bg-black/20 p-3 rounded-2xl">
+            <span className="block text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Projektů</span>
+            <span className="text-sm font-black text-white italic tracking-tighter">{worker.projectIds?.length || 0}</span>
+          </div>
+          <div className="col-span-2 bg-gradient-to-r from-indigo-600/10 to-transparent p-3 rounded-2xl flex justify-between items-center">
+            <div className="flex gap-4">
+              <div className="text-center">
+                <span className="block text-[7px] font-black text-slate-500 uppercase">Panel</span>
+                <span className="text-[11px] font-bold text-slate-300">€{worker.panelPrice}</span>
+              </div>
+              <div className="text-center border-l border-white/5 pl-4">
+                <span className="block text-[7px] font-black text-slate-500 uppercase">String</span>
+                <span className="text-[11px] font-bold text-slate-300">€{worker.stringPrice}</span>
+              </div>
+              <div className="text-center border-l border-white/5 pl-4">
+                <span className="block text-[7px] font-black text-slate-500 uppercase">Metr</span>
+                <span className="text-[11px] font-bold text-slate-300">€{worker.meterPrice}</span>
               </div>
             </div>
-          )}
-        </div>
-      </div>
-      {isAdmin && (
-        <div className="flex gap-2">
-          <button
-            onClick={() => onEdit(worker)}
-            className="p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all"
-            title={t('edit_worker')}
-          >
-            <PencilIcon className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => onDelete(worker)}
-            className="p-3 text-gray-400 hover:text-pink-500 hover:bg-pink-500/5 rounded-2xl transition-all"
-            title={t('delete_worker_title')}
-          >
-            <TrashIcon className="w-5 h-5" />
-          </button>
+          </div>
         </div>
       )}
     </div>
@@ -139,25 +155,44 @@ const Workers: React.FC = () => {
       <div className="md:hidden">
         <BackButton />
       </div>
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-        <div className="space-y-2">
-          <h1 className="text-6xl font-black text-white tracking-tighter uppercase italic leading-[0.8]">
-            {t('workers')}
-          </h1>
-          <p className="text-xl text-gray-400 font-bold tracking-tight">
-            Správa týmu pracovníků a jejich finančních ohodnocení.
-          </p>
+      <header className="space-y-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+          <div className="space-y-2">
+            <h1 className="text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.8]">
+              {t('team')}
+            </h1>
+            <p className="text-xl text-slate-500 font-bold tracking-tight">
+              Správa montážních čet a jejich výkonnosti.
+            </p>
+          </div>
+          {user?.role === 'admin' && (
+            <button
+              onClick={handleAdd}
+              className="group relative w-full md:w-auto overflow-hidden px-10 py-5 bg-white text-black font-black uppercase tracking-[0.2em] text-xs rounded-full hover:bg-indigo-600 hover:text-white transition-all duration-500 shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
+            >
+              <div className="relative z-10 flex items-center justify-center gap-3">
+                <PlusIcon className="w-5 h-5" />
+                {t('add_worker')}
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            </button>
+          )}
         </div>
-        {user?.role === 'admin' && (
-          <button
-            onClick={handleAdd}
-            className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-[var(--color-accent)] hover:text-white transition-all shadow-[0_10px_30px_rgba(255,255,255,0.2)]"
-            title={t('add_worker')}
-          >
-            <PlusIcon className="w-5 h-5" />
-            {t('add_worker')}
-          </button>
-        )}
+
+        {/* Team Stats Quick Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Celkem lidí', value: workers?.length || 0, icon: 'Users' },
+            { label: 'Aktivní dnes', value: workers?.length ? Math.floor(workers.length * 0.8) : 0, color: 'text-emerald-500' },
+            { label: 'Pracovních hodin', value: '142h', color: 'text-indigo-400' },
+            { label: 'Výkonnost', value: '94%', color: 'text-amber-500' }
+          ].map((stat, i) => (
+            <div key={i} className="glass-card p-6 rounded-[2rem] border border-white/5 bg-white/[0.02]">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
+              <p className={`text-3xl font-black italic tracking-tighter ${stat.color || 'text-white'}`}>{stat.value}</p>
+            </div>
+          ))}
+        </div>
       </header>
 
       {/* Enhanced Filter Section */}

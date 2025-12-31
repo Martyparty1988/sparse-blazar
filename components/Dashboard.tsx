@@ -5,7 +5,7 @@ import { useI18n } from '../contexts/I18nContext';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
 import TimeRecordForm from './TimeRecordForm';
-import SyncStatusIndicator from './SyncStatusIndicator';
+
 import Leaderboard from './Leaderboard';
 
 // Icons
@@ -85,9 +85,7 @@ const Dashboard: React.FC = () => {
       {/* Dynamic Header & Command Strip */}
       <header className="pt-2 md:pt-12 mb-2 px-2">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-4">
-            <SyncStatusIndicator />
-          </div>
+
           <h1 className="text-3xl font-black text-white italic tracking-tighter uppercase pl-1">
             Dashboard
           </h1>

@@ -119,47 +119,63 @@ class FirebaseService {
                 projectTasks: db.projectTasks
             };
 
-            if (lastSyncDate === null) {
-                console.log('Performing full sync, clearing local data...');
-                for (const table of Object.values(collectionsToSync)) {
-                    await table.clear();
-                }
-            }
+            // 1. Fetch all data from Firebase first (outside of Dexie transaction)
+            const syncedData: { [key: string]: any[] } = {};
+            let fetchedCount = 0;
 
-            const newSyncTime = new Date();
+            console.log('Fetching data from Firebase...');
+            const fetchPromises = Object.entries(collectionsToSync).map(async ([name, table]) => { // eslint-disable-line @typescript-eslint/no-unused-vars
+                const q = lastSyncDate
+                    ? query(collection(this.db, name), where("updatedAt", ">", Timestamp.fromDate(lastSyncDate)))
+                    : collection(this.db, name);
+
+                const snapshot = await getDocs(q);
+                if (snapshot.empty) return;
+
+                const records: any[] = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const record: { [key: string]: any } = { id: doc.id };
+                    // Convert Timestamps to Dates for Dexie
+                    for (const key in data) {
+                        if (data[key] instanceof Timestamp) {
+                            record[key] = data[key].toDate();
+                        } else {
+                            record[key] = data[key];
+                        }
+                    }
+                    records.push(record);
+                });
+                syncedData[name] = records;
+                fetchedCount += records.length;
+                console.log(`Fetched ${records.length} records for ${name}`);
+            });
+
+            await Promise.all(fetchPromises);
+
+            // 2. Write to Dexie in a single transaction
+            console.log(`Writing ${fetchedCount} records to Dexie...`);
             let totalSynced = 0;
 
             await db.transaction('rw', Object.values(collectionsToSync), async () => {
-                const syncPromises = Object.entries(collectionsToSync).map(async ([name, table]) => {
-                    const q = lastSyncDate
-                        ? query(collection(this.db, name), where("updatedAt", ">", Timestamp.fromDate(lastSyncDate)))
-                        : collection(this.db, name);
+                // If full sync, clear tables first
+                if (lastSyncDate === null) {
+                    console.log('Clearing local tables for full sync...');
+                    const clearPromises = Object.values(collectionsToSync).map(table => table.clear());
+                    await Promise.all(clearPromises);
+                }
 
-                    const snapshot = await getDocs(q);
-                    if (snapshot.empty) return;
-
-                    const recordsToUpsert: any[] = [];
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        const record: { [key: string]: any } = { id: doc.id };
-                        // Convert Timestamps to Dates for Dexie
-                        for (const key in data) {
-                            if (data[key] instanceof Timestamp) {
-                                record[key] = data[key].toDate();
-                            } else {
-                                record[key] = data[key];
-                            }
+                // Bulk Put
+                const putPromises = Object.entries(syncedData).map(async ([name, records]) => {
+                    if (records.length > 0) {
+                        const table = collectionsToSync[name as keyof typeof collectionsToSync];
+                        if (table) {
+                            await table.bulkPut(records);
+                            totalSynced += records.length;
                         }
-                        recordsToUpsert.push(record);
-                    });
-
-                    if (recordsToUpsert.length > 0) {
-                        await table.bulkPut(recordsToUpsert);
-                        totalSynced += recordsToUpsert.length;
-                        console.log(`Synced ${recordsToUpsert.length} records for ${name}`);
                     }
                 });
-                await Promise.all(syncPromises);
+                await Promise.all(putPromises);
             });
 
             localStorage.setItem('lastSyncTimestamp', String(newSyncTime.getTime()));

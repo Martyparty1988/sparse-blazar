@@ -40,12 +40,20 @@ const Chat: React.FC = () => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [isSending, setIsSending] = useState(false);
 
+    // Mobile View State ('list' or 'chat')
+    const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
+
     // Channels
     const [activeChannelId, setActiveChannelId] = useState<string>('general');
     const projects = useLiveQuery(() => db.projects.where('status').equals('active').toArray());
     const workers = useLiveQuery(() => db.workers.toArray());
 
     const CHAT_LIMIT = 50;
+
+    const handleChannelSelect = (channelId: string) => {
+        setActiveChannelId(channelId);
+        setMobileView('chat');
+    };
 
     useEffect(() => {
         const initNotifications = async () => {
@@ -79,7 +87,7 @@ const Chat: React.FC = () => {
         // Small delay to ensure render is complete
         const timer = setTimeout(scrollToBottom, 100);
         return () => clearTimeout(timer);
-    }, [messages]);
+    }, [messages, mobileView]); // Re-scroll when switching views
 
     useEffect(() => {
         if (!firebaseService.isReady) return;
@@ -232,7 +240,7 @@ const Chat: React.FC = () => {
     return (
         <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-8rem)] max-w-7xl mx-auto md:flex-row gap-4 p-2 md:p-4 overflow-hidden">
             {/* Sidebar / Channels */}
-            <div className="w-full md:w-80 flex flex-col gap-4 shrink-0 h-auto md:h-full">
+            <div className={`w-full md:w-80 flex-col gap-4 shrink-0 h-full ${mobileView === 'list' ? 'flex' : 'hidden'} md:flex`}>
                 <div className="flex items-center justify-between px-2">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-indigo-500/20 rounded-xl">
@@ -249,7 +257,7 @@ const Chat: React.FC = () => {
 
                 <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-1">
                     <button
-                        onClick={() => setActiveChannelId('general')}
+                        onClick={() => handleChannelSelect('general')}
                         className={`w-full group relative flex items-center gap-4 p-4 rounded-3xl border transition-all duration-300 ${activeChannelId === 'general'
                             ? 'bg-gradient-to-r from-indigo-600/20 to-blue-600/20 border-indigo-500/50 shadow-lg shadow-indigo-500/10'
                             : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
@@ -276,7 +284,7 @@ const Chat: React.FC = () => {
                     {projects?.map(project => (
                         <button
                             key={project.id}
-                            onClick={() => setActiveChannelId(`project_${project.id}`)}
+                            onClick={() => handleChannelSelect(`project_${project.id}`)}
                             className={`w-full group relative flex items-center gap-4 p-4 rounded-3xl border transition-all duration-300 ${activeChannelId === `project_${project.id}`
                                 ? 'bg-gradient-to-r from-emerald-600/20 to-teal-600/20 border-emerald-500/50 shadow-lg shadow-emerald-500/10'
                                 : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
@@ -306,7 +314,7 @@ const Chat: React.FC = () => {
                         return (
                             <button
                                 key={worker.id}
-                                onClick={() => setActiveChannelId(dmId)}
+                                onClick={() => handleChannelSelect(dmId)}
                                 className={`w-full group relative flex items-center gap-4 p-4 rounded-3xl border transition-all duration-300 ${activeChannelId === dmId
                                     ? 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-purple-500/50 shadow-lg shadow-purple-500/10'
                                     : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
@@ -329,20 +337,26 @@ const Chat: React.FC = () => {
             </div>
 
             {/* Main Chat Window */}
-            <div className="flex-1 flex flex-col bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-3xl overflow-hidden relative">
+            <div className={`flex-1 flex-col bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-3xl overflow-hidden relative ${mobileView === 'chat' ? 'flex' : 'hidden'} md:flex`}>
                 {/* Chat Header */}
-                <div className="flex items-center justify-between px-8 py-5 border-b border-white/5 bg-black/20">
+                <div className="flex items-center justify-between px-4 md:px-8 py-4 border-b border-white/5 bg-black/20">
                     <div className="flex items-center gap-4">
-                        <div className={`w-3 h-3 rounded-full animate-pulse ${activeChannelId === 'general' ? 'bg-indigo-500' : 'bg-emerald-500'}`}></div>
-                        <div>
-                            <h2 className="text-xl font-black text-white italic uppercase tracking-tight leading-none">{activeProjectName}</h2>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Real-time discussion</p>
+                        <button
+                            onClick={() => setMobileView('list')}
+                            className="p-2 -ml-2 text-slate-400 hover:text-white md:hidden active:scale-90 transition-transform"
+                        >
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+                        <div className={`w-3 h-3 rounded-full animate-pulse shrink-0 ${activeChannelId === 'general' ? 'bg-indigo-500' : 'bg-emerald-500'}`}></div>
+                        <div className="overflow-hidden">
+                            <h2 className="text-lg md:text-xl font-black text-white italic uppercase tracking-tight leading-none truncate">{activeProjectName}</h2>
+                            <p className="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 truncate">Real-time discussion</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Messages Container */}
-                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8 custom-scrollbar scroll-smooth">
+                <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6 space-y-6 md:space-y-8 custom-scrollbar scroll-smooth">
                     {messages.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-slate-500 animate-fade-in">
                             <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/5 group relative">
@@ -371,32 +385,32 @@ const Chat: React.FC = () => {
                                     return (
                                         <div
                                             key={`${group.date}-${item.senderId}-${groupIdx}`}
-                                            className={`flex gap-4 ${senderIsMe ? 'flex-row-reverse' : 'flex-row'} animate-list-item`}
+                                            className={`flex gap-3 md:gap-4 ${senderIsMe ? 'flex-row-reverse' : 'flex-row'} animate-list-item`}
                                             style={{ animationDelay: `${groupIdx * 0.05}s` }}
                                         >
                                             {/* Avatar */}
                                             <div
-                                                className={`w-10 h-10 rounded-2xl flex items-center justify-center text-[11px] font-black text-white shrink-0 shadow-lg border-2 border-slate-900 transition-transform hover:scale-110`}
+                                                className={`w-8 h-8 md:w-10 md:h-10 rounded-2xl flex items-center justify-center text-[10px] md:text-[11px] font-black text-white shrink-0 shadow-lg border-2 border-slate-900 transition-transform hover:scale-110`}
                                                 style={{ backgroundColor: color }}
                                                 title={item.name}
                                             >
                                                 {item.name.substring(0, 2).toUpperCase()}
                                             </div>
 
-                                            <div className={`flex flex-col space-y-1.5 max-w-[80%] md:max-w-[65%] ${senderIsMe ? 'items-end' : 'items-start'}`}>
+                                            <div className={`flex flex-col space-y-1.5 max-w-[85%] md:max-w-[65%] ${senderIsMe ? 'items-end' : 'items-start'}`}>
                                                 {!senderIsMe && (
-                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-1">{item.name}</span>
+                                                    <span className="text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-1">{item.name}</span>
                                                 )}
 
                                                 {item.messages.map((msg, msgIdx) => (
                                                     <div
                                                         key={msg.id}
-                                                        className={`group relative px-5 py-3.5 rounded-3xl text-[14px] leading-relaxed font-bold font-sans shadow-xl border transition-all ${senderIsMe
+                                                        className={`group relative px-4 py-3 md:px-5 md:py-3.5 rounded-3xl text-[13px] md:text-[14px] leading-relaxed font-bold font-sans shadow-xl border transition-all ${senderIsMe
                                                             ? 'bg-gradient-to-br from-indigo-500 to-blue-700 text-white border-white/10 rounded-tr-none hover:shadow-indigo-500/20'
                                                             : 'bg-white/10 text-slate-100 border-white/5 rounded-tl-none hover:bg-white/15'
                                                             }`}
                                                     >
-                                                        {msg.text}
+                                                        <span className="whitespace-pre-wrap break-words">{msg.text}</span>
 
                                                         {senderIsMe && (
                                                             <button
@@ -408,13 +422,13 @@ const Chat: React.FC = () => {
                                                         )}
 
                                                         {/* Individual Time Badge (appears on hover) */}
-                                                        <div className={`absolute bottom-0 ${senderIsMe ? '-left-12' : '-right-12'} opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`}>
+                                                        <div className={`absolute bottom-0 ${senderIsMe ? '-left-12' : '-right-12'} opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block`}>
                                                             <span className="text-[9px] font-black text-slate-600 bg-black/40 px-2 py-1 rounded-lg border border-white/5">{formatTime(msg.timestamp)}</span>
                                                         </div>
 
                                                         {/* Show time on the last bubble of the group permanently if not hovered */}
                                                         {msgIdx === item.messages.length - 1 && (
-                                                            <div className={`mt-2 flex opacity-40 text-[9px] font-black ${senderIsMe ? 'justify-end' : 'justify-start'}`}>
+                                                            <div className={`mt-1 md:mt-2 flex opacity-40 text-[9px] font-black ${senderIsMe ? 'justify-end' : 'justify-start'}`}>
                                                                 {formatTime(msg.timestamp)}
                                                             </div>
                                                         )}
@@ -431,29 +445,28 @@ const Chat: React.FC = () => {
                 </div>
 
                 {/* Message Input */}
-                <div className="p-6 md:p-8 bg-black/40 border-t border-white/10 backdrop-blur-3xl">
-                    <form onSubmit={handleSend} className="relative group max-w-4xl mx-auto flex gap-3">
+                <div className="p-4 md:p-8 bg-black/40 border-t border-white/10 backdrop-blur-3xl shrink-0">
+                    <form onSubmit={handleSend} className="relative group max-w-4xl mx-auto flex gap-2 md:gap-3">
                         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-blue-500/10 rounded-[2rem] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none"></div>
                         <input
                             type="text"
                             value={inputText}
                             onChange={(e) => setInputText(e.target.value)}
                             placeholder={t('type_message')}
-                            className="flex-1 bg-white/5 border-2 border-white/5 rounded-[2rem] px-8 py-5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.07] transition-all font-bold shadow-2xl relative z-10 text-lg"
+                            className="flex-1 bg-white/5 border-2 border-white/5 rounded-[2rem] px-5 py-3 md:px-8 md:py-5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.07] transition-all font-bold shadow-2xl relative z-10 text-sm md:text-lg"
                         />
                         <button
                             type="submit"
                             disabled={!inputText.trim() || isSending}
-                            className="bg-gradient-to-br from-indigo-500 to-blue-600 disabled:opacity-30 disabled:grayscale text-white w-16 h-16 rounded-[2rem] transition-all shadow-xl shadow-indigo-500/20 active:scale-95 flex items-center justify-center relative z-10 shrink-0 group/btn"
+                            className="bg-gradient-to-br from-indigo-500 to-blue-600 disabled:opacity-30 disabled:grayscale text-white w-12 h-12 md:w-16 md:h-16 rounded-[2rem] transition-all shadow-xl shadow-indigo-500/20 active:scale-95 flex items-center justify-center relative z-10 shrink-0 group/btn"
                         >
                             {isSending ? (
-                                <svg className="animate-spin h-7 w-7" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <svg className="animate-spin h-5 w-5 md:h-7 md:w-7" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             ) : (
-                                <svg className="w-7 h-7 transform group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                                <svg className="w-5 h-5 md:w-7 md:h-7 transform group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                             )}
                         </button>
                     </form>
-                    <p className="text-center text-[10px] font-black text-slate-600 uppercase tracking-widest mt-4 opacity-50">Press Enter to send message</p>
                 </div>
             </div>
         </div>

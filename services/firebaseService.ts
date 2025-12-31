@@ -119,6 +119,8 @@ class FirebaseService {
                 projectTasks: db.projectTasks
             };
 
+            const newSyncTime = new Date();
+
             // 1. Fetch all data from Firebase first (outside of Dexie transaction)
             const syncedData: { [key: string]: any[] } = {};
             let fetchedCount = 0;

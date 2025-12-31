@@ -34,7 +34,7 @@ const ProjectCard: React.FC<{
     const isMobile = useIsMobile();
 
     if (isMobile) {
-        return <ProjectCardMobile project={props.project} onManageTasks={props.onManageTasks} />;
+        return <ProjectCardMobile {...props} />;
     }
 
     return <ProjectCardDesktop {...props} />;

@@ -114,11 +114,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-0 md:p-4 animate-fade-in">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={onClose}></div>
-            <div className="relative w-full h-full md:h-auto md:max-h-[95vh] md:max-w-3xl bg-slate-900/90 backdrop-blur-2xl md:rounded-[3rem] shadow-2xl border-none md:border border-white/20 flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-md p-0 md:p-4 animate-fade-in" onClick={onClose}>
+            <div className="w-full max-h-[95vh] md:max-w-3xl bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 border-b border-white/10 flex justify-between items-center">
-                    <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase">{project ? t('edit_project') : t('add_project')}</h2>
+                    <h2 className="text-xl md:text-3xl font-black text-white italic tracking-tighter uppercase">{project ? t('edit_project') : t('add_project')}</h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white transition-all bg-white/5 rounded-full"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                 </div>
                 
@@ -173,8 +172,8 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                 </div>
 
                 <div className="p-6 border-t border-white/10 bg-black/20 flex justify-end gap-4">
-                    <button type="button" onClick={onClose} className="px-8 py-4 bg-white/5 text-white font-black rounded-xl hover:bg-white/10 transition-all uppercase tracking-widest text-[10px]">Zrušit</button>
-                    <button type="submit" onClick={handleSubmit} className="px-10 py-4 bg-white text-black font-black rounded-xl hover:bg-indigo-400 hover:text-white transition-all shadow-lg uppercase tracking-widest text-[10px]">Uložit projekt</button>
+                    <button type="button" onClick={onClose} className="px-8 py-3 bg-white/5 text-white font-black rounded-xl hover:bg-white/10 transition-all uppercase tracking-widest text-[10px]">Zrušit</button>
+                    <button type="submit" onClick={handleSubmit} className="flex-1 md:flex-none px-10 py-3 bg-white text-black font-black rounded-xl hover:bg-indigo-400 hover:text-white transition-all shadow-lg uppercase tracking-widest text-[10px]">Uložit projekt</button>
                 </div>
             </div>
         </div>

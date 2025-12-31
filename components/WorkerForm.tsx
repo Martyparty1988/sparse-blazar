@@ -93,28 +93,27 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-0 md:p-4 animate-fade-in">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose}></div>
-      <div className="relative w-full h-full md:h-auto md:max-w-lg p-8 md:p-10 bg-slate-900/90 backdrop-blur-3xl md:rounded-[3rem] shadow-2xl border-none md:border border-white/20 transform transition-all scale-100 overflow-y-auto custom-scrollbar">
-        <h2 className="text-4xl font-black mb-8 text-white tracking-tighter uppercase italic border-b border-white/10 pb-6">
-          {worker ? t('edit_worker') : t('add_worker')}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-md p-0 md:p-4 animate-fade-in" onClick={onClose}>
+      <div className="w-full max-h-[95vh] md:max-w-lg bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
+        <div className="p-6 border-b border-white/10 flex justify-between items-center">
+            <h2 className="text-xl md:text-3xl font-black text-white italic tracking-tighter uppercase">{worker ? t('edit_worker') : t('add_worker')}</h2>
+            <button onClick={onClose} className="p-2 text-gray-400 hover:text-white transition-all bg-white/5 rounded-full"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
           <div>
-            <label htmlFor="name" className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">{t('worker_name')}</label>
-            <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} required className="w-full p-5 bg-black/40 text-white placeholder-gray-500 text-lg font-bold rounded-2xl shadow-inner border border-white/10" placeholder="John Doe" />
+            <label htmlFor="name" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('worker_name')}</label>
+            <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} required className="w-full p-4 bg-black/40 text-white text-lg font-bold rounded-xl border border-white/10" placeholder="John Doe" />
           </div>
 
           <div>
-            <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Přiřazené projekty</label>
-            <div className="flex flex-wrap gap-2 p-4 bg-black/40 rounded-2xl border border-white/10">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Přiřazené projekty</label>
+            <div className="flex flex-wrap gap-2 p-3 bg-black/40 rounded-xl border border-white/10">
                 {activeProjects?.map(project => (
                     <button
                         key={project.id}
                         type="button"
                         onClick={() => handleProjectToggle(project.id!)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${projectIds.includes(project.id!) ? 'bg-[var(--color-accent)] border-transparent text-white' : 'bg-transparent border-white/10 text-gray-500 hover:border-white/30'}`}
-                    >
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border-2 ${projectIds.includes(project.id!) ? 'bg-indigo-500 text-white border-transparent' : 'text-slate-300 border-slate-700 hover:border-indigo-500'}`}>
                         {project.name}
                     </button>
                 ))}
@@ -124,33 +123,33 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
           {user?.role === 'admin' && (
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Hodinová sazba a ceny za práci</label>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Hodinová sazba a ceny za práci</label>
               </div>
-              <input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="Hodinivo" className="p-4 bg-black/40 text-white rounded-xl border border-white/10" />
-              <input type="number" value={panelPrice} onChange={(e) => setPanelPrice(e.target.value)} placeholder="Cena Panel" className="p-4 bg-black/40 text-white rounded-xl border border-white/10" />
-              <input type="number" value={stringPrice} onChange={(e) => setStringPrice(e.target.value)} placeholder="Cena String" className="p-4 bg-black/40 text-white rounded-xl border border-white/10" />
-              <input type="number" value={meterPrice} onChange={(e) => setMeterPrice(e.target.value)} placeholder="Cena Konstrukce" className="p-4 bg-black/40 text-white rounded-xl border border-white/10" />
+              <input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="Hodinová sazba" className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
+              <input type="number" value={panelPrice} onChange={(e) => setPanelPrice(e.target.value)} placeholder="Cena za panel" className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
+              <input type="number" value={stringPrice} onChange={(e) => setStringPrice(e.target.value)} placeholder="Cena za string" className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
+              <input type="number" value={meterPrice} onChange={(e) => setMeterPrice(e.target.value)} placeholder="Cena za metr" className="p-3 bg-black/40 text-white rounded-xl border border-white/10" />
               <div className="col-span-2">
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Přihlašovací heslo</label>
-                <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-4 bg-black/40 text-white rounded-xl border border-white/10" />
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Přihlašovací heslo</label>
+                <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 bg-black/40 text-white rounded-xl border border-white/10" />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">{t('worker_color')}</label>
-            <div className="grid grid-cols-6 gap-2">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('worker_color')}</label>
+            <div className="grid grid-cols-6 gap-2 p-3 bg-black/40 rounded-xl border border-white/10">
               {['#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ef4444', '#f59e0b', '#22c55e', '#10b981', '#06b6d4', '#4f46e5', '#db2777', '#f97316'].map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)} className={`h-8 rounded-lg ${color === c ? 'ring-2 ring-white scale-110 shadow-lg' : 'opacity-50'}`} style={{ backgroundColor: c }} />
+                <button key={c} type="button" onClick={() => setColor(c)} className={`h-8 rounded-lg ${color === c ? 'ring-2 ring-offset-2 ring-offset-slate-800 ring-white scale-105 shadow-lg' : 'opacity-60 hover:opacity-100'} transition-all`} style={{ backgroundColor: c }} />
               ))}
             </div>
           </div>
 
-          <div className="flex justify-end gap-4 pt-6">
-            <button type="button" onClick={onClose} className="px-6 py-3 bg-white/5 text-white font-black rounded-xl uppercase tracking-widest text-[10px]">{t('cancel')}</button>
-            <button type="submit" className="px-8 py-3 bg-white text-black font-black rounded-xl uppercase tracking-widest text-[10px] shadow-xl hover:bg-[var(--color-accent)] hover:text-white transition-all active:scale-95">{t('save')}</button>
-          </div>
         </form>
+         <div className="p-6 border-t border-white/10 bg-black/20 flex justify-end gap-4">
+            <button type="button" onClick={onClose} className="px-8 py-3 bg-white/5 text-white font-black rounded-xl hover:bg-white/10 transition-all uppercase tracking-widest text-[10px]">{t('cancel')}</button>
+            <button type="submit" onClick={handleSubmit} className="flex-1 md:flex-none px-10 py-3 bg-white text-black font-black rounded-xl hover:bg-indigo-400 hover:text-white transition-all shadow-lg uppercase tracking-widest text-[10px]">{t('save')}</button>
+          </div>
       </div>
     </div>
   );

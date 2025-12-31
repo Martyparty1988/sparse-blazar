@@ -5,6 +5,8 @@ import { useI18n } from '../contexts/I18nContext';
 import type { Project, ProjectTask, Worker } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import { firebaseService } from '../services/firebaseService';
+import ClockIcon from './icons/ClockIcon';
+import PlusIcon from './icons/PlusIcon';
 
 interface ProjectTasksModalProps {
     project: Project;
@@ -245,22 +247,23 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
     ];
 
     return (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 backdrop-blur-lg p-0 md:p-4 animate-fade-in">
-            <div className="w-full h-full md:h-auto md:max-h-[90vh] md:max-w-5xl p-6 md:p-8 bg-slate-900/90 md:bg-slate-900/80 backdrop-blur-3xl md:rounded-[2.5rem] shadow-2xl border-none md:border border-white/10 flex flex-col">
-                <div className="flex-shrink-0">
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <h2 className="text-4xl font-black text-white tracking-tight uppercase italic">{t('tasks')}</h2>
-                            <p className="text-lg text-blue-200/60 font-bold">{project.name}</p>
+        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-slate-950/40 backdrop-blur-md p-0 md:p-6 animate-fade-in">
+            <div className="w-full h-[92vh] md:h-auto md:max-h-[90vh] md:max-w-5xl bg-slate-900/90 md:bg-slate-900/80 backdrop-blur-3xl rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl border-t border-white/10 md:border border-white/5 flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
+                <div className="flex-shrink-0 p-6 md:p-8 pb-4">
+                    <div className="flex justify-between items-start mb-6">
+                        <div className="space-y-1">
+                            <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase italic">{t('tasks')}</h2>
+                            <div className="flex items-center gap-2">
+                                <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                                <p className="text-sm md:text-lg text-blue-200/60 font-bold uppercase tracking-wider">{project.name}</p>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={onClose}
-                                className="p-3 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                            >
-                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
+                        <button
+                            onClick={onClose}
+                            className="p-3 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 rounded-2xl transition-all active:scale-90"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
                     </div>
 
                     {/* Individual Progress Dashboard */}
@@ -334,210 +337,245 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                     )}
                 </div>
 
-                <div className="flex-grow overflow-y-auto pr-2 -mr-2 space-y-3 custom-scrollbar">
+                <div className="flex-grow overflow-y-auto px-6 md:px-8 space-y-4 custom-scrollbar">
                     {filteredTasks && filteredTasks.length > 0 ? (
                         filteredTasks.map(task => (
-                            <div key={task.id} className={`p-5 rounded-3xl group transition-all border border-white/5 ${task.completionDate ? 'bg-emerald-900/10 border-emerald-500/10' : 'bg-white/5 hover:bg-white/10'}`}>
-                                <div className="flex flex-col md:flex-row md:items-center gap-4">
-                                    <div className="flex-grow">
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg ${task.completionDate ? 'bg-emerald-500/20 text-emerald-300' : 'bg-blue-500/20 text-blue-300'}`}>
-                                                {task.taskType}
+                            <div key={task.id} className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 ${task.completionDate ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-white/5 border-white/10 hover:border-white/20'}`}>
+                                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none"></div>
+                                <div className="p-5 md:p-6 flex flex-col md:flex-row md:items-center gap-6 relative z-10">
+                                    <div className="flex-grow space-y-3">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-2.5 py-1 rounded-full border ${task.completionDate ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                                                {t(task.taskType)}
                                             </span>
                                             {task.assignedWorkerId && (
-                                                <span
+                                                <div
                                                     onClick={() => setWorkerFilter(task.assignedWorkerId!)}
-                                                    className="text-[9px] font-black uppercase tracking-widest text-indigo-400 bg-indigo-400/10 px-2 py-1 rounded-lg border border-indigo-400/20 cursor-pointer hover:bg-indigo-400/20"
+                                                    className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/10 text-indigo-300 rounded-full border border-indigo-500/20 cursor-pointer hover:bg-indigo-500/20 transition-all active:scale-95"
                                                 >
-                                                    {workerMap.get(task.assignedWorkerId)}
-                                                </span>
-                                            )}
-                                            {task.completionDate && (
-                                                <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
-                                                    ✓ {new Date(task.completionDate).toLocaleDateString()}
-                                                </span>
+                                                    <div className="w-1 h-1 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.5)]"></div>
+                                                    <span className="text-[9px] font-black uppercase tracking-wider">{workerMap.get(task.assignedWorkerId)}</span>
+                                                </div>
                                             )}
                                         </div>
-                                        <p className={`text-lg font-bold leading-tight ${task.completionDate ? 'text-gray-500 line-through' : 'text-white'}`}>
+                                        <h4 className={`text-xl font-bold tracking-tight leading-snug ${task.completionDate ? 'text-slate-500 italic' : 'text-white'}`}>
                                             {task.description}
-                                        </p>
+                                        </h4>
                                         {task.tableIds && task.tableIds.length > 0 && (
-                                            <div className="flex flex-wrap gap-1 mt-2">
+                                            <div className="flex flex-wrap gap-2 pt-1">
                                                 {task.tableIds.map(tid => (
-                                                    <span key={tid} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-bold text-slate-400 uppercase">
-                                                        Stůl {tid}
+                                                    <span key={tid} className="flex items-center gap-1.5 px-2 py-0.5 bg-black/20 border border-white/5 rounded-lg text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                                        <div className="w-0.5 h-1.5 bg-slate-500/50 rounded-full"></div>
+                                                        {tid}
                                                     </span>
                                                 ))}
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="flex items-center gap-3 flex-shrink-0">
-                                        <div className="flex flex-col items-end gap-1 px-4 py-2 rounded-xl bg-black/20 border border-white/5 min-w-[100px]">
-                                            <span className="font-mono font-bold text-white text-sm">€{task.price.toFixed(2)}</span>
+                                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 flex-shrink-0">
+                                        <div className="w-full sm:w-auto flex flex-col items-center sm:items-end justify-center px-6 py-3 rounded-2xl bg-black/30 border border-white/5 shadow-inner min-w-[120px]">
+                                            <div className="text-lg font-mono font-black text-white">€{task.price.toFixed(2)}</div>
                                             {task.hoursSpent && task.hoursSpent > 0 && (
-                                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-tighter">
+                                                <div className="text-[9px] font-bold text-emerald-400/70 uppercase tracking-widest mt-0.5">
                                                     €{(task.price / task.hoursSpent).toFixed(2)}/h
-                                                </span>
+                                                </div>
                                             )}
                                         </div>
 
-                                        <select
-                                            value={task.assignedWorkerId || ''}
-                                            onChange={(e) => handleAssignWorker(task.id!, e.target.value === '' ? '' : Number(e.target.value))}
-                                            className={`px-3 py-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all cursor-pointer ${task.assignedWorkerId
-                                                ? 'bg-blue-600/20 text-blue-200 border-blue-500/30'
-                                                : 'bg-white/5 text-gray-400 border-white/10'
-                                                } [&>option]:bg-slate-900`}
-                                            disabled={!!task.completionDate}
-                                        >
-                                            <option value="">Přiřadit...</option>
-                                            {workers?.map(w => {
-                                                const load = workerLoad[w.id!] || 0;
-                                                return (
-                                                    <option key={w.id} value={w.id}>
-                                                        {w.name} ({load})
-                                                    </option>
-                                                );
-                                            })}
-                                        </select>
+                                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                                            <div className="relative group/select flex-1 sm:flex-none">
+                                                <select
+                                                    value={task.assignedWorkerId || ''}
+                                                    onChange={(e) => handleAssignWorker(task.id!, e.target.value === '' ? '' : Number(e.target.value))}
+                                                    className={`w-full sm:w-auto pl-4 pr-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest appearance-none border transition-all cursor-pointer focus:ring-2 focus:ring-indigo-500/50 ${task.assignedWorkerId
+                                                        ? 'bg-indigo-600/10 text-indigo-300 border-indigo-500/30'
+                                                        : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
+                                                        } [&>option]:bg-slate-900`}
+                                                    disabled={!!task.completionDate}
+                                                >
+                                                    <option value="">{t('assign_worker')}...</option>
+                                                    {workers?.map(w => {
+                                                        const load = workerLoad[w.id!] || 0;
+                                                        return (
+                                                            <option key={w.id} value={w.id}>
+                                                                {w.name} ({load})
+                                                            </option>
+                                                        );
+                                                    })}
+                                                </select>
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
+                                                </div>
+                                            </div>
 
-                                        <button
-                                            onClick={() => handleToggleCompletion(task)}
-                                            className={`p-2.5 rounded-xl transition-all shadow-lg active:scale-95 ${task.completionDate
-                                                ? 'bg-amber-500/20 text-amber-400'
-                                                : 'bg-emerald-500 text-black'
-                                                }`}
-                                        >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                        </button>
+                                            <button
+                                                onClick={() => handleToggleCompletion(task)}
+                                                className={`p-3.5 rounded-2xl transition-all shadow-xl active:scale-95 ${task.completionDate
+                                                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                                    : 'bg-emerald-500 text-black border border-emerald-400'
+                                                    }`}
+                                                title={task.completionDate ? t('mark_as_incomplete') : t('mark_as_complete')}
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                            </button>
 
-                                        <button
-                                            onClick={() => setTaskToDelete(task.id!)}
-                                            className="p-2.5 text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
-                                        >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                        </button>
+                                            <button
+                                                onClick={() => setTaskToDelete(task.id!)}
+                                                className="p-3.5 bg-white/5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-2xl transition-all border border-white/5 hover:border-rose-500/20 active:scale-90"
+                                                title={t('delete')}
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
+
+                                <div className={`h-1 w-full opacity-20 bg-gradient-to-r ${task.completionDate ? 'from-emerald-500 to-green-600' : 'from-indigo-500 to-blue-600'}`}></div>
                             </div>
                         ))
                     ) : (
-                        <div className="text-center py-16 opacity-50">
-                            <p className="text-xl font-bold text-gray-400">{t('no_tasks_found')}</p>
-                            <p className="text-xs text-slate-500 mt-2">Zkuste změnit filtry nebo přidat nový úkol.</p>
+                        <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
+                            <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center border border-white/5 shadow-inner">
+                                <svg className="w-10 h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 00 2 2h10a2 2 0 00 2-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-2xl font-black text-slate-500 uppercase tracking-tighter italic">{t('no_tasks_found')}</p>
+                                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{t('no_tasks_found_desc') || "Zatím žádné zapsané úkoly pro tento projekt"}</p>
+                            </div>
                         </div>
                     )}
                 </div>
 
-                <div className="flex-shrink-0 mt-6 pt-6 border-t border-white/10">
+                <div className="flex-shrink-0 p-6 md:p-8 bg-black/20 border-t border-white/5">
                     {showAddForm ? (
-                        <form onSubmit={handleAddTask} className="space-y-4 animate-fade-in bg-white/5 p-6 rounded-3xl border border-white/10">
-                            <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-xl font-black text-white uppercase tracking-wide">{t('add_task')}</h3>
-                                <div className="inline-flex rounded-xl bg-black/40 p-1 border border-white/10">
+                        <form onSubmit={handleAddTask} className="space-y-6 animate-slide-up">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">{t('add_task')}</h3>
+                                <div className="inline-flex rounded-2xl bg-black/40 p-1.5 border border-white/10 w-full sm:w-auto overflow-x-auto no-scrollbar">
                                     {taskTypeOptions.map(opt => (
-                                        <button key={opt.id} type="button" onClick={() => setTaskType(opt.id)} className={`px-4 py-2 text-[10px] font-bold rounded-lg transition-all uppercase tracking-wider ${taskType === opt.id ? 'bg-white text-black shadow-lg' : 'text-gray-400'}`}>{opt.label}</button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {taskType === 'construction' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('task_description')} required className="p-4 bg-black/30 text-white border border-white/10 rounded-2xl focus:ring-1 focus:ring-indigo-500 font-bold" />
-                                    <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder={t('flat_rate')} min="0" step="0.01" required className="p-4 bg-black/30 text-white border border-white/10 rounded-2xl focus:ring-1 focus:ring-indigo-500 font-bold" />
-                                </div>
-                            )}
-                            {taskType === 'panels' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <input type="number" value={panelCount} onChange={e => setPanelCount(e.target.value)} placeholder={t('panel_count')} min="1" step="1" required className="p-4 bg-black/30 text-white border border-white/10 rounded-2xl focus:ring-1 focus:ring-indigo-500 font-bold" />
-                                    <input type="number" value={pricePerPanel} onChange={e => setPricePerPanel(e.target.value)} placeholder={t('price_per_panel')} min="0" step="0.01" required className="p-4 bg-black/30 text-white border border-white/10 rounded-2xl focus:ring-1 focus:ring-indigo-500 font-bold" />
-                                </div>
-                            )}
-                            {taskType === 'cables' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <select value={tableSize} onChange={e => setTableSize(e.target.value as any)} className="p-4 bg-black/30 text-white border border-white/10 rounded-2xl font-bold [&>option]:bg-gray-900">
-                                        <option value="small">{t('small')}</option>
-                                        <option value="medium">{t('medium')}</option>
-                                        <option value="large">{t('large')}</option>
-                                    </select>
-                                    <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder={t('task_price')} min="0" step="0.01" required className="p-4 bg-black/30 text-white border border-white/10 rounded-2xl focus:ring-1 focus:ring-indigo-500 font-bold" />
-                                </div>
-                            )}
-
-                            {/* Hours Spent Input - NEW */}
-                            <div className="mt-2">
-                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Odhadovaný/Skutečný čas (hodiny)</label>
-                                <div className="flex items-center gap-4">
-                                    <div className="relative flex-grow">
-                                        <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                        <input
-                                            type="number"
-                                            value={hoursSpent}
-                                            onChange={e => setHoursSpent(e.target.value)}
-                                            placeholder="Kolik hodin to trvalo?"
-                                            min="0"
-                                            step="0.5"
-                                            className="w-full p-4 pl-12 bg-black/30 text-white border border-white/10 rounded-2xl focus:ring-1 focus:ring-indigo-500 font-bold"
-                                        />
-                                    </div>
-                                    {hoursSpent && Number(hoursSpent) > 0 && calculatedPrice > 0 && (
-                                        <div className="px-5 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex flex-col justify-center">
-                                            <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest whitespace-nowrap">Efektivita</span>
-                                            <span className="text-sm font-black text-white">€{(calculatedPrice / Number(hoursSpent)).toFixed(2)}/h</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Table Selection for task */}
-                            <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Přiřadit ke stolům (volitelně)</label>
-                                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 custom-scrollbar">
-                                    {projectTables?.map(tbl => (
                                         <button
-                                            key={tbl.id}
+                                            key={opt.id}
                                             type="button"
-                                            onClick={() => {
-                                                const next = [...selectedTableIds];
-                                                const idx = next.indexOf(tbl.tableId);
-                                                if (idx >= 0) next.splice(idx, 1);
-                                                else next.push(tbl.tableId);
-                                                setSelectedTableIds(next);
-                                            }}
-                                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all border ${selectedTableIds.includes(tbl.tableId)
-                                                ? 'bg-indigo-600 border-indigo-500 text-white'
-                                                : 'bg-white/5 border-white/10 text-slate-500 hover:border-white/20'
-                                                }`}
+                                            onClick={() => setTaskType(opt.id)}
+                                            className={`flex-1 sm:flex-none px-5 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase tracking-widest whitespace-nowrap ${taskType === opt.id ? 'bg-white text-black shadow-lg scale-[1.02]' : 'text-slate-500 hover:text-white'}`}
                                         >
-                                            {tbl.tableId}
+                                            {opt.label}
                                         </button>
                                     ))}
-                                    {(!projectTables || projectTables.length === 0) && (
-                                        <p className="text-[10px] text-slate-600 font-bold italic">Žádné stoly v projektu definovány.</p>
-                                    )}
                                 </div>
-                                {selectedTableIds.length > 0 && (
-                                    <div className="mt-3 flex justify-between items-center">
-                                        <span className="text-[9px] font-black text-indigo-400 uppercase">Vybráno {selectedTableIds.length} stolů</span>
-                                        <button type="button" onClick={() => setSelectedTableIds([])} className="text-[9px] font-black text-rose-500 uppercase hover:text-rose-400 transition-colors">Zrušit výběr</button>
-                                    </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {taskType === 'construction' && (
+                                    <>
+                                        <div className="md:col-span-2 relative group">
+                                            <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('task_description')} required className="w-full p-4 bg-black/40 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-indigo-500/50 font-bold transition-all" />
+                                        </div>
+                                        <div className="relative">
+                                            <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder={t('flat_rate')} min="0" step="0.01" required className="w-full p-4 bg-black/40 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-indigo-500/50 font-bold transition-all" />
+                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">€</span>
+                                        </div>
+                                    </>
+                                )}
+                                {taskType === 'panels' && (
+                                    <>
+                                        <div className="relative">
+                                            <input type="number" value={panelCount} onChange={e => setPanelCount(e.target.value)} placeholder={t('panel_count')} min="1" step="1" required className="w-full p-4 bg-black/40 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-indigo-500/50 font-bold transition-all" />
+                                        </div>
+                                        <div className="relative">
+                                            <input type="number" value={pricePerPanel} onChange={e => setPricePerPanel(e.target.value)} placeholder={t('price_per_panel')} min="0" step="0.01" required className="w-full p-4 bg-black/40 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-indigo-500/50 font-bold transition-all" />
+                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">€</span>
+                                        </div>
+                                        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 flex flex-col justify-center">
+                                            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest leading-none mb-1">{t('total_price')}</span>
+                                            <span className="text-lg font-mono font-black text-white leading-none">€{calculatedPrice.toFixed(2)}</span>
+                                        </div>
+                                    </>
+                                )}
+                                {taskType === 'cables' && (
+                                    <>
+                                        <select value={tableSize} onChange={e => setTableSize(e.target.value as any)} className="w-full p-4 bg-black/40 text-white border border-white/10 rounded-2xl font-bold appearance-none transition-all cursor-pointer focus:ring-2 focus:ring-indigo-500/50 [&>option]:bg-slate-900">
+                                            <option value="small">{t('small')}</option>
+                                            <option value="medium">{t('medium')}</option>
+                                            <option value="large">{t('large')}</option>
+                                        </select>
+                                        <div className="relative">
+                                            <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder={t('task_price')} min="0" step="0.01" required className="w-full p-4 bg-black/40 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-indigo-500/50 font-bold transition-all" />
+                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">€</span>
+                                        </div>
+                                    </>
                                 )}
                             </div>
-                            <div className="flex justify-between items-center pt-2">
-                                <div className="text-xl font-black text-white tracking-tight">€{calculatedPrice.toFixed(2)}</div>
-                                <div className="flex gap-3">
-                                    <button type="button" onClick={resetForm} className="px-6 py-3 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10 transition-colors uppercase tracking-wider text-xs">{t('cancel')}</button>
-                                    <button type="submit" className="px-8 py-3 bg-[var(--color-primary)] text-white font-bold rounded-xl hover:bg-[var(--color-primary-hover)] shadow-lg transition-all active:scale-95 uppercase tracking-wider text-xs">{t('add')}</button>
+
+                            <div className="flex flex-col lg:flex-row gap-6">
+                                {/* Estimation Section */}
+                                <div className="flex-1 space-y-3">
+                                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Odhad času & Efektivita</label>
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative flex-grow">
+                                            <input
+                                                type="number"
+                                                value={hoursSpent}
+                                                onChange={e => setHoursSpent(e.target.value)}
+                                                placeholder="Kolik hodin (est.)?"
+                                                min="0"
+                                                step="0.5"
+                                                className="w-full p-4 bg-black/40 text-white border border-white/10 rounded-2xl focus:ring-2 focus:ring-indigo-500/50 font-bold transition-all"
+                                            />
+                                            <ClockIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600 pointer-events-none" />
+                                        </div>
+                                        {hoursSpent && Number(hoursSpent) > 0 && calculatedPrice > 0 && (
+                                            <div className="px-6 py-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex flex-col items-center justify-center min-w-[120px]">
+                                                <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest leading-none mb-1">Hodinová</span>
+                                                <span className="text-sm font-black text-white leading-none">€{(calculatedPrice / Number(hoursSpent)).toFixed(2)}/h</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
+
+                                {/* Table Selector for tasks */}
+                                <div className="flex-1 space-y-3">
+                                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Přiřadit ke stolům ({selectedTableIds.length})</label>
+                                    <div className="flex flex-wrap gap-2 max-h-[88px] overflow-y-auto p-3 bg-black/40 rounded-2xl border border-white/10 custom-scrollbar">
+                                        {projectTables?.map(tbl => (
+                                            <button
+                                                key={tbl.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    const next = [...selectedTableIds];
+                                                    const idx = next.indexOf(tbl.tableId);
+                                                    if (idx >= 0) next.splice(idx, 1);
+                                                    else next.push(tbl.tableId);
+                                                    setSelectedTableIds(next);
+                                                }}
+                                                className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all border ${selectedTableIds.includes(tbl.tableId)
+                                                    ? 'bg-indigo-500 border-indigo-400 text-white shadow-lg shadow-indigo-500/20'
+                                                    : 'bg-white/5 border-white/5 text-slate-500 hover:text-white hover:border-white/20'
+                                                    }`}
+                                            >
+                                                {tbl.tableId}
+                                            </button>
+                                        ))}
+                                        {(!projectTables || projectTables.length === 0) && (
+                                            <p className="text-[10px] text-slate-600 font-bold italic w-full text-center py-2 uppercase tracking-widest">{t('no_tables_defined')}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 justify-end pt-2">
+                                <button type="button" onClick={resetForm} className="px-8 py-4 bg-white/5 text-slate-400 font-black rounded-2xl hover:bg-white/10 hover:text-white transition-all uppercase tracking-widest text-[10px]">{t('cancel')}</button>
+                                <button type="submit" className="flex-1 sm:flex-none px-10 py-4 bg-white text-black font-black rounded-2xl hover:bg-emerald-500 hover:text-white shadow-xl transition-all active:scale-95 uppercase tracking-widest text-[10px]">{t('add')}</button>
                             </div>
                         </form>
                     ) : (
                         <button
                             onClick={() => setShowAddForm(true)}
-                            className="w-full py-5 bg-white/5 border-2 border-dashed border-white/10 text-gray-400 font-bold rounded-3xl hover:bg-white/10 hover:text-white transition-all uppercase tracking-widest text-sm flex items-center justify-center gap-2"
+                            className="w-full py-6 bg-white/5 border-2 border-dashed border-white/10 text-slate-500 font-black rounded-3xl hover:bg-white/10 hover:text-white hover:border-white/30 transition-all uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-3 active:scale-98"
                         >
-                            + {t('add_task')}
+                            <PlusIcon className="w-5 h-5" />
+                            {t('add_task')}
                         </button>
                     )}
                 </div>

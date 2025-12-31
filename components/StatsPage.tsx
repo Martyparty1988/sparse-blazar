@@ -182,46 +182,66 @@ const StatsPage: React.FC = () => {
     }, [allFieldTables, workers]);
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-10 md:space-y-16 pb-32">
             <div className="md:hidden">
                 <BackButton />
             </div>
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <h1 className="text-5xl font-bold text-white [text-shadow:0_4px_12px_rgba(0,0,0,0.5)]">
-                    📊 Statistiky a Grafy
-                </h1>
-                <select
-                    value={selectedProjectId}
-                    onChange={(e) => setSelectedProjectId(Number(e.target.value))}
-                    className="w-full md:w-auto max-w-sm p-4 bg-black/20 text-white border border-white/20 rounded-xl focus:ring-blue-400 focus:border-blue-400 text-lg [&>option]:bg-gray-800"
-                >
-                    <option value="" disabled>Vyberte projekt</option>
-                    {projects?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-            </div>
+
+            {/* Header Section */}
+            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8">
+                <div className="space-y-4">
+                    <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8] drop-shadow-2xl">
+                        {t('statistics')}<span className="text-cyan-500">.</span>
+                    </h1>
+                    <p className="text-sm md:text-xl text-slate-400 font-bold tracking-tight max-w-2xl border-l-4 border-cyan-500 pl-4 py-1 uppercase">
+                        {t('statistics_dashboard_desc') || "Analýza výkonu a technologického postupu."}
+                    </p>
+                </div>
+
+                <div className="w-full lg:w-96 relative group">
+                    <div className="absolute inset-0 bg-cyan-500/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <select
+                        value={selectedProjectId}
+                        onChange={(e) => setSelectedProjectId(Number(e.target.value))}
+                        className="relative w-full p-5 bg-white/5 text-white border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-cyan-500 focus:outline-none text-lg font-black uppercase tracking-widest backdrop-blur-3xl appearance-none cursor-pointer [&>option]:bg-slate-900 transition-all shadow-xl"
+                    >
+                        <option value="" disabled>{t('select_project') || "Vyberte projekt"}</option>
+                        {projects?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+            </header>
 
             {selectedProjectId && stats ? (
-                <div className="space-y-8">
-                    {/* KPI Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-12 animate-fade-in">
+                    {/* KPI Cards: Premium Tiles */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
                         {/* Total Installed kWp */}
-                        <div className="relative overflow-hidden p-8 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 backdrop-blur-2xl rounded-3xl border border-emerald-400/20 shadow-lg">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/10 rounded-full blur-3xl"></div>
-                            <div className="relative">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-4xl">⚡</span>
-                                    <h3 className="text-xl font-bold text-emerald-100">Instalováno celkem</h3>
+                        <div className="group relative overflow-hidden p-8 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/10 hover:scale-[1.02]">
+                            <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all"></div>
+                            <div className="relative z-10 space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-emerald-500/20 rounded-2xl text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                    </div>
+                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{t('total_installed') || "Instalováno celkem"}</h3>
                                 </div>
-                                <p className="text-5xl font-extrabold text-white mb-1">
-                                    {stats.installedKWp.toFixed(2)} <span className="text-3xl text-emerald-300">kWp</span>
-                                </p>
-                                <p className="text-sm text-emerald-200/80">
-                                    z {stats.totalKWp.toFixed(2)} kWp celkem
-                                </p>
-                                <div className="mt-4 h-2 bg-black/20 rounded-full overflow-hidden">
+                                <div>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-5xl font-black text-white tracking-tighter italic">
+                                            {stats.installedKWp.toFixed(1)}
+                                        </span>
+                                        <span className="text-xl font-black text-emerald-500 tracking-widest uppercase">kWp</span>
+                                    </div>
+                                    <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest">
+                                        {t('target') || "Cíl"}: <span className="text-white">{stats.totalKWp.toFixed(1)} kWp</span>
+                                    </p>
+                                </div>
+                                <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden shadow-inner">
                                     <div
-                                        className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500"
+                                        className="h-full bg-gradient-to-r from-emerald-600 to-green-500 transition-all duration-1000 ease-out"
                                         style={{ width: `${(stats.installedKWp / stats.totalKWp) * 100}%` }}
                                     ></div>
                                 </div>
@@ -229,252 +249,273 @@ const StatsPage: React.FC = () => {
                         </div>
 
                         {/* Active Team */}
-                        <div className="relative overflow-hidden p-8 bg-gradient-to-br from-blue-500/20 to-blue-600/10 backdrop-blur-2xl rounded-3xl border border-blue-400/20 shadow-lg">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full blur-3xl"></div>
-                            <div className="relative">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-4xl">👥</span>
-                                    <h3 className="text-xl font-bold text-blue-100">Aktivní tým</h3>
+                        <div className="group relative overflow-hidden p-8 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/10 hover:scale-[1.02]">
+                            <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all"></div>
+                            <div className="relative z-10 space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-blue-500/20 rounded-2xl text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                    </div>
+                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{t('active_team') || "Aktivní tým"}</h3>
                                 </div>
-                                <p className="text-5xl font-extrabold text-white mb-1">
-                                    {stats.activeTeamCount} <span className="text-3xl text-blue-300">pracovníků</span>
-                                </p>
-                                <p className="text-sm text-blue-200/80">
-                                    {stats.completedCount} dokončených stolů
-                                </p>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-5xl font-black text-white tracking-tighter italic">
+                                        {stats.activeTeamCount}
+                                    </span>
+                                    <span className="text-xl font-black text-blue-400 tracking-widest uppercase">{t('workers')}</span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <div className="flex -space-x-2">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-[8px] font-black text-white uppercase tracking-tighter">?</div>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                        {stats.completedCount} {t('tables_completed') || "dokončených stolů"}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
                         {/* Average per Day */}
-                        <div className="relative overflow-hidden p-8 bg-gradient-to-br from-purple-500/20 to-purple-600/10 backdrop-blur-2xl rounded-3xl border border-purple-400/20 shadow-lg">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-400/10 rounded-full blur-3xl"></div>
-                            <div className="relative">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-4xl">📈</span>
-                                    <h3 className="text-xl font-bold text-purple-100">Průměr za den</h3>
+                        <div className="group relative overflow-hidden p-8 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/10 hover:scale-[1.02]">
+                            <div className="absolute -top-12 -right-12 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all"></div>
+                            <div className="relative z-10 space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-purple-500/20 rounded-2xl text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    </div>
+                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{t('average_daily') || "Průměr za den"}</h3>
                                 </div>
-                                <p className="text-5xl font-extrabold text-white mb-1">
-                                    {stats.avgKWpPerDay.toFixed(2)} <span className="text-3xl text-purple-300">kWp/den</span>
-                                </p>
-                                <p className="text-sm text-purple-200/80">
-                                    Průměrný denní výkon
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-5xl font-black text-white tracking-tighter italic">
+                                        {stats.avgKWpPerDay.toFixed(1)}
+                                    </span>
+                                    <span className="text-xl font-black text-purple-400 tracking-widest uppercase">kWp/d</span>
+                                </div>
+                                <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest">
+                                    {t('daily_performance_avg') || "Průměrná efektivita dne"}
                                 </p>
                             </div>
                         </div>
                     </div>
 
                     {/* Charts Grid */}
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 lg:gap-10">
                         {/* Daily Progress - Line Chart */}
-                        <div className="xl:col-span-2 p-8 bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-lg">
-                            <div className="flex items-center gap-3 mb-6">
-                                <span className="text-3xl">📊</span>
-                                <h2 className="text-3xl font-bold text-white">Denní pokrok</h2>
+                        <div className="xl:col-span-2 group relative overflow-hidden p-8 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.08]">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+                                        <h2 className="text-sm font-black text-slate-500 uppercase tracking-[0.2em]">{t('daily_progress')}</h2>
+                                    </div>
+                                    <p className="text-white font-bold opacity-60 text-xs ml-3.5 italic uppercase tracking-wider">{t('last_30_days') || "Posledních 30 dní vývoje"}</p>
+                                </div>
+                                <div className="flex items-center gap-4 bg-black/20 px-4 py-2 rounded-xl border border-white/5">
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Status:</span>
+                                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest leading-none animate-pulse">{t('live_tracking') || "Live Tracking"}</span>
+                                </div>
                             </div>
+
                             {stats.dailyProgressData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={350}>
-                                    <LineChart data={stats.dailyProgressData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
-                                        <defs>
-                                            <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-                                        <XAxis
-                                            dataKey="date"
-                                            stroke="#9ca3af"
-                                            tick={{ fill: '#9ca3af', fontSize: 12 }}
-                                            angle={-45}
-                                            textAnchor="end"
-                                            height={80}
-                                        />
-                                        <YAxis
-                                            stroke="#9ca3af"
-                                            tick={{ fill: '#9ca3af', fontSize: 12 }}
-                                            label={{ value: 'kWp', angle: -90, position: 'insideLeft', fill: '#9ca3af' }}
-                                        />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Line
-                                            type="monotone"
-                                            dataKey="kWp"
-                                            stroke="#10b981"
-                                            strokeWidth={3}
-                                            dot={{ fill: '#10b981', r: 4 }}
-                                            activeDot={{ r: 6 }}
-                                            fill="url(#lineGradient)"
-                                        />
-                                    </LineChart>
-                                </ResponsiveContainer>
+                                <div className="relative h-[400px] w-full mt-4">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={stats.dailyProgressData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
+                                            <defs>
+                                                <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                                            <XAxis
+                                                dataKey="date"
+                                                stroke="#475569"
+                                                tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                                dy={10}
+                                            />
+                                            <YAxis
+                                                stroke="#475569"
+                                                tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                                unit="kWp"
+                                            />
+                                            <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(16,185,129,0.2)', strokeWidth: 2 }} />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="kWp"
+                                                stroke="#10b981"
+                                                strokeWidth={4}
+                                                dot={{ fill: '#10b981', strokeWidth: 2, r: 6, stroke: '#0f172a' }}
+                                                activeDot={{ r: 8, fill: '#fff', stroke: '#10b981', strokeWidth: 4 }}
+                                                fill="url(#lineGradient)"
+                                                animationDuration={2000}
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
                             ) : (
-                                <p className="text-center text-gray-300 py-12 text-lg">Žádná data k zobrazení</p>
+                                <div className="h-[350px] flex items-center justify-center opacity-40 italic font-bold text-slate-500 uppercase tracking-widest">{t('no_data')}</div>
                             )}
                         </div>
 
                         {/* Worker Performance - Bar Chart */}
-                        <div className="p-8 bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-lg">
-                            <div className="flex items-center gap-3 mb-6">
-                                <span className="text-3xl">🏆</span>
-                                <h2 className="text-3xl font-bold text-white">Výkon pracovníků</h2>
+                        <div className="group relative overflow-hidden p-8 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.08]">
+                            <div className="space-y-1 mb-10">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                                    <h2 className="text-sm font-black text-slate-500 uppercase tracking-[0.2em]">{t('worker_performance')}</h2>
+                                </div>
+                                <p className="text-white font-bold opacity-60 text-xs ml-3.5 italic uppercase tracking-wider">{t('top_workers_desc') || "Nejvýkonnější pracovníci podle kWp"}</p>
                             </div>
+
                             {stats.workerPerfData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={400}>
-                                    <BarChart data={stats.workerPerfData} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" vertical={false} />
-                                        <XAxis
-                                            dataKey="name"
-                                            stroke="#9ca3af"
-                                            tick={{ fill: '#9ca3af', fontSize: 12 }}
-                                            angle={-45}
-                                            textAnchor="end"
-                                        />
-                                        <YAxis
-                                            yAxisId="left"
-                                            stroke="#9ca3af"
-                                            tick={{ fill: '#9ca3af', fontSize: 12 }}
-                                            label={{ value: 'Stoly', angle: -90, position: 'insideLeft', fill: '#9ca3af' }}
-                                        />
-                                        <YAxis
-                                            yAxisId="right"
-                                            orientation="right"
-                                            stroke="#9ca3af"
-                                            tick={{ fill: '#9ca3af', fontSize: 12 }}
-                                            label={{ value: 'kWp', angle: 90, position: 'insideRight', fill: '#9ca3af' }}
-                                        />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Legend />
-                                        <Bar
-                                            yAxisId="left"
-                                            dataKey="tables"
-                                            name="Stoly"
-                                            fill="#3b82f6"
-                                            radius={[6, 6, 0, 0]}
-                                        />
-                                        <Bar
-                                            yAxisId="right"
-                                            dataKey="kWp"
-                                            name="kWp"
-                                            fill="#10b981"
-                                            radius={[6, 6, 0, 0]}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                <div className="h-[400px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={stats.workerPerfData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                                            <XAxis
+                                                dataKey="name"
+                                                stroke="#475569"
+                                                tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                                dy={10}
+                                            />
+                                            <YAxis
+                                                yAxisId="left"
+                                                stroke="#475569"
+                                                tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                            />
+                                            <YAxis
+                                                yAxisId="right"
+                                                orientation="right"
+                                                stroke="#475569"
+                                                tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                            />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Bar
+                                                yAxisId="left"
+                                                dataKey="tables"
+                                                name={t('tables') || "Stoly"}
+                                                fill="#3b82f6"
+                                                radius={[8, 8, 0, 0]}
+                                                barSize={30}
+                                            />
+                                            <Bar
+                                                yAxisId="right"
+                                                dataKey="kWp"
+                                                name="kWp"
+                                                fill="#10b981"
+                                                radius={[8, 8, 0, 0]}
+                                                barSize={30}
+                                            />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
                             ) : (
-                                <p className="text-center text-gray-300 py-12 text-lg">Žádná data k zobrazení</p>
+                                <div className="h-[400px] flex items-center justify-center opacity-40 italic font-bold text-slate-500 uppercase tracking-widest">{t('no_data')}</div>
                             )}
                         </div>
 
                         {/* Status Distribution - Pie Chart */}
-                        <div className="p-8 bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-lg">
-                            <div className="flex items-center gap-3 mb-6">
-                                <span className="text-3xl">🎯</span>
-                                <h2 className="text-3xl font-bold text-white">Rozdělení stavů</h2>
+                        <div className="group relative overflow-hidden p-8 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.08]">
+                            <div className="space-y-1 mb-10">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]"></div>
+                                    <h2 className="text-sm font-black text-slate-500 uppercase tracking-[0.2em]">{t('status_distribution')}</h2>
+                                </div>
+                                <p className="text-white font-bold opacity-60 text-xs ml-3.5 italic uppercase tracking-wider">{t('overall_completion_status') || "Celkový stav dokončení projektu"}</p>
                             </div>
+
                             {stats.totalTables > 0 ? (
-                                <ResponsiveContainer width="100%" height={400}>
-                                    <PieChart>
-                                        <Pie
-                                            data={stats.statusData}
-                                            cx="50%"
-                                            cy="50%"
-                                            labelLine={false}
-                                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                            outerRadius={140}
-                                            fill="#8884d8"
-                                            dataKey="value"
-                                        >
-                                            {stats.statusData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip content={<CustomTooltip />} />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                                <div className="h-[400px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={stats.statusData}
+                                                cx="50%"
+                                                cy="50%"
+                                                labelLine={false}
+                                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                outerRadius={120}
+                                                innerRadius={80}
+                                                paddingAngle={8}
+                                                dataKey="value"
+                                                animationDuration={1500}
+                                            >
+                                                {stats.statusData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip content={<CustomTooltip />} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
                             ) : (
-                                <p className="text-center text-gray-300 py-12 text-lg">Žádná data k zobrazení</p>
+                                <div className="h-[400px] flex items-center justify-center opacity-40 italic font-bold text-slate-500 uppercase tracking-widest">{t('no_data')}</div>
                             )}
                         </div>
                     </div>
 
-                    {/* Work Type Progress Bars */}
-                    <div className="p-8 bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-lg">
-                        <div className="flex items-center gap-3 mb-6">
-                            <span className="text-3xl">🔧</span>
-                            <h2 className="text-3xl font-bold text-white">Pokrok podle typu práce</h2>
+                    {/* Work Type Progress Bars: Premium Tile */}
+                    <div className="group relative overflow-hidden p-10 bg-white/5 backdrop-blur-3xl rounded-[3rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.08]">
+                        <div className="space-y-1 mb-12">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+                                <h2 className="text-sm md:text-md font-black text-slate-500 uppercase tracking-[0.3em]">{t('work_type_progress')}</h2>
+                            </div>
+                            <p className="text-white font-bold opacity-60 text-xs ml-4 italic uppercase tracking-wider">{t('technological_milestones') || "Technologické milníky (Konstrukce / Panely / Kabely)"}</p>
                         </div>
-                        <div className="space-y-6">
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                             {/* Construction (Konstrukce) */}
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-lg font-semibold text-white flex items-center gap-2">
-                                        <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-                                        Konstrukce (K)
-                                    </span>
-                                    <span className="text-lg font-bold text-blue-400">
-                                        {stats.workTypeProgress.construction.toFixed(1)}%
-                                    </span>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-end px-1">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Konstrukce (K)</span>
+                                    <span className="text-xl font-black italic text-blue-400">{stats.workTypeProgress.construction.toFixed(0)}%</span>
                                 </div>
-                                <div className="h-6 bg-black/30 rounded-full overflow-hidden">
+                                <div className="h-4 bg-black/40 rounded-full overflow-hidden shadow-inner border border-white/5">
                                     <div
-                                        className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 flex items-center justify-end pr-3"
+                                        className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(59,130,246,0.3)]"
                                         style={{ width: `${stats.workTypeProgress.construction}%` }}
-                                    >
-                                        {stats.workTypeProgress.construction > 10 && (
-                                            <span className="text-xs font-bold text-white">
-                                                {stats.workTypeProgress.construction.toFixed(0)}%
-                                            </span>
-                                        )}
-                                    </div>
+                                    ></div>
                                 </div>
                             </div>
 
                             {/* Paneling (Panely) */}
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-lg font-semibold text-white flex items-center gap-2">
-                                        <span className="w-3 h-3 bg-purple-500 rounded-full"></span>
-                                        Panely (P)
-                                    </span>
-                                    <span className="text-lg font-bold text-purple-400">
-                                        {stats.workTypeProgress.paneling.toFixed(1)}%
-                                    </span>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-end px-1">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Panely (P)</span>
+                                    <span className="text-xl font-black italic text-purple-400">{stats.workTypeProgress.paneling.toFixed(0)}%</span>
                                 </div>
-                                <div className="h-6 bg-black/30 rounded-full overflow-hidden">
+                                <div className="h-4 bg-black/40 rounded-full overflow-hidden shadow-inner border border-white/5">
                                     <div
-                                        className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500 flex items-center justify-end pr-3"
+                                        className="h-full bg-gradient-to-r from-purple-600 to-purple-400 transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(168,85,247,0.3)]"
                                         style={{ width: `${stats.workTypeProgress.paneling}%` }}
-                                    >
-                                        {stats.workTypeProgress.paneling > 10 && (
-                                            <span className="text-xs font-bold text-white">
-                                                {stats.workTypeProgress.paneling.toFixed(0)}%
-                                            </span>
-                                        )}
-                                    </div>
+                                    ></div>
                                 </div>
                             </div>
 
                             {/* Cabling (Kabely) */}
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-lg font-semibold text-white flex items-center gap-2">
-                                        <span className="w-3 h-3 bg-amber-500 rounded-full"></span>
-                                        Kabely (C)
-                                    </span>
-                                    <span className="text-lg font-bold text-amber-400">
-                                        {stats.workTypeProgress.cabling.toFixed(1)}%
-                                    </span>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-end px-1">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Kabely (C)</span>
+                                    <span className="text-xl font-black italic text-amber-400">{stats.workTypeProgress.cabling.toFixed(0)}%</span>
                                 </div>
-                                <div className="h-6 bg-black/30 rounded-full overflow-hidden">
+                                <div className="h-4 bg-black/40 rounded-full overflow-hidden shadow-inner border border-white/5">
                                     <div
-                                        className="h-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-500 flex items-center justify-end pr-3"
+                                        className="h-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(245,158,11,0.3)]"
                                         style={{ width: `${stats.workTypeProgress.cabling}%` }}
-                                    >
-                                        {stats.workTypeProgress.cabling > 10 && (
-                                            <span className="text-xs font-bold text-white">
-                                                {stats.workTypeProgress.cabling.toFixed(0)}%
-                                            </span>
-                                        )}
-                                    </div>
+                                    ></div>
                                 </div>
                             </div>
                         </div>

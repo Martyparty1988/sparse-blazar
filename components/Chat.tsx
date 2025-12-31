@@ -140,7 +140,7 @@ const Chat: React.FC = () => {
             id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
             text: inputText.trim(),
             senderId: currentUser?.workerId || -1,
-            senderName: currentUser?.name || user?.username || 'Admin',
+            senderName: currentUser?.name || (user as any)?.name || user?.username || 'Admin',
             timestamp: new Date().toISOString(),
             channelId: activeChannelId
         };

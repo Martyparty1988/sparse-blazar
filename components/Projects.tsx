@@ -127,18 +127,18 @@ const ProjectCard: React.FC<{
 
     return (
         <div
-            className="group relative flex flex-col overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl transition-all duration-500 animate-list-item w-full max-w-[100vw]"
+            className="group relative flex flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl transition-all duration-500 animate-list-item w-full max-w-[100vw]"
             style={{ animationDelay: `${index * 0.07}s` }}
         >
             {/* Glossy Overlay Background */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none"></div>
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[var(--color-primary)] opacity-[0.07] blur-[100px] transition-all duration-700 group-hover:opacity-15 group-hover:scale-125"></div>
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[var(--color-primary)] opacity-[0.05] blur-[100px] transition-all duration-700 group-hover:opacity-10 group-hover:scale-125"></div>
 
-            <div className="relative z-10 flex flex-col h-full p-6 md:p-8">
+            <div className="relative z-10 flex flex-col h-full p-5 md:p-8">
                 {/* Header: Status, Progress Ring & Admin Tools */}
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                        <div className={`px-4 py-1.5 rounded-full border border-white/10 bg-black/30 backdrop-blur-md flex items-center gap-2.5 shadow-xl`}>
+                <div className="flex flex-col gap-4 mb-6">
+                    <div className="flex items-center justify-between">
+                        <div className={`px-4 py-1.5 rounded-full border border-white/5 bg-black/20 backdrop-blur-md flex items-center gap-2.5 shadow-lg max-w-fit`}>
                             <div className={`h-2 w-2 rounded-full bg-gradient-to-r ${getStatusColor(project.status)} shadow-[0_0_12px_rgba(255,255,255,0.3)] animate-pulse`}></div>
                             <span className="text-[10px] font-black uppercase tracking-[0.15em] text-white/90">{t(project.status as any)}</span>
                         </div>
@@ -146,12 +146,12 @@ const ProjectCard: React.FC<{
                     </div>
 
                     {isAdmin && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                             {/* Create Plan / Map Button */}
                             <Link
                                 to={`/field-plans?projectId=${project.id}`}
                                 onClick={(e) => e.stopPropagation()}
-                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-purple-400 hover:bg-purple-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
+                                className="flex-1 min-w-[3rem] h-12 flex items-center justify-center rounded-2xl bg-white/5 text-purple-400 hover:bg-purple-500 hover:text-white backdrop-blur-md transition-all active:scale-95 border border-white/5 shadow-md"
                                 title={t('field_plan')}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
@@ -160,7 +160,7 @@ const ProjectCard: React.FC<{
                             {/* Export CSV Button */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); onExport(project) }}
-                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-emerald-400 hover:bg-emerald-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
+                                className="flex-1 min-w-[3rem] h-12 flex items-center justify-center rounded-2xl bg-white/5 text-emerald-400 hover:bg-emerald-500 hover:text-white backdrop-blur-md transition-all active:scale-95 border border-white/5 shadow-md"
                                 title={t('export_csv') || "Exportovat Data"}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -169,7 +169,7 @@ const ProjectCard: React.FC<{
                             {/* Edit Button */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); onEdit(project) }}
-                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-blue-300 hover:bg-blue-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
+                                className="flex-1 min-w-[3rem] h-12 flex items-center justify-center rounded-2xl bg-white/5 text-blue-300 hover:bg-blue-500 hover:text-white backdrop-blur-md transition-all active:scale-95 border border-white/5 shadow-md"
                                 title={t('edit_project')}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
@@ -178,7 +178,7 @@ const ProjectCard: React.FC<{
                             {/* Delete Button */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); onDelete(project) }}
-                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-rose-400 hover:bg-rose-500 hover:text-white backdrop-blur-md transition-all active:scale-90 border border-white/5 shadow-lg"
+                                className="flex-1 min-w-[3rem] h-12 flex items-center justify-center rounded-2xl bg-white/5 text-rose-400 hover:bg-rose-500 hover:text-white backdrop-blur-md transition-all active:scale-95 border border-white/5 shadow-md"
                                 title={t('delete_project')}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -284,70 +284,68 @@ const ProjectCard: React.FC<{
                 </div>
 
                 {/* Progress Indicators */}
-                <div className="space-y-6 mb-8">
+                <div className="grid grid-cols-1 gap-4 mb-6">
                     {/* Tables Progress */}
-                    <div className="space-y-2">
-                        <div className="flex items-end justify-between px-1">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500" title={t('tables')}>{t('tables')}</span>
-                            <span className="font-mono text-xs font-bold text-white bg-white/5 px-2 py-0.5 rounded-lg border border-white/5">
-                                {stats.tableProgress}% <span className="text-slate-500 ml-1">({stats.completedTables}/{stats.totalTables})</span>
+                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <div className="w-1 h-3 bg-cyan-500 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.5)]"></div>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('tables')}</span>
+                            </div>
+                            <span className="font-mono text-[10px] font-bold text-white bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                                {stats.tableProgress}%
                             </span>
                         </div>
-                        <div className="relative h-3 w-full overflow-hidden rounded-full bg-black/40 border border-white/5 shadow-inner">
+                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-black/40 shadow-inner">
                             <div
-                                className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-cyan-600 to-blue-500 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                                className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-cyan-600 to-blue-500 transition-all duration-1000 ease-out"
                                 style={{ width: `${stats.tableProgress}%` }}
-                            >
-                                <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.2)_50%,transparent_100%)] animate-[shimmer_2s_infinite]"></div>
-                            </div>
+                            ></div>
                         </div>
                     </div>
 
-                    {/* Tasks Progress Bar */}
-                    <div className="space-y-2">
-                        <div className="flex items-end justify-between px-1">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500" title={t('tasks')}>{t('tasks')}</span>
+                    {/* Tasks Progress */}
+                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
-                                    {stats.taskProgress}%
-                                </span>
-                                <span className="font-mono text-xs font-bold text-white bg-white/5 px-2 py-0.5 rounded-lg border border-white/5">
-                                    {stats.completedTasks}/{stats.totalTasks}
-                                </span>
+                                <div className="w-1 h-3 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('tasks')}</span>
                             </div>
+                            <span className="font-mono text-[10px] font-bold text-white bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
+                                {stats.taskProgress}%
+                            </span>
                         </div>
-                        <div className="relative h-4 w-full overflow-hidden rounded-full bg-black/40 border border-white/5 shadow-inner group-hover:border-white/10 transition-colors">
+                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-black/40 shadow-inner">
                             <div
-                                className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(167,139,250,0.5)]"
+                                className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 transition-all duration-1000 ease-out"
                                 style={{ width: `${stats.taskProgress}%` }}
-                            >
-                                <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.2)_50%,transparent_100%)] animate-[shimmer_2s_infinite]"></div>
-                            </div>
+                            ></div>
                         </div>
-                        {stats.totalTasks === 0 && (
-                            <div className="text-[9px] text-slate-600 italic text-center w-full">
-                                {t('no_tasks_found')}
-                            </div>
-                        )}
                     </div>
                 </div>
 
-                {/* Footer Actions: Glass Buttons */}
+                {/* Footer Actions: Compact Tile Button */}
                 <div className="mt-auto">
                     <button
                         onClick={() => onManageTasks(project)}
-                        className="group/btn relative flex flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white/5 py-4 backdrop-blur-md transition-all hover:bg-white/10 active:scale-95 border border-white/5 shadow-xl w-full"
+                        className="group/btn relative flex items-center justify-between overflow-hidden rounded-2xl bg-indigo-600/10 p-4 backdrop-blur-md transition-all hover:bg-indigo-600/20 active:scale-95 border border-indigo-500/20 shadow-lg w-full"
                         title={t('tasks')}
                     >
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
-                        <ClockIcon className="h-6 w-6 text-indigo-400 transition-transform duration-300 group-hover/btn:scale-110 group-hover/btn:text-white" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover/btn:text-white">{t('tasks')}</span>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-indigo-500/20 rounded-xl group-hover/btn:bg-indigo-500 group-hover/btn:text-white transition-all">
+                                <ClockIcon className="h-5 w-5 text-indigo-400 group-hover/btn:text-white" />
+                            </div>
+                            <span className="text-xs font-black uppercase tracking-widest text-indigo-300 group-hover/btn:text-white">{t('tasks')}</span>
+                        </div>
+                        <div className="flex items-center gap-1 bg-black/20 px-3 py-1 rounded-lg border border-white/5">
+                            <span className="text-[10px] font-bold text-white tracking-widest">{stats.completedTasks}/{stats.totalTasks}</span>
+                        </div>
                     </button>
                 </div>
             </div>
 
             {/* Bottom Accent Bar */}
-            <div className={`h-1.5 w-full bg-gradient-to-r ${getStatusColor(project.status)} opacity-30`}></div>
+            <div className={`h-1.5 w-full bg-gradient-to-r ${getStatusColor(project.status)} opacity-20`}></div>
         </div>
     );
 };

@@ -94,23 +94,26 @@ const Projects: React.FC = () => {
                 </div>
             </div>
 
-            <header className="space-y-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                    <div className="space-y-2">
-                        <h1 className="text-7xl font-black text-white italic tracking-tighter uppercase leading-[0.8]">
-                            {t('projects')}
-                        </h1>
-                        <p className="text-xl text-slate-500 font-bold tracking-tight">
-                            Správa a monitoring solárních parků.
+            <header className="space-y-12">
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-10">
+                    <div className="space-y-6 max-w-3xl">
+                        <div className="space-y-2">
+                            <h1 className="text-8xl md:text-9xl font-black text-white tracking-tighter uppercase italic leading-[0.7]">
+                                {t('projects')}<span className="text-indigo-500 not-italic">.</span>
+                            </h1>
+                            <div className="h-2 w-48 bg-indigo-600 rounded-full shadow-[0_4px_20px_rgba(79,70,229,0.5)]" />
+                        </div>
+                        <p className="text-2xl text-slate-400 font-bold tracking-tight pl-2 border-l-4 border-white/5 py-2">
+                            Správa a monitoring solárních parků s maximální efektivitou.
                         </p>
                     </div>
                     {user?.role === 'admin' && (
                         <button
                             onClick={handleAdd}
-                            className="group relative w-full md:w-auto overflow-hidden px-10 py-5 bg-white text-black font-black uppercase tracking-[0.2em] text-xs rounded-full hover:bg-indigo-600 hover:text-white transition-all duration-500 shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
+                            className="group relative w-full xl:w-auto overflow-hidden px-12 py-7 bg-white text-black font-black uppercase tracking-[0.3em] text-[10px] rounded-[2.5rem] hover:scale-105 transition-all duration-500 shadow-[0_30px_60px_-15px_rgba(255,255,255,0.15)] active:scale-95"
                         >
-                            <div className="relative z-10 flex items-center justify-center gap-3">
-                                <PlusIcon className="w-5 h-5" />
+                            <div className="relative z-10 flex items-center justify-center gap-4">
+                                <PlusIcon className="w-6 h-6" />
                                 {t('add_project')}
                             </div>
                             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -119,57 +122,72 @@ const Projects: React.FC = () => {
                 </div>
 
                 {/* Project Overview Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
                         { label: 'Aktivní', value: projects?.filter(p => p.status === 'active').length || 0, color: 'text-emerald-500' },
                         { label: 'Dokončeno', value: projects?.filter(p => p.status === 'completed').length || 0, color: 'text-indigo-400' },
                         { label: 'Celkový výkon', value: '4.2 MWp', color: 'text-amber-500' },
-                        { label: 'Realizace', value: '88%', color: 'text-white' }
+                        { label: 'Efektivita', value: '88%', color: 'text-white' }
                     ].map((stat, i) => (
-                        <div key={i} className="glass-card p-6 rounded-[2rem] border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
-                            <p className={`text-3xl font-black italic tracking-tighter ${stat.color}`}>{stat.value}</p>
+                        <div key={i} className="glass-dark p-8 rounded-[3rem] border border-white/5 flex flex-col justify-between h-40 group hover:border-indigo-500/30 transition-all duration-500">
+                            <div className="flex items-center justify-between">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
+                                <div className="w-2 h-2 rounded-full bg-white/10 group-hover:bg-indigo-500 transition-colors" />
+                            </div>
+                            <p className={`text-5xl font-black italic tracking-tighter ${stat.color}`}>{stat.value}</p>
                         </div>
                     ))}
                 </div>
             </header>
 
             {/* Search and Filter Section */}
-            <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1">
-                    <input
-                        type="text"
-                        placeholder={`${t('search')}...`}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-slate-800 text-white rounded-lg border-2 border-transparent focus:border-indigo-500 focus:ring-0 transition-all"
-                    />
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                </div>
-                <div className="flex gap-2">
-                    <div className="relative flex-1 md:flex-none">
-                        <select
-                            value={workerFilter}
-                            onChange={(e) => setWorkerFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                            className="w-full h-full pl-10 pr-4 py-3 bg-slate-800 text-white rounded-lg appearance-none border-2 border-transparent focus:border-indigo-500 focus:ring-0 transition-all cursor-pointer"
-                        >
-                            <option value="all">{t('all_workers')}</option>
-                            {workers?.map(w => (
-                                <option key={w.id} value={w.id}>{w.name}</option>
-                            ))}
-                        </select>
-                        <WorkersIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+            <div className="p-10 glass-dark rounded-[4rem] border border-white/5 shadow-2xl relative overflow-hidden">
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/5 blur-[100px] rounded-full" />
+
+                <div className="flex flex-col xl:flex-row gap-6 relative z-10">
+                    <div className="relative flex-[2] group">
+                        <input
+                            type="text"
+                            placeholder={`${t('search')}...`}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-14 pr-6 py-6 bg-white/[0.03] text-white placeholder-slate-600 border border-white/5 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:bg-white/[0.05] focus:border-indigo-500/30 text-xs font-black uppercase tracking-[0.2em] transition-all"
+                        />
+                        <SearchIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-600 group-focus-within:text-indigo-500 transition-colors" />
                     </div>
-                    <div className="relative flex-1 md:flex-none">
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value as any)}
-                            className="w-full h-full pl-4 pr-10 py-3 bg-slate-800 text-white rounded-lg appearance-none border-2 border-transparent focus:border-indigo-500 focus:ring-0 transition-all cursor-pointer"
-                        >
-                            {filterOptions.map(status => (
-                                <option key={status} value={status}>{t(status as any)}</option>
-                            ))}
-                        </select>
+
+                    <div className="flex flex-col md:flex-row gap-4 flex-1">
+                        <div className="relative flex-1 group">
+                            <select
+                                value={workerFilter}
+                                onChange={(e) => setWorkerFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                                className="w-full h-full pl-14 pr-10 py-6 bg-white/[0.03] text-white border border-white/5 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:bg-white/[0.05] focus:border-indigo-500/30 text-[10px] font-black uppercase tracking-widest transition-all appearance-none cursor-pointer [&>option]:bg-slate-900"
+                            >
+                                <option value="all">{t('all_workers')}</option>
+                                {workers?.map(w => (
+                                    <option key={w.id} value={w.id}>{w.name}</option>
+                                ))}
+                            </select>
+                            <WorkersIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-600 group-focus-within:text-indigo-500 transition-colors pointer-events-none" />
+                            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-600 group-hover:text-indigo-500 transition-colors">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                        </div>
+
+                        <div className="relative flex-1 group">
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value as any)}
+                                className="w-full h-full pl-6 pr-10 py-6 bg-white/[0.03] text-white border border-white/5 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:bg-white/[0.05] focus:border-indigo-500/30 text-[10px] font-black uppercase tracking-widest transition-all appearance-none cursor-pointer [&>option]:bg-slate-900"
+                            >
+                                {filterOptions.map(status => (
+                                    <option key={status} value={status}>{t(status as any)}</option>
+                                ))}
+                            </select>
+                            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-600 group-hover:text-indigo-500 transition-colors">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

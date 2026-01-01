@@ -60,28 +60,24 @@ const FieldPlans: React.FC = () => {
     return (
         <div className="space-y-8 pb-32">
             {/* Header */}
-            {/* Header */}
-            <header className="space-y-4 md:hidden">
+            <header className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-3xl font-black text-white uppercase italic tracking-tighter">
-                        {t('field_plans') || 'Plánová pole'}
+                    <h1 className="text-7xl md:text-9xl font-black text-white tracking-tighter uppercase italic leading-[0.8] mb-8">
+                        {t('field_plans')}<span className="text-indigo-500 not-italic">.</span>
                     </h1>
                 </div>
             </header>
 
-            <header className="hidden md:block">
-                <h1 className="text-6xl font-black mb-12 text-white italic uppercase tracking-tighter underline decoration-[var(--color-accent)] decoration-8">
-                    {t('field_plans')}
-                </h1>
-            </header>
-
             {/* Project Selector - Hide if project is selected to maximize map space */}
             {!selectedProjectId ? (
-                <div className="bg-white/[0.03] rounded-3xl border border-white/10 backdrop-blur-3xl shadow-2xl p-6 animate-fade-in">
-                    <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-4">
+                <div className="glass-dark rounded-[3rem] border border-white/5 p-10 animate-fade-in relative overflow-hidden">
+                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full" />
+                    <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full" />
+
+                    <label className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-8 relative z-10">
                         {t('select_project') || 'Vyberte projekt'}
                     </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
                         {projects.map(project => {
                             const isSelected = project.id === selectedProjectId;
                             const tableCount = project.tables?.length || 0;
@@ -90,26 +86,32 @@ const FieldPlans: React.FC = () => {
                                 <button
                                     key={project.id}
                                     onClick={() => setSelectedProjectId(project.id!)}
-                                    className={`p-6 rounded-2xl transition-all text-left ${isSelected
-                                        ? 'bg-white/10 border-2 border-[var(--color-accent)] shadow-lg'
-                                        : 'bg-white/5 border-2 border-transparent hover:bg-white/10'
+                                    className={`group p-8 rounded-[2rem] transition-all duration-500 text-left border relative overflow-hidden ${isSelected
+                                        ? 'bg-indigo-600 border-indigo-500/50 shadow-2xl'
+                                        : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.05] hover:border-indigo-500/30'
                                         }`}
                                 >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <h3 className="text-xl font-black text-white uppercase tracking-tight line-clamp-1">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                                    <div className="flex items-start justify-between mb-6 relative z-10">
+                                        <h3 className={`text-3xl font-black uppercase italic tracking-tighter line-clamp-1 ${isSelected ? 'text-white' : 'text-white group-hover:text-indigo-200'} transition-colors`}>
                                             {project.name}
                                         </h3>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <div className="px-3 py-1 bg-black/30 rounded-lg border border-white/10">
-                                            <span className="text-white font-bold">{tableCount}</span>
-                                            <span className="text-gray-500 ml-1">{t('tables') || 'stolů'}</span>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isSelected ? 'bg-white text-indigo-600' : 'bg-white/10 text-slate-500 group-hover:bg-indigo-500 group-hover:text-white'} transition-all`}>
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
                                         </div>
-                                        <div className={`px-3 py-1 rounded-lg border ${project.status === 'active' ? 'bg-green-500/20 border-green-500/30 text-green-400' :
+                                    </div>
+
+                                    <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest relative z-10">
+                                        <div className={`px-4 py-2 ${isSelected ? 'bg-black/20 text-white' : 'bg-black/40 text-slate-400 group-hover:text-white'} rounded-xl transition-colors`}>
+                                            <span className="text-lg italic mr-1">{tableCount}</span>
+                                            {t('tables') || 'stolů'}
+                                        </div>
+                                        <div className={`px-4 py-2 rounded-xl border ${project.status === 'active' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' :
                                             project.status === 'completed' ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' :
-                                                'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'
+                                                'bg-amber-500/20 border-amber-500/30 text-amber-400'
                                             }`}>
-                                            <span className="text-xs font-bold uppercase">{t(project.status as any)}</span>
+                                            {t(project.status as any)}
                                         </div>
                                     </div>
                                 </button>
@@ -118,32 +120,34 @@ const FieldPlans: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 animate-fade-in mb-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-500/30">
-                            <span className="text-xl">📍</span>
-                        </div>
+                <div className="flex flex-col sm:flex-row items-center justify-between glass-dark p-6 rounded-[2rem] border border-white/5 animate-fade-in mb-8 gap-4 bg-white/[0.02]">
+                    <div className="flex items-center gap-6 w-full sm:w-auto">
+                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                            <span className="text-3xl filter drop-shadow-md">📍</span>
+                        </div >
                         <div>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Aktivní projekt</p>
-                            <h2 className="text-xl font-black text-white uppercase italic tracking-tighter">{selectedProject?.name}</h2>
+                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] leading-none mb-2">Aktivní projekt</p>
+                            <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter drop-shadow-md">{selectedProject?.name}</h2>
                         </div>
-                    </div>
+                    </div >
                     <button
                         onClick={() => setSelectedProjectId(null)}
-                        className="px-6 py-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95"
+                        className="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-lg backdrop-blur-md"
                     >
                         {t('change_project') || 'Změnit projekt'}
                     </button>
-                </div>
+                </div >
             )}
 
             {/* Field Plan View */}
-            {selectedProjectId && (
-                <div className="animate-fade-in">
-                    <FieldPlanView projectId={selectedProjectId} />
-                </div>
-            )}
-        </div>
+            {
+                selectedProjectId && (
+                    <div className="animate-fade-in">
+                        <FieldPlanView projectId={selectedProjectId} />
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

@@ -225,7 +225,7 @@ class FirebaseService {
                     if (records.length > 0) {
                         const table = collectionsToSync[name as keyof typeof collectionsToSync];
                         if (table) {
-                            await table.bulkPut(records);
+                            await (table as any).bulkPut(records);
                             totalSynced += records.length;
                         }
                     }

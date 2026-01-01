@@ -25,13 +25,13 @@ const TableItem = React.memo<{
     const { t } = useI18n();
 
     const getStatusTheme = () => {
-        if (table.status === 'defect') return { color: '#fb7185', glow: 'shadow-[0_0_20px_rgba(251,113,133,0.3)]', bg: 'bg-rose-500/10' };
+        if (table.status === 'defect') return { color: '#fb7185', glow: 'shadow-[0_0_30px_rgba(251,113,133,0.4)]', bg: 'bg-rose-500/20 backdrop-blur-md' };
         if (table.status === 'completed') {
             const c = completedWorker ? getWorkerColor(completedWorker.id!, completedWorker.color, workers) : '#4f46e5';
-            return { color: c, glow: `shadow-[0_0_20px_${c}40]`, bg: 'bg-indigo-500/10' };
+            return { color: c, glow: `shadow-[0_0_30px_${c}50]`, bg: 'bg-indigo-500/20 backdrop-blur-md' };
         }
-        if (table.assignedWorkers && table.assignedWorkers.length > 0) return { color: '#f59e0b', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.3)]', bg: 'bg-amber-500/10' };
-        return { color: '#334155', glow: 'shadow-none', bg: 'bg-white/5' };
+        if (table.assignedWorkers && table.assignedWorkers.length > 0) return { color: '#f59e0b', glow: 'shadow-[0_0_30px_rgba(245,158,11,0.4)]', bg: 'bg-amber-500/20 backdrop-blur-md' };
+        return { color: '#94a3b8', glow: 'shadow-none', bg: 'bg-white/5 hover:bg-white/10' };
     };
 
     const theme = getStatusTheme();
@@ -39,8 +39,8 @@ const TableItem = React.memo<{
     const isPendingAssigned = !isCompleted && table.assignedWorkers && table.assignedWorkers.length > 0;
     const isDefect = table.status === 'defect';
 
-    const fontSize = Math.max(8, 18 * zoom);
-    const workerSize = Math.max(10, 20 * zoom);
+    const fontSize = Math.max(8, 20 * zoom); // Slightly larger font
+    const workerSize = Math.max(12, 24 * zoom);
 
     return (
         <div
@@ -49,40 +49,42 @@ const TableItem = React.memo<{
                 e.preventDefault();
                 onContextMenu(e, table);
             }}
-            className={`relative flex flex-col items-center justify-center rounded-[2rem] transition-all duration-300 cursor-pointer select-none group touch-manipulation border-2
-                ${isSelected ? 'scale-110 z-20 brightness-110' : 'hover:scale-[1.05]'}
-                ${theme.glow}
+            className={`relative flex flex-col items-center justify-center rounded-[1rem] transition-all duration-300 cursor-pointer select-none group touch-manipulation border
+                ${isSelected ? 'scale-110 z-20 brightness-125 border-white shadow-[0_0_40px_rgba(255,255,255,0.3)]' : 'hover:scale-[1.05] border-white/10'}
+                ${theme.glow} ${theme.bg}
             `}
             style={{
                 width: 100 * zoom,
                 height: 100 * zoom,
-                backgroundColor: isSelected ? 'rgba(255,255,255,0.05)' : '',
-                borderColor: isSelected ? '#fff' : `${theme.color}${isCompleted || isPendingAssigned || isDefect ? 'cc' : '44'}`,
+                borderColor: isSelected ? '#fff' : undefined,
             }}
         >
+            {/* Glossy Overlay */}
+            <div className="absolute inset-0 rounded-[1rem] bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+
             {/* Status Indicator Bar */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1 rounded-full opacity-50" style={{ backgroundColor: theme.color }} />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-b-full opacity-80 shadow-[0_2px_10px_currentColor]" style={{ backgroundColor: theme.color, width: 30 * zoom }} />
 
             <div className={`flex flex-col items-center gap-1 z-10 p-2`}>
-                <span className="font-black text-white italic tracking-tighter leading-none whitespace-nowrap drop-shadow-lg" style={{ fontSize }}>
+                <span className="font-black text-white italic tracking-tighter leading-none whitespace-nowrap drop-shadow-2xl" style={{ fontSize }}>
                     {table.tableId}
                 </span>
 
                 {isCompleted && completedWorker && zoom > 0.4 && (
-                    <div className="flex items-center justify-center rounded-full border border-white/20 shadow-xl overflow-hidden animate-in fade-in zoom-in duration-500"
+                    <div className="flex items-center justify-center rounded-2xl border-2 border-white/20 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500 relative"
                         style={{ width: workerSize, height: workerSize, backgroundColor: getWorkerColor(completedWorker.id!, completedWorker.color, workers) }}>
-                        <span className="text-white font-black uppercase" style={{ fontSize: workerSize * 0.5 }}>
+                        <span className="text-white font-black uppercase relative z-10" style={{ fontSize: workerSize * 0.5 }}>
                             {getInitials(completedWorker.name)}
                         </span>
                     </div>
                 )}
 
                 {isPendingAssigned && !isCompleted && zoom > 0.4 && (
-                    <div className="flex -space-x-2 mt-1 animate-pulse">
+                    <div className="flex -space-x-3 mt-1 animate-pulse">
                         {assignedWorkers?.slice(0, 2).map((w, idx) => (
                             <div
                                 key={w.id}
-                                className="rounded-full border border-slate-900 flex items-center justify-center text-white font-black shadow-lg"
+                                className="rounded-2xl border border-black/50 flex items-center justify-center text-white font-black shadow-xl"
                                 style={{
                                     width: workerSize,
                                     height: workerSize,
@@ -100,16 +102,16 @@ const TableItem = React.memo<{
 
             {/* Task Progress Bar (Simple) */}
             {tasks.length > 0 && zoom > 0.3 && (
-                <div className="absolute bottom-3 left-1/4 right-1/4 h-1 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 transition-all duration-1000"
+                <div className="absolute bottom-3 left-2 right-2 h-1 bg-black/20 rounded-full overflow-hidden backdrop-blur-sm">
+                    <div className="h-full bg-indigo-400 shadow-[0_0_10px_currentColor]"
                         style={{ width: `${(tasks.filter(t => !!t.completionDate).length / tasks.length) * 100}%` }} />
                 </div>
             )}
 
             {/* Defect Icon */}
             {isDefect && (
-                <div className="absolute top-2 right-2 animate-bounce">
-                    <svg className="w-4 h-4 text-rose-500 fill-current" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" /></svg>
+                <div className="absolute -top-2 -right-2 animate-bounce bg-white rounded-full p-0.5 shadow-lg">
+                    <svg className="w-5 h-5 text-rose-600 fill-current" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" /></svg>
                 </div>
             )}
         </div>
@@ -128,8 +130,8 @@ const ContextMenu: React.FC<{
     return (
         <div className="fixed inset-0 z-[1000]" onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }}>
             <div
-                className="absolute bg-[#0f172a]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] py-4 min-w-[240px] animate-scale-in"
-                style={{ left: Math.min(x, window.innerWidth - 260), top: Math.min(y, window.innerHeight - 400) }}
+                className="absolute glass-dark rounded-[2.5rem] py-6 min-w-[260px] animate-in fade-in zoom-in-95 duration-200 border border-white/10"
+                style={{ left: Math.min(x, window.innerWidth - 280), top: Math.min(y, window.innerHeight - 450) }}
                 onClick={e => e.stopPropagation()}
             >
                 <div className="px-6 py-4 border-b border-white/5 mb-2">
@@ -419,16 +421,18 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
         <div className="relative w-full h-[85vh] min-h-[700px] flex overflow-hidden bg-[#020617] font-sans rounded-[3rem] border border-white/5 shadow-[0_0_100px_rgba(0,0,0,0.5)]">
 
             {/* Left Sidebar - Statistics & Filters */}
-            <aside className={`transition-all duration-500 h-full border-r border-white/5 bg-[#0a0c1a]/60 backdrop-blur-2xl shrink-0 flex flex-col ${showLeftSidebar ? 'w-85' : 'w-0 overflow-hidden'}`}>
-                <div className="p-8 grow space-y-12 custom-scrollbar overflow-y-auto">
+            <aside className={`transition-all duration-500 h-full border-r border-white/5 bg-black/20 backdrop-blur-3xl shrink-0 flex flex-col ${showLeftSidebar ? 'w-96' : 'w-0 overflow-hidden'}`}>
+                <div className="p-8 grow space-y-10 custom-scrollbar overflow-y-auto">
                     <header className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/30">
                                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
                             </div>
-                            <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none">FIELD<span className="text-indigo-500">.</span>PLAN</h2>
+                            <div>
+                                <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-[0.8] mb-1">FIELD<span className="text-indigo-500">.</span>PLAN</h2>
+                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">Interaktivní</p>
+                            </div>
                         </div>
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Interaktivní monitoring parku</p>
                     </header>
 
                     <section className="grid grid-cols-2 gap-4">
@@ -632,14 +636,14 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
             </main>
 
             {/* Right Sidebar - Selection Context */}
-            <aside className={`transition-all duration-500 h-full border-l border-white/5 bg-[#0a0c1a]/60 backdrop-blur-2xl shrink-0 flex flex-col ${showRightSidebar ? 'w-85' : 'w-0 overflow-hidden'}`}>
-                <div className="p-10 grow space-y-12 overflow-y-auto custom-scrollbar">
+            <aside className={`transition-all duration-500 h-full border-l border-white/5 bg-black/20 backdrop-blur-3xl shrink-0 flex flex-col ${showRightSidebar ? 'w-96' : 'w-0 overflow-hidden'}`}>
+                <div className="p-10 grow space-y-10 overflow-y-auto custom-scrollbar">
                     <header className="space-y-4">
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] mb-1">Kontextový výběr</p>
-                        <h2 className="text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
-                            {selectedIds.size} <span className="text-indigo-500">X</span>
+                        <h2 className="text-7xl font-black text-white italic tracking-tighter uppercase leading-[0.8] mb-4">
+                            {selectedIds.size}<span className="text-indigo-500 text-5xl align-top ml-2">x</span>
                         </h2>
-                        <button onClick={() => { setSelectedIds(new Set()); setShowRightSidebar(false); }} className="px-6 py-2 bg-white/5 text-[10px] font-black text-indigo-400 uppercase tracking-widest rounded-full hover:bg-white/10 transition-all">Zrušit výběr</button>
+                        <button onClick={() => { setSelectedIds(new Set()); setShowRightSidebar(false); }} className="px-6 py-3 bg-white/5 border border-white/10 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] rounded-[1rem] hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/30 transition-all w-full">Zrušit výběr</button>
                     </header>
 
                     <nav className="space-y-4">

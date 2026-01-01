@@ -284,7 +284,6 @@ export const locales = {
     return_tool: 'Return Tool',
 
     // Miscellaneous
-    field_plan: 'Field Plan',
     plan: 'Plan',
     plan_desc: 'Interactive project plans.',
     view_plan: 'View Plan',
@@ -557,7 +556,6 @@ export const locales = {
     return_to_execution: 'Vrátit k realizaci',
     mark_as_finished: 'Označit jako hotové',
     view_detail: 'Zobrazit detail',
-    field_plan: 'Field Plan',
     team_performance: 'Výkon týmu',
     selected_count: '{count} vybráno',
     assign_team: 'Přiřadit tým',
@@ -627,7 +625,6 @@ export const locales = {
     return_tool: 'Vrátit nářadí',
 
     // Miscellaneous
-    field_plan: 'Plán pole',
     plan: 'Plán',
     plan_desc: 'Interaktivní projektové plány.',
     view_plan: 'Zobrazit plán',

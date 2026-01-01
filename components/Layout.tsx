@@ -29,16 +29,16 @@ const BottomNavBar: React.FC = () => {
 
     return (
         <nav
-            className="fixed bottom-0 left-0 z-[100] w-full bg-[#1a1d37]/95 backdrop-blur-xl border-t border-white/5 md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all glass-card"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+            className="fixed bottom-0 left-0 z-[100] w-full bg-[#020617]/90 backdrop-blur-2xl border-t border-white/10 md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all pb-safe"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 20px)' }}
         >
-            <div className="flex justify-around items-center px-2 py-4">
+            <div className="flex justify-around items-center px-4 py-4">
                 {visibleItems.map(item => (
                     <NavLink
                         key={item.to}
                         to={item.to}
                         className={({ isActive }) =>
-                            `group flex flex-col items-center justify-center w-full gap-1 transition-all duration-300 touch-manipulation min-h-[56px] ${isActive
+                            `group flex flex-col items-center justify-center w-full gap-1.5 transition-all duration-300 touch-manipulation min-h-[64px] rounded-2xl ${isActive
                                 ? 'text-white'
                                 : 'text-slate-500 hover:text-slate-300'
                             }`
@@ -46,11 +46,10 @@ const BottomNavBar: React.FC = () => {
                     >
                         {({ isActive }) => (
                             <>
-                                <div className={`relative p-2 rounded-2xl transition-all duration-300 ${isActive ? 'bg-white/10 scale-110 shadow-[0_0_15px_rgba(255,255,255,0.1)]' : 'scale-100'}`}>
-                                    {item.icon}
-                                    {isActive && <div className="absolute inset-x-2 -bottom-1 h-0.5 bg-[var(--color-accent)] rounded-full shadow-[0_0_8px_var(--color-accent)]"></div>}
+                                <div className={`relative p-3 rounded-2xl transition-all duration-300 ${isActive ? 'bg-indigo-600 shadow-[0_0_20px_rgba(79,70,229,0.4)] scale-110 -translate-y-2 border border-white/20' : 'bg-transparent scale-100'}`}>
+                                    {isActive ? React.cloneElement(item.icon as React.ReactElement, { className: "w-6 h-6 text-white" }) : React.cloneElement(item.icon as React.ReactElement, { className: "w-6 h-6 text-slate-500" })}
                                 </div>
-                                <span className={`text-[10px] font-black uppercase tracking-wider transition-opacity duration-300 ${isActive ? 'opacity-100 text-[var(--color-accent)]' : 'opacity-0 scale-0 h-0 hidden'}`}>
+                                <span className={`text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${isActive ? 'opacity-100 text-indigo-400 translate-y-0' : 'opacity-0 translate-y-2 hidden'}`}>
                                     {item.title}
                                 </span>
                             </>

@@ -162,42 +162,54 @@ const Chat: React.FC = () => {
     return (
         <div className="fixed inset-x-0 top-16 bottom-16 md:bottom-0 md:static flex flex-col md:flex-row h-full max-w-7xl mx-auto overflow-hidden bg-[#0a0c1a]">
             {/* Sidebar (List View) */}
-            <div className={`w-full md:w-80 flex-col shrink-0 h-full border-r border-white/5 bg-[#111324] ${mobileView === 'list' ? 'flex' : 'hidden md:flex'}`}>
-                <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                    <h1 className="text-xl font-black text-white italic tracking-tighter uppercase">{t('channels')}</h1>
+            <div className={`w-full md:w-80 flex-col shrink-0 h-full border-r border-white/5 bg-black/20 backdrop-blur-2xl ${mobileView === 'list' ? 'flex' : 'hidden md:flex'}`}>
+                <div className="p-8 border-b border-white/5">
+                    <h1 className="text-3xl font-black text-white italic tracking-tighter uppercase relative">
+                        {t('channels')}
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_10px_currentColor]"></span>
+                    </h1>
                 </div>
-                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1 custom-scrollbar">
                     <button
                         onClick={() => handleChannelSelect('general')}
-                        className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 ${activeChannelId === 'general' ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30' : 'bg-white/5 text-slate-400 border border-transparent hover:bg-white/10'}`}
+                        className={`w-full p-4 rounded-[1.5rem] flex items-center gap-4 transition-all duration-300 group ${activeChannelId === 'general' ? 'bg-indigo-600 shadow-[0_10px_20px_-5px_rgba(79,70,229,0.3)]' : 'hover:bg-white/5'}`}
                     >
-                        <div className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center font-bold">#</div>
-                        <div className="text-left"><span className="block text-[10px] font-black uppercase opacity-50">Public</span><span className="font-bold">{t('general')}</span></div>
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg transition-colors ${activeChannelId === 'general' ? 'bg-white text-indigo-600' : 'bg-white/5 text-slate-500 group-hover:bg-white/10 group-hover:text-white'}`}>#</div>
+                        <div className="text-left">
+                            <span className={`block text-[8px] font-black uppercase tracking-[0.2em] mb-0.5 ${activeChannelId === 'general' ? 'text-indigo-200' : 'text-slate-600'}`}>Public</span>
+                            <span className={`font-bold text-sm ${activeChannelId === 'general' ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>{t('general')}</span>
+                        </div>
                     </button>
 
-                    <div className="pt-4 pb-2 px-2 text-[10px] font-black text-slate-500 uppercase tracking-widest border-t border-white/5 mt-4">Moje Projekty</div>
+                    <div className="pt-8 pb-3 px-4 text-[9px] font-black text-slate-500 uppercase tracking-[0.25em] opacity-60">Projekty</div>
                     {projects.map(p => (
                         <button
                             key={p.id}
                             onClick={() => handleChannelSelect(`project_${p.id}`)}
-                            className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 ${activeChannelId === `project_${p.id}` ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-slate-400 border border-transparent hover:bg-white/10'}`}
+                            className={`w-full p-3 rounded-[1.5rem] flex items-center gap-3 transition-all duration-300 group ${activeChannelId === `project_${p.id}` ? 'bg-indigo-600' : 'hover:bg-white/5'}`}
                         >
-                            <div className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center font-bold">P</div>
-                            <div className="text-left font-bold truncate">#{p.name}</div>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs transition-colors ${activeChannelId === `project_${p.id}` ? 'bg-white text-indigo-600' : 'bg-white/5 text-slate-500 group-hover:text-white'}`}>P</div>
+                            <div className={`text-left font-bold truncate text-sm ${activeChannelId === `project_${p.id}` ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>{p.name}</div>
                         </button>
                     ))}
 
-                    <div className="pt-4 pb-2 px-2 text-[10px] font-black text-slate-500 uppercase tracking-widest border-t border-white/5 mt-4">Kolegové</div>
+                    <div className="pt-8 pb-3 px-4 text-[9px] font-black text-slate-500 uppercase tracking-[0.25em] opacity-60">Kolegové</div>
                     {workers?.filter(w => w.id !== currentUser?.workerId).map(w => {
                         const dmId = `dm_${[currentUser?.workerId || -1, w.id].sort((a, b) => Number(a) - Number(b)).join('_')}`;
                         return (
                             <button
                                 key={w.id}
                                 onClick={() => handleChannelSelect(dmId)}
-                                className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 ${activeChannelId === dmId ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30' : 'bg-white/5 text-slate-400 border border-transparent hover:bg-white/10'}`}
+                                className={`w-full p-3 rounded-[1.5rem] flex items-center gap-3 transition-all duration-300 group ${activeChannelId === dmId ? 'bg-indigo-600' : 'hover:bg-white/5'}`}
                             >
-                                <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs" style={{ backgroundColor: w.color || '#334155' }}>{w.name.substring(0, 2).toUpperCase()}</div>
-                                <div className="text-left font-bold truncate">{w.name}</div>
+                                <div
+                                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-[10px] bg-cover bg-center shadow-inner relative overflow-hidden`}
+                                    style={{ backgroundColor: w.color || '#334155' }}
+                                >
+                                    <div className="absolute inset-0 bg-black/10" />
+                                    <span className="relative z-10 text-white drop-shadow-md">{w.name.substring(0, 2).toUpperCase()}</span>
+                                </div>
+                                <div className={`text-left font-bold truncate text-sm transition-colors ${activeChannelId === dmId ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>{w.name}</div>
                             </button>
                         );
                     })}
@@ -205,22 +217,25 @@ const Chat: React.FC = () => {
             </div>
 
             {/* Chat Area (Chat Window View) */}
-            <div className={`flex-1 flex flex-col h-full bg-[#0a0c1a] relative ${mobileView === 'chat' ? 'flex' : 'hidden md:flex'}`}>
+            <div className={`flex-1 flex flex-col h-full relative overflow-hidden ${mobileView === 'chat' ? 'flex' : 'hidden md:flex'}`}>
+                <div className="absolute inset-0 bg-[#020617]" />
+                <div className="absolute -top-[20%] -right-[20%] w-[80%] h-[80%] bg-indigo-500/5 blur-[120px] rounded-full pointer-events-none" />
+
                 {/* Header */}
-                <div className="px-4 py-4 md:px-8 border-b border-white/5 bg-[#111324]/80 backdrop-blur-md flex items-center gap-4 shrink-0">
+                <div className="relative z-10 px-6 py-5 border-b border-white/5 bg-black/20 backdrop-blur-xl flex items-center gap-6 shrink-0 shadow-lg">
                     <button
                         onClick={handleBackToList}
-                        className="md:hidden p-2 -ml-2 text-indigo-400 hover:bg-white/5 rounded-full transition-colors"
+                        className="md:hidden p-3 -ml-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all active:scale-95"
                     >
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                     <div className="flex-1 overflow-hidden">
-                        <h2 className="text-lg md:text-xl font-black text-white italic uppercase tracking-tight truncate leading-tight">{activeProjectName}</h2>
-                        <div className="flex items-center gap-2 mt-0.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aktivní nyní</span>
+                        <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter truncate leading-none mb-1">{activeProjectName}</h2>
+                        <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgb(16,185,129)]"></span>
+                            <span className="text-[9px] font-black text-indigo-300 uppercase tracking-[0.2em]">{t('active_now') || 'ONLINE'}</span>
                         </div>
                     </div>
 
@@ -228,49 +243,52 @@ const Chat: React.FC = () => {
                     {Notification.permission !== 'granted' && (
                         <button
                             onClick={() => currentUser?.workerId && firebaseService.requestNotificationPermission(currentUser.workerId)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 rounded-lg border border-indigo-500/30 text-[10px] font-black uppercase hover:bg-indigo-600 transition-all hover:text-white"
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-2xl hover:scale-105 transition-all shadow-lg"
+                            title="Zapnout notifikace"
                         >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                            Zapnout notifikace
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                         </button>
                     )}
                 </div>
 
                 {/* Messages Container */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 custom-scrollbar bg-gradient-to-b from-[#0a0c1a] to-[#111324]/20">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-10 custom-scrollbar relative z-10">
                     {groupedMessages.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-600 animate-fade-in opacity-50">
-                            <div className="w-16 h-16 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center mb-4 italic font-black text-2xl">?</div>
-                            <p className="font-bold uppercase tracking-widest text-xs">Zatím žádné zprávy</p>
+                        <div className="h-full flex flex-col items-center justify-center animate-fade-in opacity-50 space-y-4">
+                            <div className="w-24 h-24 rounded-full bg-white/5 border border-white/5 flex items-center justify-center italic font-black text-6xl text-slate-700">?</div>
+                            <p className="font-black uppercase tracking-[0.2em] text-xs text-slate-600">Zatím žádné zprávy</p>
                         </div>
                     ) : (
                         groupedMessages.map(group => (
                             <div key={group.date} className="space-y-6">
-                                <div className="flex items-center gap-4 py-2 opacity-50">
-                                    <div className="h-px flex-1 bg-white/5"></div>
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{group.date}</span>
-                                    <div className="h-px flex-1 bg-white/5"></div>
+                                <div className="flex items-center gap-4 py-2 opacity-60">
+                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] bg-black/20 px-3 py-1 rounded-full border border-white/5 backdrop-blur-sm">{group.date}</span>
+                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
                                 </div>
                                 {group.items.map((item, idx) => {
                                     const senderMe = isMe({ senderId: item.senderId } as any);
                                     return (
-                                        <div key={idx} className={`flex gap-3 ${senderMe ? 'flex-row-reverse' : 'flex-row'} animate-slide-up`}>
+                                        <div key={idx} className={`flex gap-4 ${senderMe ? 'flex-row-reverse' : 'flex-row'} animate-slide-up group/msg max-w-4xl ${senderMe ? 'ml-auto' : 'mr-auto'}`}>
                                             <div
-                                                className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-[10px] font-black text-white shrink-0 shadow-lg"
+                                                className="w-10 h-10 rounded-[1rem] flex items-center justify-center text-[10px] font-black text-white shrink-0 shadow-lg border-2 border-white/5 bg-cover bg-center"
                                                 style={{ backgroundColor: workers?.find(w => w.id === item.senderId)?.color || '#3b82f6' }}
                                             >
                                                 {item.name.substring(0, 2).toUpperCase()}
                                             </div>
-                                            <div className={`flex flex-col space-y-1 max-w-[85%] md:max-w-[70%] ${senderMe ? 'items-end' : 'items-start'}`}>
-                                                {!senderMe && <span className="text-[9px] font-black text-slate-500 uppercase px-1">{item.name}</span>}
-                                                {item.messages.map(msg => (
+                                            <div className={`flex flex-col space-y-1 ${senderMe ? 'items-end' : 'items-start'} flex-1 min-w-0`}>
+                                                {!senderMe && <span className="text-[9px] font-black text-slate-400 uppercase px-1 tracking-wider opacity-0 group-hover/msg:opacity-100 transition-opacity">{item.name}</span>}
+                                                {item.messages.map((msg, msgIdx) => (
                                                     <div
                                                         key={msg.id}
-                                                        className={`px-4 py-2.5 rounded-2xl text-[13px] font-medium shadow-md transition-all ${senderMe
-                                                            ? 'bg-indigo-600 text-white rounded-tr-none hover:bg-indigo-500'
-                                                            : 'bg-white/10 text-slate-200 rounded-tl-none hover:bg-white/15'}`}
+                                                        className={`px-6 py-4 rounded-[1.5rem] text-sm leading-relaxed shadow-lg backdrop-blur-sm transition-all hover:scale-[1.01] relative ${senderMe
+                                                            ? 'bg-indigo-600 text-white rounded-tr-sm hover:bg-indigo-500 shadow-indigo-900/20'
+                                                            : 'bg-white/10 text-slate-200 rounded-tl-sm hover:bg-white/15 shadow-black/20'}`}
                                                     >
                                                         {msg.text}
+                                                        <span className={`text-[9px] font-bold uppercase tracking-wider opacity-40 block text-right mt-1 ${senderMe ? 'text-indigo-200' : 'text-slate-400'}`}>
+                                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -284,22 +302,23 @@ const Chat: React.FC = () => {
                 </div>
 
                 {/* Input Area */}
-                <div className="p-4 md:p-8 bg-[#111324] border-t border-white/5 shrink-0">
-                    <form onSubmit={handleSend} className="flex gap-2 max-w-4xl mx-auto">
+                <div className="p-6 md:p-8 bg-black/20 backdrop-blur-xl border-t border-white/5 shrink-0 relative z-20">
+                    <form onSubmit={handleSend} className="flex gap-4 max-w-5xl mx-auto relative">
                         <input
                             type="text"
                             value={inputText}
                             onChange={e => setInputText(e.target.value)}
                             placeholder={t('type_message')}
-                            className="flex-1 bg-black/30 border border-white/5 rounded-2xl px-5 py-4 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all font-medium text-sm"
+                            className="flex-1 bg-white/[0.03] border border-white/10 rounded-[2rem] px-8 py-5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-sm tracking-wide"
                         />
                         <button
                             type="submit"
                             disabled={!inputText.trim() || isSending}
-                            className="bg-indigo-600 disabled:opacity-30 text-white w-14 h-14 md:px-8 md:w-auto rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center"
+                            className="group bg-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed text-white w-16 h-auto md:w-auto md:px-10 rounded-[2rem] font-black uppercase tracking-[0.2em] active:scale-95 transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center overflow-hidden relative"
                         >
-                            <span className="hidden md:inline">Odeslat</span>
-                            <svg className="w-6 h-6 md:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                            <span className="hidden md:inline relative z-10">Odeslat</span>
+                            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 md:group-hover:opacity-20 transition-opacity" />
+                            <svg className="w-6 h-6 md:hidden relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                             </svg>
                         </button>

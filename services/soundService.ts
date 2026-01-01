@@ -15,7 +15,7 @@ class SoundService {
             this.audioContext.resume();
         }
     }
-    
+
     private vibrate(duration: number = 10) {
         if (typeof window.navigator.vibrate === 'function') {
             window.navigator.vibrate(duration);
@@ -78,6 +78,29 @@ class SoundService {
             osc.start(start);
             osc.stop(start + 0.5);
         });
+    }
+
+    // Negativní "chyba"
+    playError() {
+        this.vibrate(50);
+        if (this.isMuted || !this.audioContext) return;
+        this.ensureContext();
+
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, this.audioContext.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, this.audioContext.currentTime + 0.3);
+
+        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+
+        osc.start();
+        osc.stop(this.audioContext.currentTime + 0.3);
     }
 
     // Krátké haptické "kliknutí" (zvuk)

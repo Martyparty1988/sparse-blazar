@@ -207,7 +207,7 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
     const [contextMenu, setContextMenu] = useState<{ table: FieldTable, x: number, y: number } | null>(null);
     const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
     const [isInitializing, setIsInitializing] = useState(false);
-    const [quickActionMode, setQuickActionMode] = useState(false); // New state for Cycle Mode
+    const [activeTool, setActiveTool] = useState<'cursor' | 'complete' | 'defect' | 'pending'>('cursor'); // Paint Mode State
 
     // Auto-initialize tables if missing
     useEffect(() => {
@@ -274,24 +274,40 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
 
     // Handlers
     const handleToggleSelect = useCallback((e: React.MouseEvent, id: string) => {
-        if (quickActionMode) {
-            // Cycle Logic: Pending -> Completed -> Defect -> Pending
-            // We need to find the specific table object
+        if (activeTool !== 'cursor') {
+            // Paint Mode Logic
             const table = tables?.find(t => t.id!.toString() === id);
             if (!table) return;
 
-            let nextStatus: 'pending' | 'completed' | 'defect' = 'pending';
-            let updates: any = {};
+            // Handle Defect separately (needs modal usually, or quick tag?)
+            if (activeTool === 'defect') {
+                // For quick paint, maybe just mark as defect with empty note?
+                // Or open modal? Let's open modal to be safe, but it interrupts flow.
+                // Better: Mark as defect, if they want to add note, they long press or click details.
+                // Compromise: Just mark it.
+                const updates = { status: 'defect', defectNotes: '' };
+                db.fieldTables.update(table.id!, updates);
+                if (firebaseService.isReady) {
+                    firebaseService.upsertRecords('fieldTables', [{
+                        ...table,
+                        ...updates,
+                        id: `${table.projectId}_${table.tableId}`
+                    }]).catch(console.error);
+                }
+                soundService.playError(); // Different sound for defect
+                return;
+            }
 
-            if (table.status === 'pending') {
-                nextStatus = 'completed';
-                updates = { status: 'completed', completedAt: new Date(), completedBy: user?.workerId || 0 };
-            } else if (table.status === 'completed') {
-                nextStatus = 'defect';
-                updates = { status: 'defect', defectNotes: '' }; // Should ideally prompt, but quick cycle implies simplicity
-            } else {
-                nextStatus = 'pending';
-                updates = { status: 'pending', completedAt: undefined, completedBy: undefined };
+            let updates: any = {};
+            if (activeTool === 'complete') {
+                updates.status = 'completed';
+                updates.completedAt = new Date();
+                updates.completedBy = user?.workerId || 0;
+            } else if (activeTool === 'pending') {
+                updates.status = 'pending';
+                updates.completedAt = undefined;
+                updates.completedBy = undefined;
+                updates.assignedWorkers = [];
             }
 
             // apply update
@@ -337,7 +353,7 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
         setLastSelectedId(id);
         setShowRightSidebar(newSelected.size > 0);
         soundService.playClick();
-    }, [selectedIds, lastSelectedId, filteredTables, tables, quickActionMode]);
+    }, [selectedIds, lastSelectedId, filteredTables, tables, activeTool]);
 
     // Keyboard Shortcuts
     useEffect(() => {
@@ -543,34 +559,16 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
                     }}
                 />
 
-                {/* Mobile View Toggle */}
-                <div className="absolute top-8 left-20 z-50 flex gap-2 md:hidden">
-                    <button onClick={() => setViewMode('map')} className={`p-4 rounded-2xl border transition-all ${viewMode === 'map' ? 'bg-indigo-600 text-white border-transparent shadow-xl' : 'bg-[#0f172a]/80 text-slate-500 border-white/5 backdrop-blur-xl'}`}>
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-                    </button>
-                    <button onClick={() => setViewMode('list')} className={`p-4 rounded-2xl border transition-all ${viewMode === 'list' ? 'bg-indigo-600 text-white border-transparent shadow-xl' : 'bg-[#0f172a]/80 text-slate-500 border-white/5 backdrop-blur-xl'}`}>
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
-                    </button>
-                </div>
-
-                {/* Quick Action Mode Toggle */}
-                <div className="absolute top-8 right-20 z-50 md:right-auto md:left-48 flex gap-2">
-                    <button
-                        onClick={() => setQuickActionMode(!quickActionMode)}
-                        className={`px-4 py-3 rounded-2xl border transition-all font-black uppercase tracking-widest text-[10px] flex items-center gap-2 ${quickActionMode ? 'bg-amber-500 text-white border-transparent shadow-[0_0_20px_rgba(245,158,11,0.4)] animate-pulse' : 'bg-[#0f172a]/80 text-slate-400 border-white/5 backdrop-blur-xl hover:text-white'}`}
-                    >
-                        {quickActionMode ? (
-                            <>
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                Režim: Rychlá Akce
-                            </>
-                        ) : (
-                            <>
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
-                                Režim: Výběr
-                            </>
-                        )}
-                    </button>
+                {/* Helper Tooltip Overlay */}
+                <div className="absolute top-8 left-1/2 -translate-x-1/2 z-40 pointer-events-none transition-opacity duration-300">
+                    <div className="bg-black/80 backdrop-blur-md px-6 py-2 rounded-full border border-white/10 shadow-2xl flex items-center gap-3">
+                        <span className="text-white font-black uppercase text-[10px] tracking-widest">
+                            {activeTool === 'cursor' && 'Režim výběru a detailu'}
+                            {activeTool === 'complete' && 'Kliknutím označíte HOTOVO'}
+                            {activeTool === 'defect' && 'Kliknutím nahlásíte ZÁVADU'}
+                            {activeTool === 'pending' && 'Kliknutím RESETUJETE stav'}
+                        </span>
+                    </div>
                 </div>
 
                 {viewMode === 'map' ? (
@@ -616,6 +614,44 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
                             </div>
                         </div>
 
+                        {/* Paint Mode Toolbar - Floating Bottom Action Bar */}
+                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 p-2 bg-[#0f172a]/90 backdrop-blur-2xl border border-white/10 rounded-full shadow-[0_0_50px_rgba(0,0,0,0.5)] active:scale-[0.98] transition-all">
+
+                            <button
+                                onClick={() => setActiveTool('cursor')}
+                                className={`p-4 rounded-full transition-all flex flex-col items-center justify-center gap-1 min-w-[80px] group ${activeTool === 'cursor' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/40 relative -top-2 scale-110' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                            >
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
+                                {activeTool === 'cursor' && <span className="text-[9px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-bottom-2">Výběr</span>}
+                            </button>
+
+                            <div className="w-px h-8 bg-white/10 mx-1"></div>
+
+                            <button
+                                onClick={() => setActiveTool('complete')}
+                                className={`p-4 rounded-full transition-all flex flex-col items-center justify-center gap-1 min-w-[80px] group ${activeTool === 'complete' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 relative -top-2 scale-110' : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10'}`}
+                            >
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                {activeTool === 'complete' && <span className="text-[9px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-bottom-2">Hotovo</span>}
+                            </button>
+
+                            <button
+                                onClick={() => setActiveTool('defect')}
+                                className={`p-4 rounded-full transition-all flex flex-col items-center justify-center gap-1 min-w-[80px] group ${activeTool === 'defect' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/40 relative -top-2 scale-110' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-500/10'}`}
+                            >
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                {activeTool === 'defect' && <span className="text-[9px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-bottom-2">Závada</span>}
+                            </button>
+
+                            <button
+                                onClick={() => setActiveTool('pending')}
+                                className={`p-4 rounded-full transition-all flex flex-col items-center justify-center gap-1 min-w-[80px] group ${activeTool === 'pending' ? 'bg-slate-500 text-white shadow-lg shadow-slate-500/40 relative -top-2 scale-110' : 'text-slate-400 hover:text-white hover:bg-slate-500/10'}`}
+                            >
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                {activeTool === 'pending' && <span className="text-[9px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-bottom-2">Reset</span>}
+                            </button>
+                        </div>
+
                         {contextMenu && (
                             <ContextMenu
                                 table={contextMenu.table}
@@ -648,7 +684,33 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
                             const isWork = table.assignedWorkers?.length;
 
                             return (
-                                <div key={table.id} onClick={() => onTableClick?.(table)} className="group bg-[#0a0c1a]/60 border border-white/5 rounded-[2rem] p-6 flex items-center justify-between shadow-xl active:scale-[0.98] transition-all hover:bg-white/[0.04] hover:border-white/10">
+                                <div key={table.id} onClick={() => {
+                                    if (activeTool !== 'cursor') {
+                                        // Mobile list view paint mode support
+                                        if (activeTool === 'defect') {
+                                            setSelectedIds(new Set([table.id!.toString()]));
+                                            setShowDefectModal(true);
+                                        } else {
+                                            // Execute direct action
+                                            const updates: any = {};
+                                            if (activeTool === 'complete') {
+                                                updates.status = 'completed';
+                                                updates.completedAt = new Date();
+                                                updates.completedBy = user?.workerId || 0;
+                                            } else if (activeTool === 'pending') {
+                                                updates.status = 'pending';
+                                                updates.completedAt = undefined;
+                                                updates.completedBy = undefined;
+                                                updates.assignedWorkers = [];
+                                            }
+
+                                            db.fieldTables.update(table.id!, updates);
+                                            soundService.playSuccess();
+                                        }
+                                    } else {
+                                        onTableClick?.(table)
+                                    }
+                                }} className="group bg-[#0a0c1a]/60 border border-white/5 rounded-[2rem] p-6 flex items-center justify-between shadow-xl active:scale-[0.98] transition-all hover:bg-white/[0.04] hover:border-white/10">
                                     <div className="flex items-center gap-6">
                                         <div className={`w-3 h-20 rounded-full transition-all duration-500 ${isDone ? 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : isErr ? 'bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.3)]' : isWork ? 'bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'bg-slate-800'}`}></div>
                                         <div>

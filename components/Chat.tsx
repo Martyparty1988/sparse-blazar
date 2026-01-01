@@ -29,6 +29,8 @@ const Chat: React.FC = () => {
     const [inputText, setInputText] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [isSending, setIsSending] = useState(false);
+    const [typingUsers, setTypingUsers] = useState<string[]>([]);
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Mobile-specific state: 'list' shows channels, 'chat' shows message window
     const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
@@ -94,8 +96,32 @@ const Chat: React.FC = () => {
             }
         });
 
-        return () => firebaseService.unsubscribe(path);
+        // Typing Status Subscription
+        const unsubTyping = firebaseService.subscribeTypingStatus(activeChannelId, (data) => {
+            if (!currentUser?.workerId) return;
+            const names = Object.entries(data)
+                .filter(([uid]) => Number(uid) !== currentUser.workerId) // Don't show myself
+                // Filter out stale typing (older than 5s) - optional but good for cleanup
+                .map(([, info]) => info.name);
+            setTypingUsers(names);
+        });
+
+        return () => {
+            unsubscribe();
+            unsubTyping();
+        };
     }, [activeChannelId, currentUser?.workerId, showToast, t]);
+
+    const handleTyping = () => {
+        if (!currentUser?.workerId) return;
+
+        firebaseService.setTypingStatus(activeChannelId, currentUser.workerId, currentUser.username || 'User', true);
+
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+            firebaseService.setTypingStatus(activeChannelId, currentUser.workerId, currentUser.username || 'User', false);
+        }, 3000);
+    };
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -113,6 +139,11 @@ const Chat: React.FC = () => {
 
         try {
             await firebaseService.setData(`chat/${activeChannelId}/${newMessage.id}`, newMessage);
+            // Clear typing status immediately on send
+            if (currentUser?.workerId) {
+                firebaseService.setTypingStatus(activeChannelId, currentUser.workerId, currentUser.username || 'User', false);
+                if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            }
             setInputText('');
             soundService.playClick();
         } catch (error) {
@@ -281,14 +312,27 @@ const Chat: React.FC = () => {
                                                 {item.messages.map((msg, msgIdx) => (
                                                     <div
                                                         key={msg.id}
-                                                        className={`px-6 py-4 rounded-[1.5rem] text-sm leading-relaxed shadow-lg backdrop-blur-sm transition-all hover:scale-[1.01] relative ${senderMe
-                                                            ? 'bg-indigo-600 text-white rounded-tr-sm hover:bg-indigo-500 shadow-indigo-900/20'
-                                                            : 'bg-white/10 text-slate-200 rounded-tl-sm hover:bg-white/15 shadow-black/20'}`}
+                                                        className={`relative transition-all ${msg.isSystem ? 'w-full flex justify-center py-4' : ''}`}
                                                     >
-                                                        {msg.text}
-                                                        <span className={`text-[9px] font-bold uppercase tracking-wider opacity-40 block text-right mt-1 ${senderMe ? 'text-indigo-200' : 'text-slate-400'}`}>
-                                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </span>
+                                                        {msg.isSystem ? (
+                                                            <div className="bg-indigo-500/10 border border-indigo-500/20 px-6 py-3 rounded-full flex items-center gap-3 max-w-[90%] backdrop-blur-sm shadow-xl">
+                                                                <span className="text-lg">📢</span>
+                                                                <span className="text-xs font-bold text-indigo-300 uppercase tracking-wide text-center leading-relaxed">
+                                                                    {msg.text}
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <div
+                                                                className={`px-6 py-4 rounded-[1.5rem] text-sm leading-relaxed shadow-lg backdrop-blur-sm transition-all hover:scale-[1.01] relative ${senderMe
+                                                                    ? 'bg-indigo-600 text-white rounded-tr-sm hover:bg-indigo-500 shadow-indigo-900/20'
+                                                                    : 'bg-white/10 text-slate-200 rounded-tl-sm hover:bg-white/15 shadow-black/20'}`}
+                                                            >
+                                                                {msg.text}
+                                                                <span className={`text-[9px] font-bold uppercase tracking-wider opacity-40 block text-right mt-1 ${senderMe ? 'text-indigo-200' : 'text-slate-400'}`}>
+                                                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -301,13 +345,25 @@ const Chat: React.FC = () => {
                     <div ref={messagesEndRef} />
                 </div>
 
+                {/* Typing Indicator */}
+                {typingUsers.length > 0 && (
+                    <div className="absolute bottom-24 left-8 text-xs font-bold text-indigo-400 animate-pulse flex items-center gap-2">
+                        <span className="flex gap-0.5">
+                            <span className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                            <span className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                            <span className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                        </span>
+                        {typingUsers.join(', ')} {typingUsers.length === 1 ? 'píše...' : 'píší...'}
+                    </div>
+                )}
+
                 {/* Input Area */}
                 <div className="p-6 md:p-8 bg-black/20 backdrop-blur-xl border-t border-white/5 shrink-0 relative z-20">
                     <form onSubmit={handleSend} className="flex gap-4 max-w-5xl mx-auto relative">
                         <input
                             type="text"
                             value={inputText}
-                            onChange={e => setInputText(e.target.value)}
+                            onChange={e => { setInputText(e.target.value); handleTyping(); }}
                             placeholder={t('type_message')}
                             className="flex-1 bg-white/[0.03] border border-white/10 rounded-[2rem] px-8 py-5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-sm tracking-wide"
                         />

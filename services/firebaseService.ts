@@ -21,7 +21,7 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
-import { getDatabase, ref, onValue, off, set, Database } from 'firebase/database';
+import { getDatabase, ref, onValue, off, set, Database, onDisconnect } from 'firebase/database';
 import { getAuth, Auth } from 'firebase/auth';
 import { db } from './db'; // Import Dexie instance
 
@@ -89,6 +89,32 @@ class FirebaseService {
     public unsubscribe(path: string) {
         if (!this.rtdb) return;
         off(ref(this.rtdb, path));
+    }
+
+    public async setTypingStatus(channelId: string, userId: number, userName: string, isTyping: boolean) {
+        if (!this.rtdb) return;
+        const path = `chat/${channelId}/typing/${userId}`;
+        const typingRef = ref(this.rtdb, path);
+
+        if (isTyping) {
+            // Set timestamp and remove on disconnect
+            await set(typingRef, { name: userName, timestamp: serverTimestamp() });
+            onDisconnect(typingRef).remove();
+        } else {
+            await set(typingRef, null);
+        }
+    }
+
+    public subscribeTypingStatus(channelId: string, callback: (typingUsers: { [key: string]: { name: string, timestamp: number } }) => void) {
+        if (!this.rtdb) return () => { };
+        const path = `chat/${channelId}/typing`;
+        const typingRef = ref(this.rtdb, path);
+
+        onValue(typingRef, (snapshot) => {
+            callback(snapshot.val() || {});
+        });
+
+        return () => off(typingRef);
     }
 
     public async setData(path: string, data: any): Promise<SyncResult> {

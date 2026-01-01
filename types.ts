@@ -225,4 +225,5 @@ export interface ChatMessage {
   senderName: string;
   timestamp: string;
   channelId?: string;
+  isSystem?: boolean;
 }

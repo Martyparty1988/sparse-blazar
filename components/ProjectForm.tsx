@@ -113,6 +113,21 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
             const fieldTables: FieldTable[] = structuredTables.map(t => ({ projectId: projectId!, tableId: t.id, tableType: t.type, status: 'pending' }));
             if (fieldTables.length > 0) await db.fieldTables.bulkAdd(fieldTables);
 
+            // Announce new project in General Chat
+            if (!project?.id && firebaseService.isReady) {
+                const systemMsg = {
+                    id: Date.now().toString(),
+                    text: `🚀 Byla zahájena příprava nového projektu: ${name} (${location || 'Bez lokace'}). Plánovaný start: ${startDate ? new Date(startDate).toLocaleDateString('cs-CZ') : 'Neurčeno'}.`,
+                    senderId: -1, // System ID
+                    senderName: 'Systém',
+                    timestamp: new Date().toISOString(),
+                    channelId: 'general',
+                    isSystem: true // Flag for styling
+                };
+                // We use fire-and-forget here, no await needed strictly, but good practice to catch
+                firebaseService.setData(`chat/general/${systemMsg.id}`, systemMsg).catch(console.error);
+            }
+
             onClose();
             showToast("Projekt úspěšně uložen!", "success");
 

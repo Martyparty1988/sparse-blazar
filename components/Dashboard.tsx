@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
@@ -74,6 +74,16 @@ const Dashboard: React.FC = () => {
 
   const { isRefreshing } = usePullToRefresh({ onRefresh: handleDataRefresh });
 
+  // Sync Status State
+  const [syncStatus, setSyncStatus] = useState({ online: firebaseService.isOnline, pending: firebaseService.pendingOps });
+
+  useEffect(() => {
+    const unsub = firebaseService.onStatusChange((online, pending) => {
+      setSyncStatus({ online, pending });
+    });
+    return () => unsub();
+  }, []);
+
   // Data Queries
   const stats = useLiveQuery(async () => {
     const projects = await db.projects.toArray();
@@ -113,6 +123,26 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center gap-3">
             <span className="h-1 w-12 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></span>
             <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em]">{t('dashboard') || 'Overview'}</span>
+
+            {/* Sync Status Indicator */}
+            <div className={`ml-4 flex items-center gap-2 px-3 py-1 rounded-full border ${syncStatus.pending > 0 ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : syncStatus.online ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
+              {syncStatus.pending > 0 ? (
+                <>
+                  <RedoIcon className="w-3 h-3 animate-spin" />
+                  <span className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap">Odesílám ({syncStatus.pending})</span>
+                </>
+              ) : syncStatus.online ? (
+                <>
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                  <span className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap">Online & Zálohováno</span>
+                </>
+              ) : (
+                <>
+                  <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+                  <span className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap">Offline</span>
+                </>
+              )}
+            </div>
           </div>
           <h1 className="text-6xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-[0.8]">
             Vítejte, {user?.username || 'Marty'}<span className="text-indigo-500 font-normal">.</span>

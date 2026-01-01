@@ -19,9 +19,9 @@ const BottomNavBar: React.FC = () => {
 
     const navItems = [
         { to: "/", title: t('dashboard'), icon: <DashboardIcon className="w-8 h-8" />, roles: ['admin', 'user'] },
-        { to: "/projects", title: t('projects'), icon: <ProjectsIcon className="w-8 h-8" />, roles: ['admin', 'user'] },
+        { to: "/projects", title: 'Seznam', icon: <ProjectsIcon className="w-8 h-8" />, roles: ['admin', 'user'] },
         { to: "/chat", title: "Chat", icon: <ChatIcon className="w-8 h-8" />, roles: ['admin', 'user'] },
-        { to: "/records", title: t('work_log'), icon: <ClockIcon className="w-8 h-8" />, roles: ['admin', 'user'] },
+        { to: "/records", title: 'Práce', icon: <ClockIcon className="w-8 h-8" />, roles: ['admin', 'user'] },
         { to: "/settings", title: t('settings'), icon: <SettingsIcon className="w-8 h-8" />, roles: ['admin', 'user'] },
     ];
 
@@ -96,7 +96,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     className="flex-1 overflow-y-auto custom-scrollbar p-6 overscroll-contain"
                     style={{
                         paddingTop: 'calc(4.5rem + env(safe-area-inset-top, 0px))',
-                        paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))',
+                        paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 0px))',
                         paddingLeft: 'calc(1.5rem + env(safe-area-inset-left, 0px))',
                         paddingRight: 'calc(1.5rem + env(safe-area-inset-right, 0px))'
                     }}

@@ -63,7 +63,7 @@ const FieldPlans: React.FC = () => {
             <header className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-7xl md:text-9xl font-black text-white tracking-tighter uppercase italic leading-[0.8] mb-8">
-                        {t('field_plans')}<span className="text-indigo-500 not-italic">.</span>
+                        PROJEKTY<span className="text-indigo-500 not-italic">.</span>
                     </h1>
                 </div>
             </header>

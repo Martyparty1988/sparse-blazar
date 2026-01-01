@@ -164,7 +164,7 @@ const TimeRecords: React.FC = () => {
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
                 <div className="space-y-2 relative z-10">
                     <h1 className="text-7xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8]">
-                        Pracovní<br /><span className="text-indigo-500">Log.</span>
+                        PRÁCE<span className="text-indigo-500">.</span>
                     </h1>
                     <div className="h-2 w-32 bg-indigo-600 rounded-full shadow-[0_4px_20px_rgba(79,70,229,0.5)] mt-4" />
                 </div>

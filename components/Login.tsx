@@ -136,7 +136,7 @@ const Login: React.FC = () => {
                                         type="email"
                                         value={email}
                                         onChange={e => setEmail(e.target.value)}
-                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500/30 transition-all font-bold text-sm"
+                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500/30 transition-all font-bold text-base"
                                         placeholder="admin@mst.app"
                                         required
                                     />
@@ -156,7 +156,7 @@ const Login: React.FC = () => {
                                         type="password"
                                         value={password}
                                         onChange={e => setPassword(e.target.value)}
-                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500/30 transition-all font-bold text-sm"
+                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500/30 transition-all font-bold text-base"
                                         placeholder="••••••••"
                                         required
                                     />
@@ -204,7 +204,7 @@ const Login: React.FC = () => {
                                     type="text"
                                     value={name}
                                     onChange={e => setName(e.target.value)}
-                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-sm"
+                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-base"
                                     placeholder={t('worker_name')}
                                     required
                                 />
@@ -212,7 +212,7 @@ const Login: React.FC = () => {
                                     type="email"
                                     value={email}
                                     onChange={e => setEmail(e.target.value)}
-                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-sm"
+                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-base"
                                     placeholder={t('email')}
                                     required
                                 />
@@ -220,7 +220,7 @@ const Login: React.FC = () => {
                                     type="password"
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
-                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-sm"
+                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-base"
                                     placeholder={t('password')}
                                     required
                                 />
@@ -228,7 +228,7 @@ const Login: React.FC = () => {
                                     type="password"
                                     value={confirmPassword}
                                     onChange={e => setConfirmPassword(e.target.value)}
-                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-sm"
+                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-base"
                                     placeholder={t('confirm_password')}
                                     required
                                 />
@@ -279,7 +279,7 @@ const Login: React.FC = () => {
                                     type="email"
                                     value={email}
                                     onChange={e => setEmail(e.target.value)}
-                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-sm"
+                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-base"
                                     placeholder={t('email')}
                                     required
                                 />

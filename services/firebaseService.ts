@@ -21,7 +21,8 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
-import { getDatabase, ref, onValue, off, set, Database, onDisconnect } from 'firebase/database';
+import { getDatabase, ref, set, push, onValue, off, remove, goOnline, goOffline, onDisconnect, get, Database } from 'firebase/database';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth, Auth } from 'firebase/auth';
 import { db } from './db'; // Import Dexie instance
 
@@ -47,6 +48,7 @@ class FirebaseService {
     private rtdb: Database;
     private auth: Auth;
     private messaging: Messaging | null = null;
+    public currentFcmToken: string | null = null;
     public isInitialized = false;
     public isOnline = false;
     public pendingOps = 0;
@@ -91,6 +93,32 @@ class FirebaseService {
         off(ref(this.rtdb, path));
     }
 
+    public async toggleReaction(channelId: string, messageId: string, emoji: string, userId: number) {
+        if (!this.rtdb) return; // Changed from this.db to this.rtdb
+        const path = `chat/${channelId}/${messageId}/reactions/${emoji}`;
+        const snapshot = await get(ref(this.rtdb, path)); // Changed from this.db to this.rtdb
+        const users: number[] = snapshot.val() || [];
+
+        let newUsers;
+        if (users.includes(userId)) {
+            newUsers = users.filter(id => id !== userId);
+        } else {
+            newUsers = [...users, userId];
+        }
+
+        if (newUsers.length === 0) {
+            await remove(ref(this.rtdb, path)); // Changed from this.db to this.rtdb
+        } else {
+            await set(ref(this.rtdb, path), newUsers); // Changed from this.db to this.rtdb
+        }
+    }
+
+    public async markAsSeen(channelId: string, userId: number) {
+        if (!this.rtdb) return;
+        const path = `chat/${channelId}/seen/${userId}`;
+        await set(ref(this.rtdb, path), new Date().toISOString());
+    }
+
     public async setTypingStatus(channelId: string, userId: number, userName: string, isTyping: boolean) {
         if (!this.rtdb) return;
         const path = `chat/${channelId}/typing/${userId}`;
@@ -133,14 +161,18 @@ class FirebaseService {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
                 const token = await getToken(this.messaging, {
-                    vapidKey: 'BM6F-pXyU3R_5e7H8u1X2zR_L6VqW6X0H_Z0z2X0W_z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z' // Use real VAPID key if possible, or omit if default works
+                    // This is a placeholder, a real VAPID key is needed from Firebase Console > Settings > Cloud Messaging
+                    vapidKey: 'BM6F-pXyU3R_5e7H8u1X2zR_L6VqW6X0H_Z0z2X0W_z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z'
                 });
 
                 if (token) {
+                    this.currentFcmToken = token;
                     console.log('FCM Token:', token);
                     // Update worker in RTDB and Firestore
-                    await this.setData(`workers/${workerId}`, { id: workerId, fcmToken: token });
-                    await this.updateRecord('workers', String(workerId), { fcmToken: token });
+                    if (workerId) {
+                        await this.setData(`workers/${workerId}`, { id: workerId, fcmToken: token, lastSeen: new Date().toISOString() });
+                        await this.updateRecord('workers', String(workerId), { fcmToken: token });
+                    }
                     return token;
                 }
             }
@@ -148,6 +180,16 @@ class FirebaseService {
             console.error('Permission/Token error:', error);
         }
         return null;
+    }
+
+    public updateBadge(count: number) {
+        if ('setAppBadge' in navigator) {
+            if (count > 0) {
+                (navigator as any).setAppBadge(count).catch(console.error);
+            } else {
+                (navigator as any).clearAppBadge().catch(console.error);
+            }
+        }
     }
 
     private setupForegroundMessageListener() {

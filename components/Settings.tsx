@@ -115,13 +115,35 @@ const Settings: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="p-6 bg-white/[0.03] rounded-3xl border border-white/5 flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <div className="p-6 bg-white/[0.03] rounded-3xl border border-white/5 flex flex-col gap-4">
+                            <div className="flex items-start gap-4">
+                                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0">
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </div>
+                                <p className="text-slate-400 text-xs font-bold leading-relaxed">
+                                    Push notifikace vám umožní dostávat okamžitá upozornění na nové zprávy v chatu a přiřazené úkoly i když nemáte aplikaci otevřenou.
+                                </p>
                             </div>
-                            <p className="text-slate-400 text-xs font-bold leading-relaxed">
-                                Push notifikace vám umožní dostávat okamžitá upozornění na nové zprávy v chatu a přiřazené úkoly i když nemáte aplikaci otevřenou.
-                            </p>
+
+                            {firebaseService.currentFcmToken && (
+                                <div className="mt-4 pt-4 border-t border-white/5">
+                                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-2">FCM Debug Token</p>
+                                    <div className="flex gap-2">
+                                        <code className="flex-1 bg-black/40 p-2 rounded-lg text-[10px] text-slate-500 font-mono truncate">
+                                            {firebaseService.currentFcmToken}
+                                        </code>
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(firebaseService.currentFcmToken || '');
+                                                showToast('Token zkopírován', 'success');
+                                            }}
+                                            className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-[10px] font-bold uppercase transition-all"
+                                        >
+                                            Copy
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </SettingsSection>

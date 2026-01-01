@@ -37,25 +37,25 @@ exports.sendChatNotification = functions.database.ref('/chat/{channelId}/{messag
             workerList.forEach(w => {
                 if (w.id !== message.senderId && w.fcmToken) tokens.push(w.fcmToken);
             });
-        } 
+        }
         else if (channelId.startsWith('project_')) {
             // Pošli jen členům projektu
             const projectId = parseInt(channelId.replace('project_', ''));
             const projectSnap = await admin.database().ref(`/projects/${projectId}`).once('value');
             const project = projectSnap.val();
-            
+
             const memberIds = project?.workerIds || [];
             workerList.forEach(w => {
                 if (memberIds.includes(w.id) && w.id !== message.senderId && w.fcmToken) {
                     tokens.push(w.fcmToken);
                 }
             });
-        } 
+        }
         else if (channelId.startsWith('dm_')) {
             // Pošli jen druhému účastníkovi v DM (dm_ID1_ID2)
             const parts = channelId.split('_');
             const targetId = parseInt(parts[1]) === message.senderId ? parseInt(parts[2]) : parseInt(parts[1]);
-            
+
             const targetWorker = workerList.find(w => w.id === targetId);
             if (targetWorker && targetWorker.fcmToken) {
                 tokens.push(targetWorker.fcmToken);
@@ -65,8 +65,6 @@ exports.sendChatNotification = functions.database.ref('/chat/{channelId}/{messag
 
         if (tokens.length > 0) {
             try {
-                // messaging().sendToDevice je sice deprecated, ale pro Legacy FCM stále funkční. 
-                // Používám novější sendEachForMulticast pro jistotu, pokud je k dispozici.
                 const messages = tokens.map(token => ({
                     token: token,
                     notification: payload.notification,
@@ -77,6 +75,49 @@ exports.sendChatNotification = functions.database.ref('/chat/{channelId}/{messag
             } catch (error) {
                 console.error('❌ Chyba při odesílání FCM:', error);
             }
+        }
+
+        // --- NEW: Update unread status in RTDB ---
+        const unreadUpdates = {};
+        const unreadPath = `unread`;
+
+        if (channelId === 'general') {
+            workerList.forEach(w => {
+                if (w.id !== message.senderId) {
+                    unreadUpdates[`${unreadPath}/${w.id}/${channelId}`] = {
+                        text: message.text,
+                        timestamp: message.timestamp,
+                        senderName: message.senderName
+                    };
+                }
+            });
+        } else if (channelId.startsWith('project_')) {
+            const projectId = parseInt(channelId.replace('project_', ''));
+            const projectSnap = await admin.database().ref(`/projects/${projectId}`).once('value');
+            const project = projectSnap.val();
+            const memberIds = project?.workerIds || [];
+
+            memberIds.forEach(uid => {
+                if (uid !== message.senderId) {
+                    unreadUpdates[`${unreadPath}/${uid}/${channelId}`] = {
+                        text: message.text,
+                        timestamp: message.timestamp,
+                        senderName: message.senderName
+                    };
+                }
+            });
+        } else if (channelId.startsWith('dm_')) {
+            const parts = channelId.split('_');
+            const targetId = parseInt(parts[1]) === message.senderId ? parseInt(parts[2]) : parseInt(parts[1]);
+            unreadUpdates[`${unreadPath}/${targetId}/${channelId}`] = {
+                text: message.text,
+                timestamp: message.timestamp,
+                senderName: message.senderName
+            };
+        }
+
+        if (Object.keys(unreadUpdates).length > 0) {
+            await admin.database().ref().update(unreadUpdates);
         }
 
         return null;

@@ -3,6 +3,20 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
 import type { Project, FieldTable, Worker } from '../types';
 import { useI18n } from '../contexts/I18nContext';
+
+const typeToShort = (type?: 'small' | 'medium' | 'large'): 'S' | 'M' | 'L' | undefined => {
+    if (type === 'small') return 'S';
+    if (type === 'medium') return 'M';
+    if (type === 'large') return 'L';
+    return undefined;
+};
+
+const shortToType = (short?: 'S' | 'M' | 'L'): 'small' | 'medium' | 'large' | undefined => {
+    if (short === 'S') return 'small';
+    if (short === 'M') return 'medium';
+    if (short === 'L') return 'large';
+    return undefined;
+};
 import { firebaseService } from '../services/firebaseService';
 import { useToast } from '../contexts/ToastContext';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -26,7 +40,8 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
     const allWorkers = useLiveQuery(() => db.workers.toArray(), []);
 
     const [tableList, setTableList] = useState('');
-    const [structuredTables, setStructuredTables] = useState<{ id: string, type: TableType }[]>([]);
+    const [variant, setVariant] = useState<'basic' | 'advanced'>('basic');
+    const [structuredTables, setStructuredTables] = useState<{ id: string, type: TableType | null }[]>([]);
     const [isTablesProcessed, setIsTablesProcessed] = useState(false);
 
     const detectTableType = (tableId: string): TableType => {
@@ -45,6 +60,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
             setEndDate(project.endDate || '');
             setStatus(project.status);
             setWorkerIds(project.workerIds || []);
+            setVariant(project.hasPredefinedSizes ? 'advanced' : 'basic');
 
             const fetchRelatedData = async () => {
                 const existingTables = await db.fieldTables.where('projectId').equals(project.id!).toArray();
@@ -60,22 +76,61 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
     }, [project]);
 
     const handleProcessTables = () => {
-        const tableIds = tableList.split(/[\n,]+/).map(t => t.trim()).filter(t => t.length > 0);
-        if (tableIds.length === 0) {
+        const lines = tableList.split(/[\n,]+/).map(t => t.trim()).filter(t => t.length > 0);
+
+        if (lines.length === 0) {
             showToast("Seznam stolů je prázdný.", "warning");
             return;
         }
-        const newStructuredTables = tableIds.map(id => ({ id, type: detectTableType(id) }));
-        setStructuredTables(newStructuredTables);
+
+        const seenIds = new Set<string>();
+        const duplicates: string[] = [];
+        const uniqueTables: { id: string, type: TableType | null }[] = [];
+
+        lines.forEach(line => {
+            let id = line;
+            let type: TableType | null = null;
+
+            if (variant === 'advanced') {
+                const parts = line.split(/\s+/);
+                if (parts.length > 1) {
+                    const lastPart = parts[parts.length - 1].toUpperCase();
+                    const extractedId = parts.slice(0, -1).join(' ');
+                    if (lastPart === 'S') { id = extractedId; type = 'small'; }
+                    else if (lastPart === 'L') { id = extractedId; type = 'large'; }
+                    else if (lastPart === 'M') { id = extractedId; type = 'medium'; }
+                    else { id = line; type = detectTableType(line); }
+                } else {
+                    id = line;
+                    type = detectTableType(line);
+                }
+            } else {
+                id = line;
+                type = null;
+            }
+
+            if (seenIds.has(id)) {
+                duplicates.push(id);
+            } else {
+                seenIds.add(id);
+                uniqueTables.push({ id, type });
+            }
+        });
+
+        if (duplicates.length > 0) {
+            showToast(`Odstraněno ${duplicates.length} duplicitních stolů (např. ${duplicates.slice(0, 3).join(', ')}...).`, "warning");
+        }
+
+        setStructuredTables(uniqueTables);
         setIsTablesProcessed(true);
-        showToast(`Zpracováno ${tableIds.length} stolů.`, 'info');
+        showToast(`Zpracováno ${uniqueTables.length} stolů.`, 'info');
     };
 
-    const handleTableTypeChange = (id: string, type: TableType) => {
+    const handleTableTypeChange = (id: string, type: TableType | null) => {
         setStructuredTables(prev => prev.map(t => t.id === id ? { ...t, type } : t));
     };
 
-    const handleBulkTypeChange = (type: TableType) => {
+    const handleBulkTypeChange = (type: TableType | null) => {
         setStructuredTables(prev => prev.map(t => ({ ...t, type })));
     };
 
@@ -96,7 +151,8 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
             endDate: endDate || undefined,
             status,
             workerIds,
-            tables: structuredTables.map(t => t.id),
+            hasPredefinedSizes: variant === 'advanced',
+            tables: structuredTables.map(t => ({ id: t.id, type: typeToShort(t.type || undefined) })),
             createdAt: project?.createdAt || now,
             updatedAt: now,
         };
@@ -110,8 +166,16 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
             }
 
             await db.fieldTables.where('projectId').equals(projectId).delete();
-            const fieldTables: FieldTable[] = structuredTables.map(t => ({ projectId: projectId!, tableId: t.id, tableType: t.type, status: 'pending' }));
+            const fieldTables: FieldTable[] = structuredTables.map(t => ({
+                projectId: projectId!,
+                tableId: t.id,
+                tableType: t.type || undefined,
+                status: 'pending'
+            }));
             if (fieldTables.length > 0) await db.fieldTables.bulkAdd(fieldTables);
+
+            // Trigger background sync immediately to reach other users
+            firebaseService.synchronize(false).catch(console.error);
 
             // Announce new project in General Chat
             if (!project?.id && firebaseService.isReady) {
@@ -244,16 +308,51 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
 
                         {/* Right Column: Tables Setup */}
                         <div className="lg:col-span-7 space-y-6">
+
+                            {/* Variant Selection */}
+                            <div className="space-y-4 p-6 bg-white/[0.02] rounded-[2rem] border border-white/5">
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('project_variant')}</label>
+                                <div className="grid grid-cols-1 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setVariant('basic'); setIsTablesProcessed(false); }}
+                                        className={`flex items-start gap-4 p-4 rounded-2xl border transition-all text-left ${variant === 'basic' ? 'bg-indigo-600/10 border-indigo-500 shadow-lg shadow-indigo-500/10' : 'bg-black/20 border-white/5 hover:border-white/10'}`}
+                                    >
+                                        <div className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${variant === 'basic' ? 'border-white' : 'border-slate-700'}`}>
+                                            {variant === 'basic' && <div className="w-2 h-2 bg-white rounded-full" />}
+                                        </div>
+                                        <div>
+                                            <p className={`font-black uppercase text-[11px] tracking-wide ${variant === 'basic' ? 'text-white' : 'text-slate-400'}`}>{t('basic_project')}</p>
+                                            <p className="text-[9px] text-slate-500 font-bold mt-0.5">{t('variant_basic_desc')}</p>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => { setVariant('advanced'); setIsTablesProcessed(false); }}
+                                        className={`flex items-start gap-4 p-4 rounded-2xl border transition-all text-left ${variant === 'advanced' ? 'bg-indigo-600/10 border-indigo-500 shadow-lg shadow-indigo-500/10' : 'bg-black/20 border-white/5 hover:border-white/10'}`}
+                                    >
+                                        <div className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${variant === 'advanced' ? 'border-white' : 'border-slate-700'}`}>
+                                            {variant === 'advanced' && <div className="w-2 h-2 bg-white rounded-full" />}
+                                        </div>
+                                        <div>
+                                            <p className={`font-black uppercase text-[11px] tracking-wide ${variant === 'advanced' ? 'text-white' : 'text-slate-400'}`}>{t('advanced_project')}</p>
+                                            <p className="text-[9px] text-slate-500 font-bold mt-0.5">{t('variant_advanced_desc')}</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
                             <div className="relative group">
                                 <div className="flex justify-between items-center mb-3 ml-1">
-                                    <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest">Import stolů (FieldPlan)</label>
-                                    <span className="text-[9px] font-bold text-slate-600 italic">ID oddělujte novým řádkem</span>
+                                    <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest">Import stolů</label>
+                                    <span className="text-[9px] font-bold text-slate-600 italic">ID {variant === 'advanced' ? '+ S/M/L' : ''} oddělujte novým řádkem</span>
                                 </div>
                                 <textarea
                                     value={tableList}
                                     onChange={(e) => { setTableList(e.target.value); setIsTablesProcessed(false); }}
                                     rows={8}
-                                    placeholder="ST1-01&#10;ST1-02&#10;..."
+                                    placeholder={t('table_list_placeholder')}
                                     className="w-full p-6 bg-black/40 text-white placeholder-slate-700 rounded-[2rem] border border-white/5 text-sm font-mono leading-relaxed outline-none focus:border-indigo-500/30 transition-all custom-scrollbar"
                                 />
                                 <button
@@ -261,11 +360,11 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                                     onClick={handleProcessTables}
                                     className="mt-4 w-full py-5 bg-indigo-600 text-white font-black text-xs uppercase tracking-[0.2em] rounded-[2rem] hover:bg-indigo-500 transition-all shadow-xl active:scale-[0.98]"
                                 >
-                                    Zanalyzovat konstrukce
+                                    {t('analyze_tables')}
                                 </button>
                             </div>
 
-                            {isTablesProcessed && structuredTables.length > 0 && (
+                            {isTablesProcessed && structuredTables.length > 0 && variant === 'advanced' && (
                                 <div className="p-6 bg-white/[0.02] rounded-[2.5rem] animate-fade-in border border-indigo-500/10 space-y-6">
                                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                                         <div className="space-y-0.5">
@@ -285,7 +384,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                                             <div key={table.id} className="group/item bg-black/40 p-3 rounded-2xl border border-white/5 flex flex-col gap-2 hover:border-indigo-500/30 transition-all">
                                                 <span className="text-[10px] font-black text-slate-300 truncate tracking-tight">{table.id}</span>
                                                 <select
-                                                    value={table.type}
+                                                    value={table.type || 'medium'}
                                                     onChange={(e) => handleTableTypeChange(table.id, e.target.value as TableType)}
                                                     className="w-full bg-[#1a1c2e] text-indigo-400 text-[10px] font-black uppercase tracking-tighter border-none rounded-xl py-2 px-3 focus:ring-1 focus:ring-indigo-500 outline-none"
                                                 >
@@ -295,6 +394,18 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                                                 </select>
                                             </div>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {isTablesProcessed && structuredTables.length > 0 && variant === 'basic' && (
+                                <div className="p-6 bg-emerald-500/5 rounded-[2.5rem] border border-emerald-500/10 flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-500">
+                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <h3 className="text-[11px] font-black text-emerald-500 uppercase tracking-widest">{structuredTables.length} stolů připraveno</h3>
+                                        <p className="text-[9px] text-slate-500 font-bold">Bez předdefinovaných velikostí.</p>
                                     </div>
                                 </div>
                             )}

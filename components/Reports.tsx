@@ -63,7 +63,7 @@ const Reports: React.FC = () => {
                 break;
             }
             case 'monthly': {
-                 if (!selectedMonth) return;
+                if (!selectedMonth) return;
                 const [year, month] = selectedMonth.split('-').map(Number);
                 startDate = new Date(year, month - 1, 1);
                 endDate = new Date(year, month, 0);
@@ -88,7 +88,7 @@ const Reports: React.FC = () => {
             const recordTime = new Date(record.startTime).getTime();
             return recordTime >= startDate.getTime() && recordTime <= endDate.getTime();
         });
-        
+
         const filteredTasks = allTasks.filter(task => {
             if (!task.completionDate) return false;
             const taskTime = new Date(task.completionDate).getTime();
@@ -108,12 +108,12 @@ const Reports: React.FC = () => {
                 totalHourlyCost += durationHours * worker.hourlyRate;
             }
         });
-        
+
         const totalTaskCost = filteredTasks.reduce((sum, task) => sum + task.price, 0);
 
-        setReportData({ 
-            records: filteredRecords.sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
-            tasks: filteredTasks.sort((a,b) => new Date(a.completionDate!).getTime() - new Date(b.completionDate!).getTime())
+        setReportData({
+            records: filteredRecords.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
+            tasks: filteredTasks.sort((a, b) => new Date(a.completionDate!).getTime() - new Date(b.completionDate!).getTime())
         });
         setReportStats({ totalHours, totalHourlyCost, totalTaskCost, title });
     };
@@ -128,16 +128,16 @@ const Reports: React.FC = () => {
         };
 
         const headers = [
-            t('type'), 
-            t('worker_name'), 
-            t('project_name'), 
-            t('description'), 
-            t('date_or_start_time'), 
-            t('end_time'), 
-            t('duration'), 
+            t('type'),
+            t('worker_name'),
+            t('project_name'),
+            t('description'),
+            t('date_or_start_time'),
+            t('end_time'),
+            t('duration'),
             t('cost')
         ];
-        
+
         const recordRows = reportData.records.map(record => {
             const worker = workerMap.get(record.workerId);
             const workerName = worker?.name || 'N/A';
@@ -151,13 +151,13 @@ const Reports: React.FC = () => {
             const cost = ((durationMs / (1000 * 60 * 60)) * (worker?.hourlyRate || 0)).toFixed(2);
 
             return [
-                escapeCSV('Hourly'), 
-                escapeCSV(workerName), 
-                escapeCSV(projectName), 
-                escapeCSV(record.description), 
-                escapeCSV(startTime), 
-                escapeCSV(endTime), 
-                escapeCSV(duration), 
+                escapeCSV('Hourly'),
+                escapeCSV(workerName),
+                escapeCSV(projectName),
+                escapeCSV(record.description),
+                escapeCSV(startTime),
+                escapeCSV(endTime),
+                escapeCSV(duration),
                 escapeCSV(cost)
             ].join(',');
         });
@@ -166,26 +166,26 @@ const Reports: React.FC = () => {
             const workerName = task.assignedWorkerId ? (workerMap.get(task.assignedWorkerId)?.name || 'N/A') : 'N/A';
             const projectName = projectMap.get(task.projectId)?.name || 'N/A';
             const completionDate = new Date(task.completionDate!).toLocaleDateString();
-            
+
             return [
-                escapeCSV('Task'), 
-                escapeCSV(workerName), 
-                escapeCSV(projectName), 
-                escapeCSV(task.description), 
-                escapeCSV(completionDate), 
-                escapeCSV(''), 
-                escapeCSV(''), 
+                escapeCSV('Task'),
+                escapeCSV(workerName),
+                escapeCSV(projectName),
+                escapeCSV(task.description),
+                escapeCSV(completionDate),
+                escapeCSV(''),
+                escapeCSV(''),
                 escapeCSV(task.price.toFixed(2))
             ].join(',');
         });
 
         const csvContent = [headers.map(escapeCSV).join(','), ...recordRows, ...taskRows].join('\n');
-        
+
         // Use UTF-8 with BOM for Excel compatibility
         const BOM = '\uFEFF';
         const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
-        
+
         const link = document.createElement("a");
         link.setAttribute("href", url);
         link.setAttribute("download", `MST_Report_${reportStats?.title.replace(/[^a-z0-9]/gi, '_') || 'export'}.csv`);
@@ -198,23 +198,23 @@ const Reports: React.FC = () => {
     const renderDateInputs = () => {
         switch (reportType) {
             case 'daily':
-                return <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="p-4 bg-black/20 text-white border border-white/20 rounded-xl focus:ring-blue-400 focus:border-blue-400 text-lg" />;
+                return <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="w-full p-5 bg-black/40 text-white border border-white/5 rounded-3xl outline-none focus:border-indigo-500/50 transition-all text-sm font-bold" />;
             case 'weekly':
-                return <input type="week" value={selectedWeek} onChange={e => setSelectedWeek(e.target.value)} className="p-4 bg-black/20 text-white border border-white/20 rounded-xl focus:ring-blue-400 focus:border-blue-400 text-lg" />;
+                return <input type="week" value={selectedWeek} onChange={e => setSelectedWeek(e.target.value)} className="w-full p-5 bg-black/40 text-white border border-white/5 rounded-3xl outline-none focus:border-indigo-500/50 transition-all text-sm font-bold" />;
             case 'monthly':
-                return <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="p-4 bg-black/20 text-white border border-white/20 rounded-xl focus:ring-blue-400 focus:border-blue-400 text-lg" />;
+                return <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="w-full p-5 bg-black/40 text-white border border-white/5 rounded-3xl outline-none focus:border-indigo-500/50 transition-all text-sm font-bold" />;
             case 'custom':
                 return (
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl focus:ring-blue-400 focus:border-blue-400 text-lg" placeholder={t('start_date')} />
-                        <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl focus:ring-blue-400 focus:border-blue-400 text-lg" placeholder={t('end_date')} />
+                    <div className="flex flex-col sm:flex-row gap-4 w-full">
+                        <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="flex-1 p-5 bg-black/40 text-white border border-white/5 rounded-3xl outline-none focus:border-indigo-500/50 transition-all text-sm font-bold" placeholder={t('start_date')} />
+                        <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="flex-1 p-5 bg-black/40 text-white border border-white/5 rounded-3xl outline-none focus:border-indigo-500/50 transition-all text-sm font-bold" placeholder={t('end_date')} />
                     </div>
                 );
             default:
                 return null;
         }
     }
-    
+
     const calculateDuration = (start: Date, end: Date) => {
         const diffMs = new Date(end).getTime() - new Date(start).getTime();
         if (diffMs < 0) return 'Invalid';
@@ -230,28 +230,34 @@ const Reports: React.FC = () => {
                 <h1 className="text-5xl font-bold text-white [text-shadow:0_4px_12px_rgba(0,0,0,0.5)]">{t('reports')}</h1>
             </div>
 
-            <div className="p-6 bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-lg mb-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                    <div>
-                        <label className="block text-lg font-medium text-gray-300 mb-2">{t('report_type')}</label>
-                        <select
-                            value={reportType}
-                            onChange={e => setReportType(e.target.value as any)}
-                            className="w-full p-4 bg-black/20 text-white border border-white/20 rounded-xl focus:ring-blue-400 focus:border-blue-400 text-lg [&>option]:bg-gray-800"
-                        >
-                            <option value="daily">{t('daily')}</option>
-                            <option value="weekly">{t('weekly')}</option>
-                            <option value="monthly">{t('monthly')}</option>
-                            <option value="custom">{t('custom_range')}</option>
-                        </select>
+            {/* Report Generator Controls */}
+            <div className="p-10 bg-[#0a0c1a]/60 backdrop-blur-3xl rounded-[3rem] border border-white/5 shadow-2xl mb-12 animate-slide-up">
+                <div className="flex flex-col lg:flex-row gap-10 items-end">
+                    <div className="flex-1 space-y-4 w-full">
+                        <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] ml-2">{t('report_type')}</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1 bg-black/40 rounded-3xl border border-white/5">
+                            {(['daily', 'weekly', 'monthly', 'custom'] as const).map(type => (
+                                <button
+                                    key={type}
+                                    onClick={() => setReportType(type)}
+                                    className={`py-3 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${reportType === type ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-500 hover:text-white'}`}
+                                >
+                                    {t(type as any)}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-lg font-medium text-gray-300 mb-2">{t(reportType as any)}</label>
-                        {renderDateInputs()}
+
+                    <div className="flex-1 space-y-4 w-full">
+                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">{t('select_period') || 'Období'}</label>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            {renderDateInputs()}
+                        </div>
                     </div>
+
                     <button
                         onClick={handleGenerateReport}
-                        className="w-full px-8 py-4 bg-[var(--color-primary)] text-white font-bold rounded-xl hover:bg-[var(--color-primary-hover)] transition-all shadow-lg text-lg"
+                        className="w-full lg:w-auto px-12 py-5 bg-white text-black font-black rounded-3xl hover:bg-indigo-600 hover:text-white transition-all shadow-xl uppercase tracking-[0.2em] text-xs active:scale-95"
                     >
                         {t('generate_report')}
                     </button>
@@ -259,86 +265,156 @@ const Reports: React.FC = () => {
             </div>
 
             {reportData && reportStats && (
-                <div className="p-8 bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-lg animate-page-enter">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                        <h2 className="text-3xl font-bold text-white">{reportStats.title}</h2>
-                        <button 
-                            onClick={handleExportCSV} 
-                            className="flex items-center gap-2 px-6 py-3 bg-emerald-600/80 text-white font-bold rounded-xl hover:bg-emerald-600 transition shadow-md text-lg active:scale-95"
+                <div className="space-y-12 animate-fade-in print:p-0">
+                    {/* Header with Export */}
+                    <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-white/5 pb-10">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">Exportované data</span>
+                            </div>
+                            <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">{reportStats.title}</h2>
+                        </div>
+                        <button
+                            onClick={handleExportCSV}
+                            className="flex items-center gap-3 px-8 py-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-black rounded-3xl hover:bg-emerald-500 hover:text-white transition-all shadow-xl uppercase tracking-widest text-[10px] active:scale-95"
                         >
-                            <DownloadIcon className="w-5 h-5" />
-                            {t('export_to_csv')}
+                            <DownloadIcon className="w-4 h-4" />
+                            {t('export_csv')}
                         </button>
                     </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div className="p-6 bg-black/20 rounded-2xl border border-white/10 text-center">
-                            <h3 className="text-xl font-bold text-gray-300 mb-2">{t('total_hourly_cost')}</h3>
-                            <p className="text-4xl font-extrabold text-white">€{reportStats.totalHourlyCost.toFixed(2)}</p>
-                            <p className="text-gray-400">({reportStats.totalHours.toFixed(2)} {t('hours')})</p>
+
+                    {/* Top Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="group p-8 bg-black/40 backdrop-blur-xl rounded-[2.5rem] border border-white/5 hover:border-indigo-500/30 transition-all shadow-lg overflow-hidden relative">
+                            <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+                                <DocumentTextIcon className="w-32 h-32" />
+                            </div>
+                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">{t('total_hourly_cost')}</h3>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-4xl font-black text-white italic tracking-tighter">€{reportStats.totalHourlyCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-600 mt-2 uppercase tracking-tight">{reportStats.totalHours.toFixed(2)} {t('hours')}</p>
                         </div>
-                         <div className="p-6 bg-black/20 rounded-2xl border border-white/10 text-center">
-                            <h3 className="text-xl font-bold text-gray-300 mb-2">{t('total_task_cost')}</h3>
-                            <p className="text-4xl font-extrabold text-white">€{reportStats.totalTaskCost.toFixed(2)}</p>
+
+                        <div className="group p-8 bg-black/40 backdrop-blur-xl rounded-[2.5rem] border border-white/5 hover:border-indigo-500/30 transition-all shadow-lg overflow-hidden relative">
+                            <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+                                <DocumentTextIcon className="w-32 h-32" />
+                            </div>
+                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">{t('total_task_cost')}</h3>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-4xl font-black text-white italic tracking-tighter">€{reportStats.totalTaskCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-600 mt-2 uppercase tracking-tight">{reportData.tasks.length} {t('tasks')}</p>
                         </div>
-                         <div className="p-6 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] rounded-2xl text-center">
-                            <h3 className="text-xl font-bold text-white mb-2">{t('total_cost')}</h3>
-                            <p className="text-4xl font-extrabold text-white">€{(reportStats.totalHourlyCost + reportStats.totalTaskCost).toFixed(2)}</p>
+
+                        <div className="group p-1 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[2.5rem] shadow-2xl shadow-indigo-500/10">
+                            <div className="h-full w-full p-8 bg-[#0a0c1a]/95 backdrop-blur-3xl rounded-[2.4rem]">
+                                <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-6">{t('total_cost')}</h3>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-5xl font-black text-white italic tracking-tighter">€{(reportStats.totalHourlyCost + reportStats.totalTaskCost).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                </div>
+                                <div className="mt-4 flex gap-2">
+                                    <span className="px-3 py-1 bg-white/5 rounded-full text-[9px] font-black text-white uppercase tracking-tighter">Brutto</span>
+                                    <span className="px-3 py-1 bg-white/5 rounded-full text-[9px] font-black text-indigo-300 uppercase tracking-tighter">Verified</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto custom-scrollbar">
-                        <h3 className="text-2xl font-bold text-white mb-4">{t('records')}</h3>
-                        <table className="min-w-full divide-y divide-white/10 mb-8">
-                             <thead className="bg-white/10">
-                                <tr>
-                                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-200 uppercase tracking-wider">{t('worker_name')}</th>
-                                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-200 uppercase tracking-wider">{t('project_name')}</th>
-                                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-200 uppercase tracking-wider">{t('description')}</th>
-                                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-200 uppercase tracking-wider">{t('duration')}</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/10">
-                                {reportData.records.length > 0 ? reportData.records.map(record => (
-                                    <tr key={record.id} className="hover:bg-white/10 transition-colors">
-                                        <td className="px-6 py-5 whitespace-nowrap text-lg font-medium text-white">{workerMap.get(record.workerId)?.name}</td>
-                                        <td className="px-6 py-5 whitespace-nowrap text-lg text-gray-200">{projectMap.get(record.projectId)?.name}</td>
-                                        <td className="px-6 py-5 text-lg text-gray-200 max-w-xs whitespace-normal break-words">{record.description}</td>
-                                        <td className="px-6 py-5 whitespace-nowrap text-lg font-bold text-white">{calculateDuration(record.startTime, record.endTime)}</td>
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan={4} className="text-center py-12 text-gray-300 text-lg">{t('no_records_found')}</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                        
-                        <h3 className="text-2xl font-bold text-white mb-4">{t('tasks')}</h3>
-                        <table className="min-w-full divide-y divide-white/10">
-                             <thead className="bg-white/10">
-                                <tr>
-                                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-200 uppercase tracking-wider">{t('worker_name')}</th>
-                                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-200 uppercase tracking-wider">{t('project_name')}</th>
-                                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-200 uppercase tracking-wider">{t('task_description')}</th>
-                                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-200 uppercase tracking-wider">{t('cost')}</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/10">
-                                {reportData.tasks.length > 0 ? reportData.tasks.map(task => (
-                                    <tr key={task.id} className="hover:bg-white/10 transition-colors">
-                                        <td className="px-6 py-5 whitespace-nowrap text-lg font-medium text-white">{task.assignedWorkerId ? workerMap.get(task.assignedWorkerId)?.name : t('unassigned')}</td>
-                                        <td className="px-6 py-5 whitespace-nowrap text-lg text-gray-200">{projectMap.get(task.projectId)?.name}</td>
-                                        <td className="px-6 py-5 text-lg text-gray-200 max-w-xs whitespace-normal break-words">{task.description}</td>
-                                        <td className="px-6 py-5 whitespace-nowrap text-lg font-bold text-white">€{task.price.toFixed(2)}</td>
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan={4} className="text-center py-12 text-gray-300 text-lg">{t('no_tasks_found')}</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                    {/* Detailed Lists */}
+                    <div className="space-y-20 pt-10">
+                        {/* Records Table */}
+                        <div className="space-y-8">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-xl font-black text-white italic tracking-tighter uppercase">{t('work_log')}</h3>
+                                <div className="px-4 py-1.5 bg-white/5 rounded-full border border-white/5">
+                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{reportData.records.length} záznamů</span>
+                                </div>
+                            </div>
+                            <div className="overflow-hidden rounded-[2rem] border border-white/5 bg-black/20">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-white/[0.02]">
+                                        <tr>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('worker_name')}</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('project_name')}</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest hidden md:table-cell">{t('description')}</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">{t('duration')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {reportData.records.map(record => (
+                                            <tr key={record.id} className="group hover:bg-white/[0.02] transition-colors">
+                                                <td className="px-8 py-6">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-[10px] font-black text-indigo-300 uppercase italic">
+                                                            {workerMap.get(record.workerId)?.name.substring(0, 2)}
+                                                        </div>
+                                                        <span className="text-sm font-black text-white italic tracking-tight uppercase">{workerMap.get(record.workerId)?.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">{projectMap.get(record.projectId)?.name}</span>
+                                                </td>
+                                                <td className="px-8 py-6 hidden md:table-cell">
+                                                    <span className="text-xs text-slate-500 leading-relaxed font-medium block max-w-xs truncate group-hover:max-w-none group-hover:whitespace-normal transition-all">{record.description}</span>
+                                                </td>
+                                                <td className="px-8 py-6 text-right">
+                                                    <span className="text-sm font-black text-white italic tracking-tighter">{calculateDuration(record.startTime, record.endTime)}</span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Tasks Table */}
+                        <div className="space-y-8">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-xl font-black text-white italic tracking-tighter uppercase">{t('tasks')}</h3>
+                                <div className="px-4 py-1.5 bg-white/5 rounded-full border border-white/5">
+                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{reportData.tasks.length} položek</span>
+                                </div>
+                            </div>
+                            <div className="overflow-hidden rounded-[2rem] border border-white/5 bg-black/20">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-white/[0.02]">
+                                        <tr>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('worker_name')}</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('project_name')}</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest hidden md:table-cell">{t('task_description')}</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">{t('cost')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {reportData.tasks.map(task => (
+                                            <tr key={task.id} className="group hover:bg-white/[0.02] transition-colors">
+                                                <td className="px-8 py-6">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-[10px] font-black text-purple-300 uppercase italic">
+                                                            {(task.assignedWorkerId ? workerMap.get(task.assignedWorkerId)?.name : '?')?.substring(0, 2)}
+                                                        </div>
+                                                        <span className="text-sm font-black text-white italic tracking-tight uppercase truncate max-w-[120px]">
+                                                            {task.assignedWorkerId ? workerMap.get(task.assignedWorkerId)?.name : t('unassigned')}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">{projectMap.get(task.projectId)?.name}</span>
+                                                </td>
+                                                <td className="px-8 py-6 hidden md:table-cell">
+                                                    <span className="text-xs text-slate-500 leading-relaxed font-medium block max-w-xs">{task.description}</span>
+                                                </td>
+                                                <td className="px-8 py-6 text-right">
+                                                    <span className="text-sm font-black text-white italic tracking-tighter">€{task.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

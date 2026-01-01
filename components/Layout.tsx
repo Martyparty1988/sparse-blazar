@@ -12,6 +12,7 @@ import ConnectionStatusIndicator from './ConnectionStatusIndicator';
 import FloatingActionMenu from './FloatingActionMenu';
 import Sidebar from './Sidebar'; // Import the Sidebar
 import TimeRecordForm from './TimeRecordForm';
+import NotificationBell from './NotificationBell';
 import { useState, useEffect } from 'react';
 
 const BottomNavBar: React.FC = () => {
@@ -105,7 +106,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         <div className="flex items-center gap-3">
                             <span className="text-xl font-black italic tracking-tighter text-white">MST<span className="text-[var(--color-accent)]">.</span></span>
                         </div>
-                        <ConnectionStatusIndicator />
+                        <div className="flex items-center gap-4">
+                            <NotificationBell className="w-6 h-6" />
+                            <ConnectionStatusIndicator />
+                        </div>
                     </div>
                 </header>
 

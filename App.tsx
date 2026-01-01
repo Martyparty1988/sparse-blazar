@@ -27,6 +27,7 @@ const ToolManager = React.lazy(() => import('./components/ToolManager'));
 const DailyReports = React.lazy(() => import('./components/DailyReports'));
 const Chat = React.lazy(() => import('./components/Chat'));
 const Payroll = React.lazy(() => import('./components/Payroll'));
+const WorkerDetail = React.lazy(() => import('./components/WorkerDetail'));
 
 const PageLoader = () => (
   <div className="flex flex-col items-center justify-center h-full min-h-[50vh] animate-fade-in">
@@ -40,27 +41,13 @@ const PageLoader = () => (
 
 const App: React.FC = () => {
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
-  const [isSyncing, setIsSyncing] = useState(true);
+  // const [isSyncing, setIsSyncing] = useState(true); // Removed blocking state
 
   useEffect(() => {
     const performInitialSync = async () => {
-      if (!isAuthenticated || !firebaseService.isReady) {
-        // If firebase is not ready, wait a bit and retry, but don't block forever
-        setTimeout(() => setIsSyncing(false), 1000);
-        return;
-      }
-      setIsSyncing(true);
-      try {
-        // Use the new incremental sync method
-        const syncResult = await firebaseService.synchronize();
-        if (!syncResult.success) {
-          console.error('Initial sync failed:', syncResult.error);
-          // Optional: Show a toast to the user
-        }
-      } catch (error) {
-        console.error('Initial sync exception:', error);
-      } finally {
-        setIsSyncing(false);
+      // Run sync in background without blocking UI
+      if (firebaseService.isReady) {
+        firebaseService.synchronize().catch(console.error);
       }
     };
 
@@ -68,11 +55,32 @@ const App: React.FC = () => {
       performInitialSync();
     }
 
+    // Sync on window focus (Real-time-ish feeling)
+    const handleFocus = () => {
+      if (isAuthenticated && firebaseService.isReady && document.visibilityState === 'visible') {
+        console.log("📱 App focused, checking for updates...");
+        firebaseService.synchronize(false).catch(console.error); // Incremental sync
+        firebaseService.updateBadge(0);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('visibilitychange', handleFocus);
+    };
+
   }, [isAuthenticated]);
 
-  if (authLoading) return <SplashScreen />;
+  if (authLoading) return (
+    <div className="fixed inset-0 bg-[#020617] flex items-center justify-center z-50">
+      <PageLoader />
+    </div>
+  );
   if (!isAuthenticated) return <Login />;
-  if (isSyncing) return <SplashScreen />;
+  // if (isSyncing) return <SplashScreen />; // Non-blocking sync
 
   return (
     <ToastProvider>
@@ -85,6 +93,7 @@ const App: React.FC = () => {
                   <Route path="/" element={user?.role === 'admin' ? <Dashboard /> : <Navigate to="/my-tasks" />} />
                   <Route path="/my-tasks" element={<MyTasks />} />
                   <Route path="/workers" element={<Workers />} />
+                  <Route path="/workers/:id" element={<WorkerDetail />} />
                   <Route path="/projects" element={<Projects />} />
                   <Route path="/field-plans" element={<FieldPlans />} />
                   <Route path="/statistics" element={<Statistics />} />

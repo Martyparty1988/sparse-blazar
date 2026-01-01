@@ -55,11 +55,13 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [showConflictConfirm, setShowConflictConfirm] = useState(false);
 
     // Data
     const projects = useLiveQuery(() => db.projects.where('status').equals('active').toArray());
     const workers = useLiveQuery(() => db.workers.orderBy('name').toArray());
     const worker = useLiveQuery(() => workerId !== -1 ? db.workers.get(workerId) : undefined, [workerId]);
+    const selectedProject = useLiveQuery(() => projectId ? db.projects.get(Number(projectId)) : undefined, [projectId]);
 
     const selectedTables = useLiveQuery(async () => {
         if (!projectId || tableIds.length === 0) return [];
@@ -121,10 +123,12 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
     const calculatedStrings = useMemo(() => {
         if (workType !== 'task') return 0;
 
-        // If specific tables are selected, calculate exact sum
+        // If specific tables are selected
         if (selectedTables && selectedTables.length > 0) {
             return selectedTables.reduce((acc, table) => {
-                const coeff = table.tableType === 'small' ? 1 : table.tableType === 'large' ? 2 : 1.5;
+                // If table has type, use it. Otherwise use the manual selection.
+                const type = table.tableType || manualTableType;
+                const coeff = type === 'small' ? 1 : type === 'large' ? 2 : 1.5;
                 return acc + coeff;
             }, 0);
         }
@@ -133,6 +137,27 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
         const coeff = manualTableType === 'small' ? 1 : manualTableType === 'large' ? 2 : 1.5;
         return manualQuantity * coeff;
     }, [workType, selectedTables, manualQuantity, manualTableType]);
+
+    // Check if we need to show the size selector
+    // We show it if ANY of the selected tables is missing a type OR if the project doesn't have predefined sizes
+    const needsSizeSelection = useMemo(() => {
+        if (workType !== 'task') return false;
+        if (tableIds.length === 0) return true; // Always show for manual entry
+        if (!selectedProject?.hasPredefinedSizes) return true;
+
+        // Advanced project: only show if some tables are missing type (shouldn't happen but for safety)
+        return selectedTables?.some(t => !t.tableType) || false;
+    }, [workType, tableIds, selectedProject, selectedTables]);
+
+    // Detect if some selected tables were already completed by another worker
+    const tableConflicts = useMemo(() => {
+        if (!selectedTables || selectedTables.length === 0) return [];
+        return selectedTables.filter(t =>
+            t.status === 'completed' &&
+            t.completedBy !== undefined &&
+            t.completedBy !== workerId
+        );
+    }, [selectedTables, workerId]);
 
     // Memoize sorted projects to put the last used one on top
     const sortedProjects = useMemo(() => {
@@ -303,6 +328,14 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
             return;
         }
 
+        // Check for conflicts before proceeding
+        if (tableConflicts.length > 0 && !showConflictConfirm) {
+            setShowConflictConfirm(true);
+            soundService.playError();
+            showToast("Zjistili jsme kolizi se záznamy kolegů!", "warning");
+            return;
+        }
+
         setIsSending(true);
         try {
             const recordData: Omit<TimeRecord, 'id'> = {
@@ -348,7 +381,9 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                         completedAt: new Date(),
                         completedBy: workerId
                     };
-                    await db.fieldTables.update(table.id!, updates);
+                    if (table.id !== undefined) {
+                        await db.fieldTables.update(table.id as number, updates);
+                    }
 
                     if (firebaseService.isReady) {
                         firebaseService.upsertRecords('fieldTables', [{
@@ -465,9 +500,36 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                         <div className="space-y-4 animate-slide-in-right">
                             {/* If came from map selection */}
                             {tableIds.length > 0 ? (
-                                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
-                                    <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Vybrané stoly ({tableIds.length})</h3>
-                                    <p className="text-white font-mono text-sm truncate opacity-70">{tableIds.join(', ')}</p>
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
+                                        <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Vybrané stoly ({tableIds.length})</h3>
+                                        <p className="text-white font-mono text-sm truncate opacity-70">{tableIds.join(', ')}</p>
+                                    </div>
+
+                                    {needsSizeSelection ? (
+                                        <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl space-y-3">
+                                            <label className="text-[9px] font-black text-amber-500 uppercase tracking-widest block">Potvrdit velikost (Povinné)</label>
+                                            <select
+                                                value={manualTableType}
+                                                onChange={e => setManualTableType(e.target.value as any)}
+                                                className="w-full bg-black/40 text-white text-sm font-bold p-4 rounded-xl border border-amber-500/30 outline-none focus:border-amber-500 transition-all"
+                                            >
+                                                <option value="small">S (1 str)</option>
+                                                <option value="medium">M (1.5 str)</option>
+                                                <option value="large">L (2 str)</option>
+                                            </select>
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none mb-1">Velikosti načteny</p>
+                                                <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">Typy konstrukcí jsou pevně definovány v projektu.</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 // Manual Quantity Input
@@ -499,19 +561,53 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                             )}
 
                             {/* Earnings Estimate */}
-                            <div className="p-5 bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 rounded-2xl flex justify-between items-center">
-                                <div>
+                            <div className="p-5 bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 rounded-2xl flex justify-between items-center relative overflow-hidden group/est">
+                                <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover/est:opacity-100 transition-opacity" />
+                                <div className="relative z-10">
                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Celkem stringů</p>
                                     <p className="text-2xl font-black text-white italic tracking-tighter">{calculatedStrings.toFixed(1)} <span className="text-sm not-italic opacity-50 font-normal">str</span></p>
                                 </div>
                                 {worker && (
-                                    <div className="text-right">
+                                    <div className="relative z-10 text-right">
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Odměna cca</p>
                                         <p className="text-2xl font-black text-emerald-400 italic tracking-tighter">
                                             {Math.round(calculatedStrings * (worker.stringPrice || 0))} <span className="text-sm text-emerald-600/50">Kč</span>
                                         </p>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Conflict Warnings */}
+                    {tableConflicts.length > 0 && (
+                        <div className={`p-4 rounded-2xl border animate-fade-in ${showConflictConfirm ? 'bg-red-500/10 border-red-500/50 ring-2 ring-red-500/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
+                            <div className="flex items-start gap-4">
+                                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${showConflictConfirm ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}`}>
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                </div>
+                                <div className="space-y-3 flex-1 min-w-0">
+                                    <h3 className={`text-[11px] font-black uppercase tracking-widest ${showConflictConfirm ? 'text-red-500' : 'text-amber-500'}`}>{t('table_conflict')}</h3>
+                                    <div className="space-y-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
+                                        {tableConflicts.map(tConf => {
+                                            const completedByWorker = workers?.find(w => w.id === tConf.completedBy);
+                                            return (
+                                                <div key={tConf.id} className="p-3 bg-black/20 rounded-xl border border-white/5">
+                                                    <p className="text-[10px] font-bold text-white mb-1">Konstrukce: <span className="text-indigo-400">{tConf.tableId}</span></p>
+                                                    <p className="text-[9px] text-slate-400 font-medium">
+                                                        {t('already_completed_by')
+                                                            .replace('{worker}', completedByWorker?.name || 'Neznámý')
+                                                            .replace('{date}', tConf.completedAt ? new Date(tConf.completedAt).toLocaleDateString('cs-CZ') : '---')
+                                                        }
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    {showConflictConfirm && (
+                                        <p className="text-[10px] font-bold text-red-500/80 italic leading-tight">{t('conflict_warning_desc')}</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -583,13 +679,21 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                         id="submit-btn"
                         onClick={(e) => { soundService.playClick(); handleSubmit(e); }}
                         disabled={isSending}
-                        className={`w-full text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-[0.98] transition-all disabled:opacity-30 touch-manipulation ${workType === 'task' ? 'bg-gradient-to-r from-emerald-600 to-teal-600' : 'bg-gradient-to-r from-indigo-600 to-blue-600'}`}
+                        className={`w-full text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-[0.98] transition-all disabled:opacity-30 touch-manipulation ${showConflictConfirm ? 'bg-red-600 hover:bg-red-500' : (workType === 'task' ? 'bg-gradient-to-r from-emerald-600 to-teal-600' : 'bg-gradient-to-r from-indigo-600 to-blue-600')}`}
                     >
-                        {isSending ? 'Ukládám...' : workType === 'task' ? 'Potvrdit úkol (Ctrl+S)' : 'Uložit hodiny (Ctrl+S)'}
+                        {isSending ? 'Ukládám...' : showConflictConfirm ? t('confirm_conflict') : workType === 'task' ? 'Potvrdit úkol (Ctrl+S)' : 'Uložit hodiny (Ctrl+S)'}
                     </button>
+                    {showConflictConfirm && (
+                        <button
+                            onClick={() => setShowConflictConfirm(false)}
+                            className="w-full mt-3 py-3 text-[10px] font-black uppercase text-slate-500 hover:text-white transition-colors"
+                        >
+                            {t('back_to_edit')}
+                        </button>
+                    )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

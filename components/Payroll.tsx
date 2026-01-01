@@ -74,6 +74,9 @@ const Payroll: React.FC = () => {
             const totalEarnings = hourlyEarnings + stringEarnings + fixedTaskEarnings;
             const tablesCount = completedTables?.filter(t => t.completedBy === w.id && t.completedAt && new Date(t.completedAt) >= startDate).length || 0;
 
+            const timeSpentOnTasks = taskRecords.reduce((acc, r) => acc + (new Date(r.endTime).getTime() - new Date(r.startTime).getTime()), 0) / 3600000;
+            const totalHoursCombined = hours + timeSpentOnTasks;
+
             return {
                 worker: w,
                 hours: hours.toFixed(1),
@@ -84,18 +87,61 @@ const Payroll: React.FC = () => {
                 earnings: totalEarnings.toFixed(2),
                 tables: tablesCount,
                 tasksCount: workerTasks.length,
-                totalHours: (hours + (taskRecords.reduce((acc, r) => acc + (new Date(r.endTime).getTime() - new Date(r.startTime).getTime()), 0) / 3600000)).toFixed(1),
-                efficiency: (totalEarnings / (hours + (taskRecords.reduce((acc, r) => acc + (new Date(r.endTime).getTime() - new Date(r.startTime).getTime()), 0) / 3600000))).toFixed(2)
+                totalHours: totalHoursCombined.toFixed(1),
+                efficiency: (totalEarnings / (totalHoursCombined || 1)).toFixed(2)
             };
         }).filter(s => isAdmin || s.worker.id === currentUser?.workerId);
     }, [workers, records, completedTables, projectTasks, startDate, currentUser, isAdmin]);
+
+    const handleExport = () => {
+        if (!stats.length) return;
+
+        const headers = [
+            "Pracovník",
+            "Hodiny",
+            "Hodinová odměna (€)",
+            "Stringy",
+            "Odměna za úkol (€)",
+            "Bonusy (€)",
+            "Efektivita (€/h)",
+            "Celkem k výplatě (€)",
+            "Hotových stolů (ks)"
+        ];
+
+        const rows = stats.map(s => [
+            s.worker.name,
+            s.hours.replace('.', ','),
+            s.hourlyEarnings.replace('.', ','),
+            s.strings.replace('.', ','),
+            s.stringEarnings.replace('.', ','),
+            s.fixedTaskEarnings.replace('.', ','),
+            s.efficiency.replace('.', ','),
+            s.earnings.replace('.', ','),
+            s.tables
+        ]);
+
+        const csvContent = [
+            headers.join(';'),
+            ...rows.map(r => r.join(';'))
+        ].join('\n');
+
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Vyplaty_${dateRange}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     const totalEarnings = stats.reduce((acc, s) => acc + parseFloat(s.earnings), 0);
     const totalTables = stats.reduce((acc, s) => acc + s.tables, 0);
 
     return (
         <div className="space-y-8 pb-32 animate-fade-in">
-            <header className="flex items-center gap-4 pt-4">
+            <header className="flex flex-wrap items-center gap-4 pt-4">
                 <BackButton />
                 <div className="flex items-center gap-4">
                     <div className="p-3 bg-indigo-500/20 rounded-2xl border border-indigo-500/30">
@@ -110,6 +156,23 @@ const Payroll: React.FC = () => {
                         </p>
                     </div>
                 </div>
+
+                {isAdmin && (
+                    <button
+                        onClick={handleExport}
+                        className="ml-auto group flex items-center gap-3 px-6 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-[2rem] transition-all shadow-xl shadow-indigo-600/20 active:scale-[0.98]"
+                    >
+                        <div className="p-2 bg-white/10 rounded-xl">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div className="text-left hidden sm:block">
+                            <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{t('export_payroll')}</p>
+                            <p className="text-[8px] font-bold text-indigo-200 uppercase tracking-tighter opacity-70">CSV • Excel kompatibilní</p>
+                        </div>
+                    </button>
+                )}
             </header>
 
             {/* Range Selector */}

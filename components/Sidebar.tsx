@@ -14,6 +14,7 @@ import DocumentTextIcon from './icons/DocumentTextIcon';
 import WrenchIcon from './icons/WrenchIcon';
 import CalendarIcon from './icons/CalendarIcon';
 import BrainIcon from './icons/BrainIcon';
+import NotificationBell from './NotificationBell';
 
 const Sidebar: React.FC = () => {
     const { t } = useI18n();
@@ -107,6 +108,7 @@ const Sidebar: React.FC = () => {
                         <p className="text-sm font-black uppercase italic tracking-tighter text-white truncate">{user?.username || 'Guest'}</p>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{user?.role || 'User'}</p>
                     </div>
+                    <NotificationBell className="w-8 h-8 ml-2" />
                 </div>
                 <button
                     onClick={logout}

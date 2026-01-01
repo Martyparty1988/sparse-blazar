@@ -18,9 +18,10 @@ export interface Project {
   location?: string; // New
   description?: string;
   status: 'active' | 'completed' | 'on_hold';
-  tables?: string[];
+  tables?: { id: string; type?: 'S' | 'M' | 'L' }[];
   planFile?: File;
   googleSpreadsheetId?: string;
+  hasPredefinedSizes?: boolean;
   lastSync?: Date;
   startDate?: string; // New
   endDate?: string; // New
@@ -53,7 +54,7 @@ export interface FieldTable {
   id?: number;
   projectId: number;
   tableId: string;
-  tableType: 'small' | 'medium' | 'large';
+  tableType?: 'small' | 'medium' | 'large';
   status: 'pending' | 'completed' | 'defect';
   assignedWorkers?: number[];
   completedAt?: Date;
@@ -198,13 +199,27 @@ export interface Tool {
   id?: number;
   name: string;
   type: string;
+  category: 'asset' | 'consumable'; // Asset = trackable by S/N, Consumable = trackable by quantity
   brand?: string;
   serialNumber?: string;
+  quantity?: number; // for consumables
+  unit?: string; // pcs, m, box...
   status: ToolStatus;
   assignedWorkerId?: number;
   purchaseDate?: Date;
   notes?: string;
   lastInspection?: Date;
+  location?: string;
+  condition?: 1 | 2 | 3 | 4 | 5; // 1 = New, 5 = Ready for scrap
+}
+
+export interface ToolLog {
+  id?: number;
+  toolId: number;
+  workerId: number;
+  action: 'borrow' | 'return' | 'repair' | 'scrap';
+  timestamp: Date;
+  notes?: string;
 }
 
 export interface DailyReport {
@@ -224,6 +239,9 @@ export interface ChatMessage {
   senderId: number;
   senderName: string;
   timestamp: string;
-  channelId?: string;
+  channelId: string;
   isSystem?: boolean;
+  reactions?: Record<string, number[]>; // emoji: [userIds] (numbers)
+  replyTo?: string; // id of referenced message
+  imageUrl?: string; // for image messages
 }

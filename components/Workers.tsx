@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
 import { useI18n } from '../contexts/I18nContext';
@@ -19,16 +20,23 @@ const WorkerCard: React.FC<{
   isAdmin: boolean;
   onEdit: (w: Worker) => void;
   onDelete: (w: Worker) => void;
-}> = ({ worker, index, isAdmin, onEdit, onDelete }) => {
+  onClick: (id: number) => void;
+}> = ({ worker, index, isAdmin, onEdit, onDelete, onClick }) => {
   const { t } = useI18n();
 
   return (
     <div
-      className="group glass-dark rounded-[3rem] p-8 border border-white/5 hover:border-indigo-500/30 transition-all duration-500 flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-5 overflow-hidden relative shadow-2xl hover:scale-[1.02]"
+      onClick={() => onClick(worker.id!)}
+      className="group glass-dark rounded-[3rem] p-8 border border-white/5 hover:border-indigo-500/30 transition-all duration-500 flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-5 overflow-hidden relative shadow-2xl hover:scale-[1.02] cursor-pointer"
       style={{ animationDelay: `${index * 0.05}s` }}
     >
       {/* Decorative Blur */}
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 blur-[80px] rounded-full group-hover:bg-indigo-500/20 transition-colors duration-700" />
+
+      {/* "Detail" hint */}
+      <div className="absolute top-8 right-8 opacity-0 group-hover:opacity-100 transition-opacity">
+        <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+      </div>
 
       <div className="flex items-start justify-between relative z-10">
         <div className="flex items-center gap-6">
@@ -45,7 +53,7 @@ const WorkerCard: React.FC<{
         </div>
 
         {isAdmin && (
-          <div className="flex gap-2">
+          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => onEdit(worker)}
               className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10"
@@ -109,6 +117,7 @@ const WorkerCard: React.FC<{
 const Workers: React.FC = () => {
   const { t } = useI18n();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [minRate, setMinRate] = useState('');
@@ -294,6 +303,7 @@ const Workers: React.FC = () => {
             isAdmin={user?.role === 'admin'}
             onEdit={handleEdit}
             onDelete={confirmDelete}
+            onClick={(id) => navigate(`/workers/${id}`)}
           />
         ))}
 

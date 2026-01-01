@@ -13,11 +13,18 @@ const notifyUser = (message: ChatMessage, showToast: (msg: string, type?: any) =
     if (navigator.vibrate) navigator.vibrate(200);
     const name = message.senderName || 'Systém';
     showToast(t('new_message_from', { name }).replace('{name}', name), 'info');
+
+    // Increment badge
+    if ('setAppBadge' in navigator) {
+        (navigator as any).setAppBadge().catch(() => { });
+    }
+
     if (Notification.permission === 'granted' && document.hidden) {
-        new Notification(`New message from ${message.senderName}`, {
+        new Notification(`${message.senderName}`, {
             body: message.text,
-            icon: '/icon-192.svg'
-        });
+            icon: '/icon-192.svg',
+            tag: 'chat-msg'
+        } as any);
     }
 };
 
@@ -30,14 +37,24 @@ const Chat: React.FC = () => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [isSending, setIsSending] = useState(false);
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
+    const [seenStatus, setSeenStatus] = useState<Record<string, string>>({});
+    const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Mobile-specific state: 'list' shows channels, 'chat' shows message window
     const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
     const [activeChannelId, setActiveChannelId] = useState<string>('general');
+    const [unreads, setUnreads] = useState<Record<string, any>>({});
 
     const allProjects = useLiveQuery(() => db.projects.where('status').equals('active').toArray());
     const workers = useLiveQuery(() => db.workers.toArray());
+
+    useEffect(() => {
+        if (!currentUser?.workerId || !firebaseService.isReady) return;
+        return firebaseService.subscribe(`unread/${currentUser.workerId}`, (data) => {
+            setUnreads(data || {});
+        });
+    }, [currentUser?.workerId]);
 
     // Filter projects based on user role and assignment
     const projects = useMemo(() => {
@@ -100,15 +117,27 @@ const Chat: React.FC = () => {
         const unsubTyping = firebaseService.subscribeTypingStatus(activeChannelId, (data) => {
             if (!currentUser?.workerId) return;
             const names = Object.entries(data)
-                .filter(([uid]) => Number(uid) !== currentUser.workerId) // Don't show myself
-                // Filter out stale typing (older than 5s) - optional but good for cleanup
+                .filter(([uid]) => Number(uid) !== currentUser.workerId)
                 .map(([, info]) => info.name);
             setTypingUsers(names);
         });
 
+        // Seen Status Subscription
+        const unsubSeen = firebaseService.subscribe(`chat/${activeChannelId}/seen`, (data) => {
+            if (data) setSeenStatus(data);
+        });
+
+        // Mark as seen, clear badge and unread RTDB node
+        if (currentUser?.workerId) {
+            firebaseService.markAsSeen(activeChannelId, currentUser.workerId);
+            firebaseService.updateBadge(0);
+            firebaseService.setData(`unread/${currentUser.workerId}/${activeChannelId}`, null);
+        }
+
         return () => {
             unsubscribe();
             unsubTyping();
+            unsubSeen();
         };
     }, [activeChannelId, currentUser?.workerId, showToast, t]);
 
@@ -134,7 +163,8 @@ const Chat: React.FC = () => {
             senderId: currentUser?.workerId || -1,
             senderName: currentUser?.username || 'Admin',
             timestamp: new Date().toISOString(),
-            channelId: activeChannelId
+            channelId: activeChannelId,
+            replyTo: replyToMessage?.id
         };
 
         try {
@@ -145,11 +175,22 @@ const Chat: React.FC = () => {
                 if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
             }
             setInputText('');
+            setReplyToMessage(null);
             soundService.playClick();
         } catch (error) {
             showToast("Chyba při odesílání", "error");
         } finally {
             setIsSending(false);
+        }
+    };
+
+    const handleToggleReaction = async (messageId: string, emoji: string) => {
+        if (!currentUser?.workerId) return;
+        try {
+            await firebaseService.toggleReaction(activeChannelId, messageId, emoji, currentUser.workerId);
+            soundService.playClick();
+        } catch (error) {
+            console.error(error);
         }
     };
 
@@ -206,8 +247,13 @@ const Chat: React.FC = () => {
                         className={`w-full p-4 rounded-[1.5rem] flex items-center gap-4 transition-all duration-300 group ${activeChannelId === 'general' ? 'bg-indigo-600 shadow-[0_10px_20px_-5px_rgba(79,70,229,0.3)]' : 'hover:bg-white/5'}`}
                     >
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg transition-colors ${activeChannelId === 'general' ? 'bg-white text-indigo-600' : 'bg-white/5 text-slate-500 group-hover:bg-white/10 group-hover:text-white'}`}>#</div>
-                        <div className="text-left">
-                            <span className={`block text-[8px] font-black uppercase tracking-[0.2em] mb-0.5 ${activeChannelId === 'general' ? 'text-indigo-200' : 'text-slate-600'}`}>Public</span>
+                        <div className="text-left flex-1 min-w-0">
+                            <div className="flex justify-between items-center">
+                                <span className={`block text-[8px] font-black uppercase tracking-[0.2em] mb-0.5 ${activeChannelId === 'general' ? 'text-indigo-200' : 'text-slate-600'}`}>Public</span>
+                                {unreads['general'] && activeChannelId !== 'general' && (
+                                    <div className="w-2 h-2 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse" />
+                                )}
+                            </div>
                             <span className={`font-bold text-sm ${activeChannelId === 'general' ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>{t('general')}</span>
                         </div>
                     </button>
@@ -220,7 +266,10 @@ const Chat: React.FC = () => {
                             className={`w-full p-3 rounded-[1.5rem] flex items-center gap-3 transition-all duration-300 group ${activeChannelId === `project_${p.id}` ? 'bg-indigo-600' : 'hover:bg-white/5'}`}
                         >
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs transition-colors ${activeChannelId === `project_${p.id}` ? 'bg-white text-indigo-600' : 'bg-white/5 text-slate-500 group-hover:text-white'}`}>P</div>
-                            <div className={`text-left font-bold truncate text-sm ${activeChannelId === `project_${p.id}` ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>{p.name}</div>
+                            <div className={`text-left font-bold truncate text-sm flex-1 ${activeChannelId === `project_${p.id}` ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>{p.name}</div>
+                            {unreads[`project_${p.id}`] && activeChannelId !== `project_${p.id}` && (
+                                <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse mr-2" />
+                            )}
                         </button>
                     ))}
 
@@ -240,7 +289,10 @@ const Chat: React.FC = () => {
                                     <div className="absolute inset-0 bg-black/10" />
                                     <span className="relative z-10 text-white drop-shadow-md">{w.name.substring(0, 2).toUpperCase()}</span>
                                 </div>
-                                <div className={`text-left font-bold truncate text-sm transition-colors ${activeChannelId === dmId ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>{w.name}</div>
+                                <div className={`text-left font-bold truncate text-sm flex-1 transition-colors ${activeChannelId === dmId ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>{w.name}</div>
+                                {unreads[dmId] && activeChannelId !== dmId && (
+                                    <div className="w-4 h-4 rounded-full bg-rose-500 text-[8px] font-black text-white flex items-center justify-center animate-bounce mr-2">1</div>
+                                )}
                             </button>
                         );
                     })}
@@ -312,25 +364,98 @@ const Chat: React.FC = () => {
                                                 {item.messages.map((msg, msgIdx) => (
                                                     <div
                                                         key={msg.id}
-                                                        className={`relative transition-all ${msg.isSystem ? 'w-full flex justify-center py-4' : ''}`}
+                                                        className={`relative transition-all group/bubble ${msg.isSystem ? 'w-full flex justify-center py-4' : ''}`}
                                                     >
                                                         {msg.isSystem ? (
-                                                            <div className="bg-indigo-500/10 border border-indigo-500/20 px-6 py-3 rounded-full flex items-center gap-3 max-w-[90%] backdrop-blur-sm shadow-xl">
+                                                            <div className="bg-indigo-500/10 border border-indigo-500/20 px-6 py-3 rounded-full flex items-center gap-3 max-w-[90%] backdrop-blur-sm shadow-xl animate-fade-in">
                                                                 <span className="text-lg">📢</span>
                                                                 <span className="text-xs font-bold text-indigo-300 uppercase tracking-wide text-center leading-relaxed">
                                                                     {msg.text}
                                                                 </span>
                                                             </div>
                                                         ) : (
-                                                            <div
-                                                                className={`px-6 py-4 rounded-[1.5rem] text-sm leading-relaxed shadow-lg backdrop-blur-sm transition-all hover:scale-[1.01] relative ${senderMe
-                                                                    ? 'bg-indigo-600 text-white rounded-tr-sm hover:bg-indigo-500 shadow-indigo-900/20'
-                                                                    : 'bg-white/10 text-slate-200 rounded-tl-sm hover:bg-white/15 shadow-black/20'}`}
-                                                            >
-                                                                {msg.text}
-                                                                <span className={`text-[9px] font-bold uppercase tracking-wider opacity-40 block text-right mt-1 ${senderMe ? 'text-indigo-200' : 'text-slate-400'}`}>
-                                                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                </span>
+                                                            <div className="relative">
+                                                                {/* Reaction Toolbar (appearing on hover/context) */}
+                                                                <div className={`absolute -top-10 z-[100] flex gap-2 p-2 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl opacity-0 scale-90 pointer-events-none group-hover/bubble:opacity-100 group-hover/bubble:scale-100 group-hover/bubble:pointer-events-auto transition-all ${senderMe ? 'right-0' : 'left-0'}`}>
+                                                                    {['👍', '❤️', '🔥', '👏', '😂', '😮'].map(emoji => (
+                                                                        <button
+                                                                            key={emoji}
+                                                                            onClick={() => handleToggleReaction(msg.id, emoji)}
+                                                                            className="w-8 h-8 flex items-center justify-center hover:scale-125 transition-transform text-lg"
+                                                                        >
+                                                                            {emoji}
+                                                                        </button>
+                                                                    ))}
+                                                                    <div className="w-px h-6 bg-white/10 mx-1"></div>
+                                                                    <button
+                                                                        onClick={() => setReplyToMessage(msg)}
+                                                                        className="px-3 text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-white transition-colors"
+                                                                    >
+                                                                        Odpovědět
+                                                                    </button>
+                                                                </div>
+
+                                                                <div
+                                                                    className={`px-6 py-4 rounded-[1.5rem] text-sm leading-relaxed shadow-lg backdrop-blur-sm transition-all hover:scale-[1.01] relative ${senderMe
+                                                                        ? 'bg-indigo-600 text-white rounded-tr-sm hover:bg-indigo-500 shadow-indigo-900/20'
+                                                                        : 'bg-white/10 text-slate-200 rounded-tl-sm hover:bg-white/15 shadow-black/20'}`}
+                                                                >
+                                                                    {msg.replyTo && (
+                                                                        <div className="mb-3 p-3 bg-black/20 rounded-xl border-l-4 border-white/20 text-xs opacity-70 italic truncate">
+                                                                            {messages.find(m => m.id === msg.replyTo)?.text || 'Původní zpráva smazána'}
+                                                                        </div>
+                                                                    )}
+                                                                    {msg.text}
+                                                                    <span className={`text-[9px] font-bold uppercase tracking-wider opacity-40 block text-right mt-1 ${senderMe ? 'text-indigo-200' : 'text-slate-400'}`}>
+                                                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Display Reactions */}
+                                                                {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                                                                    <div className={`flex flex-wrap gap-1 mt-1.5 ${senderMe ? 'justify-end' : 'justify-start'}`}>
+                                                                        {Object.entries(msg.reactions).map(([emoji, userIds]) => {
+                                                                            const reactedByMe = userIds.includes(currentUser?.workerId || -1);
+                                                                            return (
+                                                                                <button
+                                                                                    key={emoji}
+                                                                                    onClick={() => handleToggleReaction(msg.id, emoji)}
+                                                                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-black transition-all ${reactedByMe ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300' : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/10'}`}
+                                                                                >
+                                                                                    <span className="text-xs">{emoji}</span>
+                                                                                    <span>{userIds.length}</span>
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Seen Status Avatars (Only for the last message in a sequence or globally last) */}
+                                                                {msgIdx === item.messages.length - 1 && (
+                                                                    <div className={`flex items-center gap-1 mt-1.5 ${senderMe ? 'justify-end' : 'justify-start'}`}>
+                                                                        {Object.entries(seenStatus)
+                                                                            .filter(([uid, timestamp]) => {
+                                                                                const userIdNum = Number(uid);
+                                                                                if (userIdNum === (currentUser?.workerId || -1)) return false;
+                                                                                const seenTime = new Date(timestamp).getTime();
+                                                                                const msgTime = new Date(msg.timestamp).getTime();
+                                                                                return seenTime >= msgTime;
+                                                                            })
+                                                                            .map(([uid]) => {
+                                                                                const w = workers?.find(worker => String(worker.id) === uid);
+                                                                                return (
+                                                                                    <div
+                                                                                        key={uid}
+                                                                                        className="w-4 h-4 rounded-full border border-white/20 text-[6px] font-black flex items-center justify-center text-white shadow-sm"
+                                                                                        style={{ backgroundColor: w?.color || '#334155' }}
+                                                                                        title={`Viděno: ${w?.name}`}
+                                                                                    >
+                                                                                        {w?.name.substring(0, 1).toUpperCase()}
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
@@ -359,6 +484,17 @@ const Chat: React.FC = () => {
 
                 {/* Input Area */}
                 <div className="p-6 md:p-8 bg-black/20 backdrop-blur-xl border-t border-white/5 shrink-0 relative z-20">
+                    {replyToMessage && (
+                        <div className="max-w-5xl mx-auto mb-4 p-4 bg-indigo-500/10 border-l-4 border-indigo-500 rounded-r-2xl flex justify-between items-center animate-slide-up">
+                            <div className="flex-1 truncate">
+                                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Odpověď pro {replyToMessage.senderName}</p>
+                                <p className="text-sm text-slate-300 truncate">{replyToMessage.text}</p>
+                            </div>
+                            <button onClick={() => setReplyToMessage(null)} className="p-2 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-colors">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                    )}
                     <form onSubmit={handleSend} className="flex gap-4 max-w-5xl mx-auto relative">
                         <input
                             type="text"

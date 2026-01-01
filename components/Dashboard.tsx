@@ -81,7 +81,7 @@ const Dashboard: React.FC = () => {
     const unsub = firebaseService.onStatusChange((online, pending) => {
       setSyncStatus({ online, pending });
     });
-    return () => unsub();
+    return () => { unsub(); };
   }, []);
 
   // Data Queries
@@ -107,6 +107,44 @@ const Dashboard: React.FC = () => {
 
     return { activeProjects, completedTablesToday, last7Days, totalTables: tables.length, completedTables: tables.filter(t => t.status === 'completed').length };
   }, [], { activeProjects: 0, completedTablesToday: 0, last7Days: [], totalTables: 0, completedTables: 0 });
+
+  // Recent Activity Feed
+  const recentActivity = useLiveQuery(async () => {
+    const tables = await db.fieldTables
+      .where('status')
+      .equals('completed')
+      .toArray();
+
+    const records = await db.records.toArray();
+    const workers = await db.workers.toArray();
+    const projects = await db.projects.toArray();
+
+    const wMap = new Map(workers.map(w => [w.id, w]));
+    const pMap = new Map(projects.map(p => [p.id, p]));
+
+    const combined = [
+      ...tables.map(t => ({
+        id: `table-${t.id}`,
+        type: 'table',
+        time: new Date(t.completedAt || 0),
+        title: `Stůl ${t.tableId} dokončen`,
+        subtitle: pMap.get(t.projectId)?.name || 'Neznámý projekt',
+        icon: <MapIcon className="w-4 h-4" />
+      })),
+      ...records.map(r => ({
+        id: `record-${r.id}`,
+        type: 'work',
+        time: new Date(r.startTime),
+        title: `Zapsána práce: ${r.description.substring(0, 20)}...`,
+        subtitle: wMap.get(r.workerId)?.name || 'Neznámý pracovník',
+        icon: <ClockIcon className="w-4 h-4" />
+      }))
+    ]
+      .sort((a, b) => b.time.getTime() - a.time.getTime())
+      .slice(0, 5);
+
+    return combined;
+  }, []);
 
   return (
     <div className="space-y-12 pb-32 animate-in fade-in slide-in-from-bottom-5 duration-700 relative">
@@ -177,58 +215,87 @@ const Dashboard: React.FC = () => {
       {/* Charts & Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 px-4 md:px-0">
         {/* Weekly Activity */}
-        <div className="lg:col-span-2 glass-dark rounded-[3rem] p-10 shadow-3xl overflow-hidden relative group border border-white/5">
-          <div className="flex justify-between items-center mb-10">
-            <div className="space-y-1">
-              <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">{t('weekly_activity') || 'Týdenní Aktivita'}</h3>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">{t('completed_tables_count') || 'Počet dokončených stolů'}</p>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 rounded-full border border-indigo-500/20">
-                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
-                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Live</span>
+        <div className="lg:col-span-2 space-y-10">
+          <div className="glass-dark rounded-[3rem] p-10 shadow-3xl overflow-hidden relative group border border-white/5">
+            <div className="flex justify-between items-center mb-10">
+              <div className="space-y-1">
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">{t('weekly_activity') || 'Týdenní Aktivita'}</h3>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">{t('completed_tables_count') || 'Počet dokončených stolů'}</p>
               </div>
+            </div>
+
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.last7Days}>
+                  <defs>
+                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }}
+                    dy={15}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(2, 6, 23, 0.9)',
+                      backdropFilter: 'blur(16px)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '1.5rem',
+                      padding: '1rem'
+                    }}
+                    itemStyle={{ color: '#fff', fontSize: 12, fontWeight: 900 }}
+                    cursor={{ stroke: 'rgba(99, 102, 241, 0.2)', strokeWidth: 2 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#6366f1"
+                    strokeWidth={4}
+                    fillOpacity={1}
+                    fill="url(#colorCount)"
+                    animationDuration={1500}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats.last7Days}>
-                <defs>
-                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="name"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }}
-                  dy={15}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(2, 6, 23, 0.9)',
-                    backdropFilter: 'blur(16px)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '1.5rem',
-                    padding: '1rem'
-                  }}
-                  itemStyle={{ color: '#fff', fontSize: 12, fontWeight: 900 }}
-                  cursor={{ stroke: 'rgba(99, 102, 241, 0.2)', strokeWidth: 2 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  stroke="#6366f1"
-                  strokeWidth={4}
-                  fillOpacity={1}
-                  fill="url(#colorCount)"
-                  animationDuration={1500}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* Live Activity Feed */}
+          <div className="glass-dark rounded-[3rem] p-10 border border-white/5 space-y-8">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">{t('live_activity') || 'Živý přenos aktivit'}</h3>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Právě se děje</p>
+              </div>
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                <RedoIcon className="w-5 h-5 animate-spin-slow" />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {recentActivity?.map((act, i) => (
+                <div key={act.id} className="group flex items-center gap-6 p-4 rounded-2xl hover:bg-white/5 transition-all border border-transparent hover:border-white/5 animate-slide-up" style={{ animationDelay: `${i * 100}ms` }}>
+                  <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                    {act.icon}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-black text-white uppercase tracking-tight italic leading-tight">{act.title}</p>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{act.subtitle}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">{act.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  </div>
+                </div>
+              ))}
+              {!recentActivity?.length && (
+                <p className="text-center py-10 text-slate-600 font-bold uppercase tracking-widest text-xs">Zatím žádná aktivita</p>
+              )}
+            </div>
           </div>
         </div>
 

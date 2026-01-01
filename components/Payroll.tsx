@@ -83,7 +83,9 @@ const Payroll: React.FC = () => {
                 fixedTaskEarnings: fixedTaskEarnings.toFixed(2),
                 earnings: totalEarnings.toFixed(2),
                 tables: tablesCount,
-                tasksCount: workerTasks.length
+                tasksCount: workerTasks.length,
+                totalHours: (hours + (taskRecords.reduce((acc, r) => acc + (new Date(r.endTime).getTime() - new Date(r.startTime).getTime()), 0) / 3600000)).toFixed(1),
+                efficiency: (totalEarnings / (hours + (taskRecords.reduce((acc, r) => acc + (new Date(r.endTime).getTime() - new Date(r.startTime).getTime()), 0) / 3600000))).toFixed(2)
             };
         }).filter(s => isAdmin || s.worker.id === currentUser?.workerId);
     }, [workers, records, completedTables, projectTasks, startDate, currentUser, isAdmin]);
@@ -168,6 +170,7 @@ const Payroll: React.FC = () => {
                                 <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Hodiny</th>
                                 <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Stringy (Úkol)</th>
                                 <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Bonusy / Pole</th>
+                                <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-center">Efektivita</th>
                                 <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Odměna celkem</th>
                             </tr>
                         </thead>
@@ -220,6 +223,12 @@ const Payroll: React.FC = () => {
                                             {Number(s.fixedTaskEarnings) === 0 && s.tables === 0 && (
                                                 <span className="text-slate-600 text-[10px] font-bold">-</span>
                                             )}
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6 text-center">
+                                        <div className="inline-block px-3 py-1 rounded-lg bg-white/5 border border-white/10">
+                                            <span className={`font-black text-sm ${Number(s.efficiency) > 15 ? 'text-emerald-400' : 'text-slate-300'}`}>{isNaN(Number(s.efficiency)) ? '0.00' : s.efficiency}</span>
+                                            <span className="text-[10px] text-slate-500 ml-1">€/h</span>
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 text-right">

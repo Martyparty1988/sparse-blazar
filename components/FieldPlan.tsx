@@ -27,8 +27,10 @@ const TableItem = React.memo<{
     const getStatusTheme = () => {
         if (table.status === 'defect') return { color: '#fb7185', glow: 'shadow-[0_0_30px_rgba(251,113,133,0.4)]', bg: 'bg-rose-500/20 backdrop-blur-md' };
         if (table.status === 'completed') {
-            const c = completedWorker ? getWorkerColor(completedWorker.id!, completedWorker.color, workers) : '#4f46e5';
-            return { color: c, glow: `shadow-[0_0_30px_${c}50]`, bg: 'bg-indigo-500/20 backdrop-blur-md' };
+            // "Green = Hotovo" requested, but we also want worker ID if possible.
+            // Compromise: Main bar is Green, badge shows worker color.
+            const c = '#10b981'; // Emerald-500
+            return { color: c, glow: `shadow-[0_0_30px_${c}50]`, bg: 'bg-emerald-500/20 backdrop-blur-md' };
         }
         if (table.assignedWorkers && table.assignedWorkers.length > 0) return { color: '#f59e0b', glow: 'shadow-[0_0_30px_rgba(245,158,11,0.4)]', bg: 'bg-amber-500/20 backdrop-blur-md' };
         return { color: '#94a3b8', glow: 'shadow-none', bg: 'bg-white/5 hover:bg-white/10' };
@@ -205,6 +207,7 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
     const [contextMenu, setContextMenu] = useState<{ table: FieldTable, x: number, y: number } | null>(null);
     const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
     const [isInitializing, setIsInitializing] = useState(false);
+    const [quickActionMode, setQuickActionMode] = useState(false); // New state for Cycle Mode
 
     // Auto-initialize tables if missing
     useEffect(() => {
@@ -271,6 +274,39 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
 
     // Handlers
     const handleToggleSelect = useCallback((e: React.MouseEvent, id: string) => {
+        if (quickActionMode) {
+            // Cycle Logic: Pending -> Completed -> Defect -> Pending
+            // We need to find the specific table object
+            const table = tables?.find(t => t.id!.toString() === id);
+            if (!table) return;
+
+            let nextStatus: 'pending' | 'completed' | 'defect' = 'pending';
+            let updates: any = {};
+
+            if (table.status === 'pending') {
+                nextStatus = 'completed';
+                updates = { status: 'completed', completedAt: new Date(), completedBy: user?.workerId || 0 };
+            } else if (table.status === 'completed') {
+                nextStatus = 'defect';
+                updates = { status: 'defect', defectNotes: '' }; // Should ideally prompt, but quick cycle implies simplicity
+            } else {
+                nextStatus = 'pending';
+                updates = { status: 'pending', completedAt: undefined, completedBy: undefined };
+            }
+
+            // apply update
+            db.fieldTables.update(table.id!, updates);
+            if (firebaseService.isReady) {
+                firebaseService.upsertRecords('fieldTables', [{
+                    ...table,
+                    ...updates,
+                    id: `${table.projectId}_${table.tableId}`
+                }]).catch(console.error);
+            }
+            soundService.playSuccess();
+            return;
+        }
+
         const newSelected = new Set(selectedIds);
 
         if (e.shiftKey && lastSelectedId && tables) {
@@ -301,7 +337,7 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
         setLastSelectedId(id);
         setShowRightSidebar(newSelected.size > 0);
         soundService.playClick();
-    }, [selectedIds, lastSelectedId, filteredTables, tables]);
+    }, [selectedIds, lastSelectedId, filteredTables, tables, quickActionMode]);
 
     // Keyboard Shortcuts
     useEffect(() => {
@@ -514,6 +550,26 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
                     </button>
                     <button onClick={() => setViewMode('list')} className={`p-4 rounded-2xl border transition-all ${viewMode === 'list' ? 'bg-indigo-600 text-white border-transparent shadow-xl' : 'bg-[#0f172a]/80 text-slate-500 border-white/5 backdrop-blur-xl'}`}>
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </button>
+                </div>
+
+                {/* Quick Action Mode Toggle */}
+                <div className="absolute top-8 right-20 z-50 md:right-auto md:left-48 flex gap-2">
+                    <button
+                        onClick={() => setQuickActionMode(!quickActionMode)}
+                        className={`px-4 py-3 rounded-2xl border transition-all font-black uppercase tracking-widest text-[10px] flex items-center gap-2 ${quickActionMode ? 'bg-amber-500 text-white border-transparent shadow-[0_0_20px_rgba(245,158,11,0.4)] animate-pulse' : 'bg-[#0f172a]/80 text-slate-400 border-white/5 backdrop-blur-xl hover:text-white'}`}
+                    >
+                        {quickActionMode ? (
+                            <>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                Režim: Rychlá Akce
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
+                                Režim: Výběr
+                            </>
+                        )}
                     </button>
                 </div>
 

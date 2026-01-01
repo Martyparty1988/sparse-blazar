@@ -61,13 +61,61 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
     const workers = useLiveQuery(() => db.workers.orderBy('name').toArray());
     const worker = useLiveQuery(() => workerId !== -1 ? db.workers.get(workerId) : undefined, [workerId]);
 
-    // Convert string IDs to FieldTable objects for calculation
     const selectedTables = useLiveQuery(async () => {
         if (!projectId || tableIds.length === 0) return [];
         return await db.fieldTables.where('projectId').equals(Number(projectId))
             .filter(t => tableIds.includes(t.tableId))
             .toArray();
     }, [projectId, tableIds]);
+
+    // Smart Suggestion: Find tables completed TODAY by THIS worker which are NOT yet in a TimeRecord
+    const pendingTables = useLiveQuery(async () => {
+        if (!workerId || workerId === -1) return [];
+
+        const todayStr = new Date().toDateString();
+
+        // 1. Find all tables completed by me today
+        const completedToday = await db.fieldTables
+            .filter(t =>
+                t.status === 'completed' &&
+                t.completedBy === workerId &&
+                !!t.completedAt &&
+                new Date(t.completedAt).toDateString() === todayStr
+            )
+            .toArray();
+
+        // 2. Find all TimeRecords for today to check if these tables are already logged
+        // This is a bit expensive but necessary to avoid duplicates.
+        // Optimization: Just check if tableId is in any of today's records.
+        // Actually, we can just suggest them. The user can decide. 
+        // But better UX: filter out used ones.
+        const todayRecords = await db.records
+            .where('workerId').equals(workerId)
+            .filter(r => {
+                const rDate = new Date(r.startTime).toDateString();
+                return rDate === todayStr;
+            })
+            .toArray();
+
+        const usedTableIds = new Set<string>();
+        todayRecords.forEach(r => r.tableIds?.forEach(tid => usedTableIds.add(tid)));
+
+        return completedToday.filter(t => !usedTableIds.has(t.tableId));
+    }, [workerId]);
+
+    const handleSmartFill = () => {
+        if (!pendingTables || pendingTables.length === 0) return;
+
+        const firstTable = pendingTables[0];
+
+        setWorkType('task');
+        setProjectId(firstTable.projectId);
+        setTableIds(pendingTables.map(t => t.tableId));
+        setDescription(`Dokončeno ${pendingTables.length} stolů (Smart Fill)`);
+
+        soundService.playSuccess();
+        showToast(`Načteno ${pendingTables.length} stolů z mapy`, 'success');
+    };
 
     // Calculate Total Strings (Earnings Base)
     const calculatedStrings = useMemo(() => {

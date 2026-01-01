@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
-import type { Project, TimeRecord } from '../types';
+import type { Project, TimeRecord, FieldTable } from '../types';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
 import { firebaseService } from '../services/firebaseService';
@@ -27,12 +27,18 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
     const savedProjectId = localStorage.getItem('last_project_id');
 
     // States
-    const [workType, setWorkType] = useState<'hourly' | 'task'>(editRecord ? 'hourly' : (savedWorkType || 'hourly'));
+    const [workType, setWorkType] = useState<'hourly' | 'task'>(
+        editRecord?.workType || (initialTableIds && initialTableIds.length > 0 ? 'task' : (savedWorkType || 'hourly'))
+    );
     const [projectId, setProjectId] = useState<number | ''>(editRecord?.projectId || initialProjectId || (savedProjectId ? Number(savedProjectId) : ''));
     const [workerId] = useState<number>(currentUser?.workerId || -1);
     const [description, setDescription] = useState(editRecord?.description || '');
     const [tableIds, setTableIds] = useState<string[]>(initialTableIds || []);
     const [isListening, setIsListening] = useState(false);
+
+    // Task Specific States
+    const [manualQuantity, setManualQuantity] = useState<number>(editRecord?.quantity || 0);
+    const [manualTableType, setManualTableType] = useState<'small' | 'medium' | 'large'>(editRecord?.tableType || 'medium');
 
     // Time States
     const [startTime, setStartTime] = useState('');
@@ -41,6 +47,32 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
 
     // Data
     const projects = useLiveQuery(() => db.projects.where('status').equals('active').toArray());
+    const worker = useLiveQuery(() => workerId !== -1 ? db.workers.get(workerId) : undefined, [workerId]);
+
+    // Convert string IDs to FieldTable objects for calculation
+    const selectedTables = useLiveQuery(async () => {
+        if (!projectId || tableIds.length === 0) return [];
+        return await db.fieldTables.where('projectId').equals(Number(projectId))
+            .filter(t => tableIds.includes(t.tableId))
+            .toArray();
+    }, [projectId, tableIds]);
+
+    // Calculate Total Strings (Earnings Base)
+    const calculatedStrings = useMemo(() => {
+        if (workType !== 'task') return 0;
+
+        // If specific tables are selected, calculate exact sum
+        if (selectedTables && selectedTables.length > 0) {
+            return selectedTables.reduce((acc, table) => {
+                const coeff = table.tableType === 'small' ? 1 : table.tableType === 'large' ? 2 : 1.5;
+                return acc + coeff;
+            }, 0);
+        }
+
+        // Otherwise use manual quantity * type coeff
+        const coeff = manualTableType === 'small' ? 1 : manualTableType === 'large' ? 2 : 1.5;
+        return manualQuantity * coeff;
+    }, [workType, selectedTables, manualQuantity, manualTableType]);
 
     // Memoize sorted projects to put the last used one on top
     const sortedProjects = useMemo(() => {
@@ -67,13 +99,23 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
         } else {
             const now = new Date();
             const start = new Date(now);
-            start.setHours(7, 0, 0, 0); // Default to 7:00 AM
+            // Default to 'now' minus 8 hours if not set, or just common work hours
+            start.setHours(7, 0, 0, 0);
             const end = new Date(now);
-            end.setHours(15, 30, 0, 0); // Default to 3:30 PM
+            // end.setHours(15, 30, 0, 0);
+
             setStartTime(toLocalISO(start));
             setEndTime(toLocalISO(end));
         }
     }, [editRecord]);
+
+    // Update manual quantity defaulting if simple table selection
+    useEffect(() => {
+        if (selectedTables && selectedTables.length > 0 && manualQuantity === 0) {
+            // We don't set manual quantity here because we use calculatedStrings.
+            // Only relevant if we want to pre-fill manual inputs for fallback.
+        }
+    }, [selectedTables]);
 
     const handleQuickTime = (type: 'now' | 'full_day' | 'half_day') => {
         const now = new Date();
@@ -103,6 +145,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
             if (lastRecord) {
                 setProjectId(lastRecord.projectId);
                 setDescription(lastRecord.description);
+                if (lastRecord.workType) setWorkType(lastRecord.workType);
                 if (lastRecord.tableIds) setTableIds(lastRecord.tableIds);
 
                 // Smart Time: Use yesterday's times but for TODAY
@@ -178,6 +221,10 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                 endTime: new Date(endTime),
                 description: description || (tableIds.length > 0 ? `Stoly: ${tableIds.join(', ')}` : ''),
                 tableIds: tableIds.length > 0 ? tableIds : undefined,
+                workType,
+                // Store the calculated STRINGS as quantity, so stats are easy
+                quantity: workType === 'task' ? calculatedStrings : undefined,
+                tableType: workType === 'task' && tableIds.length === 0 ? manualTableType : undefined
             };
 
             let finalId: number;
@@ -188,6 +235,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                 finalId = await db.records.add(recordData as TimeRecord);
             }
 
+            // Sync with Firebase
             if (firebaseService.isReady) {
                 await firebaseService.upsertRecords('timeRecords', [{
                     ...recordData,
@@ -197,6 +245,30 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                 }]);
             }
 
+            // If Task-based and has tables, update their status!
+            if (workType === 'task' && tableIds.length > 0) {
+                const tablesToUpdate = await db.fieldTables.where('projectId').equals(Number(projectId))
+                    .filter(t => tableIds.includes(t.tableId))
+                    .toArray();
+
+                for (const table of tablesToUpdate) {
+                    const updates = {
+                        status: 'completed' as const,
+                        completedAt: new Date(),
+                        completedBy: workerId
+                    };
+                    await db.fieldTables.update(table.id!, updates);
+
+                    if (firebaseService.isReady) {
+                        firebaseService.upsertRecords('fieldTables', [{
+                            ...table,
+                            ...updates,
+                            id: `${table.projectId}_${table.tableId}`
+                        }]).catch(console.error);
+                    }
+                }
+            }
+
             localStorage.setItem('last_work_type', workType);
             localStorage.setItem('last_project_id', String(projectId));
 
@@ -204,6 +276,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
             soundService.playSuccess();
             onClose();
         } catch (err) {
+            console.error(err);
             showToast("Chyba při ukládání", "error");
         } finally {
             setIsSending(false);
@@ -220,6 +293,78 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+
+                    {/* Work Type Switcher - Top Priority */}
+                    <div className="grid grid-cols-2 p-1 bg-black/40 rounded-2xl border border-white/5">
+                        <button
+                            onClick={() => setWorkType('hourly')}
+                            className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${workType === 'hourly' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                        >
+                            Hodinová
+                        </button>
+                        <button
+                            onClick={() => setWorkType('task')}
+                            className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${workType === 'task' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                        >
+                            Úkolová
+                        </button>
+                    </div>
+
+                    {/* Task Specific Inputs */}
+                    {workType === 'task' && (
+                        <div className="space-y-4 animate-slide-in-right">
+                            {/* If came from map selection */}
+                            {tableIds.length > 0 ? (
+                                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                                    <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Vybrané stoly ({tableIds.length})</h3>
+                                    <p className="text-white font-mono text-sm truncate opacity-70">{tableIds.join(', ')}</p>
+                                </div>
+                            ) : (
+                                // Manual Quantity Input
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Počet kusů</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            value={manualQuantity}
+                                            onChange={e => setManualQuantity(Number(e.target.value))}
+                                            className="w-full bg-black/40 text-white text-lg font-black p-3 rounded-xl border border-white/10 focus:border-emerald-500 outline-none"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Velikost stolu</label>
+                                        <select
+                                            value={manualTableType}
+                                            onChange={e => setManualTableType(e.target.value as any)}
+                                            className="w-full bg-black/40 text-white text-sm font-bold p-3 rounded-xl border border-white/10 outline-none"
+                                        >
+                                            <option value="small">S (1 str)</option>
+                                            <option value="medium">M (1.5 str)</option>
+                                            <option value="large">L (2 str)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Earnings Estimate */}
+                            <div className="p-5 bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 rounded-2xl flex justify-between items-center">
+                                <div>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Celkem stringů</p>
+                                    <p className="text-2xl font-black text-white italic tracking-tighter">{calculatedStrings.toFixed(1)} <span className="text-sm not-italic opacity-50 font-normal">str</span></p>
+                                </div>
+                                {worker && (
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Odměna cca</p>
+                                        <p className="text-2xl font-black text-emerald-400 italic tracking-tighter">
+                                            {Math.round(calculatedStrings * (worker.stringPrice || 0))} <span className="text-sm text-emerald-600/50">Kč</span>
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Repeat Last Button - Featured for Speed */}
                     {!initialProjectId && !editRecord && (
@@ -250,13 +395,15 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                         </section>
                     )}
 
-                    {/* Quick Time Presets */}
+                    {/* Quick Time Presets (Visible for both, but maybe less emphasized for Task) */}
                     <section className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Rychlá volba času</label>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">
+                            {workType === 'task' ? 'Čas realizace (pro statistiku)' : 'Odpracovaný čas (pro výplatu)'}
+                        </label>
                         <div className="flex gap-2">
-                            <button onClick={() => { soundService.playClick(); handleQuickTime('full_day'); }} className="flex-1 py-3 px-2 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black uppercase rounded-xl border border-white/5 transition-all touch-manipulation">Celý den (7-15:30)</button>
-                            <button onClick={() => { soundService.playClick(); handleQuickTime('half_day'); }} className="flex-1 py-3 px-2 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black uppercase rounded-xl border border-white/5 transition-all touch-manipulation">Půlden (7-11:00)</button>
-                            <button onClick={() => { soundService.playClick(); handleQuickTime('now'); }} className="flex-1 py-3 px-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-indigo-500/20 transition-all touch-manipulation">Právě teď</button>
+                            <button onClick={() => { soundService.playClick(); handleQuickTime('full_day'); }} className="flex-1 py-3 px-2 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black uppercase rounded-xl border border-white/5 transition-all touch-manipulation">Celý den</button>
+                            <button onClick={() => { soundService.playClick(); handleQuickTime('half_day'); }} className="flex-1 py-3 px-2 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black uppercase rounded-xl border border-white/5 transition-all touch-manipulation">Půlden</button>
+                            <button onClick={() => { soundService.playClick(); handleQuickTime('now'); }} className="flex-1 py-3 px-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-indigo-500/20 transition-all touch-manipulation">Teď</button>
                         </div>
                     </section>
 
@@ -287,7 +434,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                         <textarea
                             value={description}
                             onChange={e => setDescription(e.target.value)}
-                            placeholder="Zadejte popis práce..."
+                            placeholder={workType === 'task' ? "Poznámka k úkolu..." : "Co se dělalo..."}
                             className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors text-sm font-bold"
                             rows={3}
                         />
@@ -301,9 +448,9 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                     <button
                         onClick={(e) => { soundService.playClick(); handleSubmit(e); }}
                         disabled={isSending || !projectId}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-[0.98] transition-all disabled:opacity-30 touch-manipulation"
+                        className={`w-full text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-[0.98] transition-all disabled:opacity-30 touch-manipulation ${workType === 'task' ? 'bg-gradient-to-r from-emerald-600 to-teal-600' : 'bg-gradient-to-r from-indigo-600 to-blue-600'}`}
                     >
-                        {isSending ? 'Ukládám...' : 'Uložit záznam'}
+                        {isSending ? 'Ukládám...' : workType === 'task' ? 'Potvrdit úkol' : 'Uložit hodiny'}
                     </button>
                 </div>
             </div>

@@ -77,7 +77,10 @@ const TimeRecords: React.FC = () => {
             const durationMs = end.getTime() - start.getTime();
 
             let details = 'N/A';
-            if (!isNaN(durationMs) && durationMs >= 0) {
+            if (r.workType === 'task' && r.quantity) {
+                details = `${r.quantity.toFixed(1)} str`;
+                if (r.tableType) details += ` (${r.tableType === 'small' ? 'S' : r.tableType === 'large' ? 'L' : 'M'})`;
+            } else if (!isNaN(durationMs) && durationMs >= 0) {
                 const hours = Math.floor(durationMs / 3600000);
                 const minutes = Math.floor((durationMs % 3600000) / 60000);
                 details = `${hours}h ${minutes}m`;
@@ -189,8 +192,8 @@ const TimeRecords: React.FC = () => {
                         <div className="flex flex-col md:flex-row justify-between items-start gap-6 relative z-10">
                             <div className="flex gap-6 items-start">
                                 <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-lg border border-white/5 ${item.type === 'record' ? 'bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white' :
-                                        item.type === 'task' ? 'bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white' :
-                                            'bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white'
+                                    item.type === 'task' ? 'bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white' :
+                                        'bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white'
                                     } transition-all duration-500`}>
                                     {item.type === 'record' ? <ClockIcon className="w-7 h-7" /> :
                                         item.type === 'task' ? <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg> :

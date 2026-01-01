@@ -43,9 +43,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const email = firebaseUser.email;
         let worker = await db.workers.where('username').equals(email?.split('@')[0] || '').first();
 
-        // Fallback for admin
-        if (!worker && (email === 'admin@mst.app' || email?.startsWith('admin'))) {
-          const adminUser: User = { username: 'admin', role: 'admin' };
+        // Explicit Admin Overrides
+        if (email === 'mullerpve@gmail.com' || (!worker && (email === 'admin@mst.app' || email?.startsWith('admin')))) {
+          const adminUser: User = {
+            username: worker?.name || 'Admin',
+            role: 'admin',
+            workerId: worker?.id
+          };
           setUser(adminUser);
           localStorage.setItem('user', JSON.stringify(adminUser));
         } else if (worker) {

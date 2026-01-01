@@ -12,6 +12,8 @@ import { useI18n } from '../contexts/I18nContext';
 import { db } from '../services/db';
 import type { Worker } from '../types';
 
+import AdminLoginModal from './AdminLoginModal';
+
 const Login: React.FC = () => {
     const [mode, setMode] = useState<'login' | 'register' | 'reset'>('login');
     const [email, setEmail] = useState('');
@@ -21,6 +23,7 @@ const Login: React.FC = () => {
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showAdminLogin, setShowAdminLogin] = useState(false);
 
     const { t } = useI18n();
 
@@ -314,17 +317,26 @@ const Login: React.FC = () => {
                     )}
                 </div>
 
-                {/* Footer Info */}
-                <div className="mt-16 text-center animate-in fade-in duration-1000 delay-500">
+                {/* Footer Info & Admin Access */}
+                <div className="mt-16 text-center animate-in fade-in duration-1000 delay-500 flex flex-col items-center gap-4">
                     <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.6em] flex items-center justify-center gap-4">
                         <span className="w-8 h-px bg-slate-800" />
                         &copy; 2026 MST TECHNOLOGY &bull; V.4.5
                         <span className="w-8 h-px bg-slate-800" />
                     </p>
+                    <button
+                        onClick={() => setShowAdminLogin(true)}
+                        className="text-[8px] font-black text-slate-800 hover:text-slate-600 uppercase tracking-widest transition-colors"
+                    >
+                        Admin Access
+                    </button>
                 </div>
             </div>
+
+            {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} />}
         </div>
     );
 };
 
 export default Login;
+

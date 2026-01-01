@@ -22,7 +22,7 @@ const BottomNavBar: React.FC = () => {
         { to: "/projects", title: t('projects'), icon: <ProjectsIcon className="w-8 h-8" />, roles: ['admin', 'user'] },
         { to: "/chat", title: "Chat", icon: <ChatIcon className="w-8 h-8" />, roles: ['admin', 'user'] },
         { to: "/records", title: t('work_log'), icon: <ClockIcon className="w-8 h-8" />, roles: ['admin', 'user'] },
-        { to: "/settings", title: t('settings'), icon: <SettingsIcon className="w-8 h-8" />, roles: ['admin'] },
+        { to: "/settings", title: t('settings'), icon: <SettingsIcon className="w-8 h-8" />, roles: ['admin', 'user'] },
     ];
 
     const visibleItems = navItems.filter(item => item.roles.includes(user?.role || 'user'));

@@ -196,6 +196,8 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
     const [showWorkLogForm, setShowWorkLogForm] = useState(false); // NEW
+    const [showDefectModal, setShowDefectModal] = useState(false); // NEW
+    const [defectNotes, setDefectNotes] = useState(''); // NEW
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterWorker, setFilterWorker] = useState<number | 'all'>('all');
     const [showLeftSidebar, setShowLeftSidebar] = useState(true);
@@ -387,6 +389,7 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
                 updates.status = 'defect';
                 updates.completedAt = undefined;
                 updates.completedBy = undefined;
+                updates.defectNotes = data || ''; // Save notes
             } else if (action === 'assign') {
                 const currentTables = tables?.filter(t => ids.includes(t.id!)) || [];
                 for (const t of currentTables) {
@@ -570,6 +573,9 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
                                     else if (action === 'assign') {
                                         setSelectedIds(new Set([contextMenu.table.id!.toString()]));
                                         handleBulkAction('assign', data);
+                                    } else if (action === 'defect') {
+                                        setSelectedIds(new Set([contextMenu.table.id!.toString()]));
+                                        setShowDefectModal(true);
                                     } else {
                                         setSelectedIds(new Set([contextMenu.table.id!.toString()]));
                                         handleBulkAction(action);
@@ -709,8 +715,57 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
                         setShowRightSidebar(false);
                     }}
                     initialTableIds={Array.from(selectedIds)}
-                    initialProjectId={projectId}
                 />
+            )}
+
+            {/* Defect Reporting Modal */}
+            {showDefectModal && (
+                <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
+                    <div className="w-full max-w-md bg-slate-900 rounded-[2.5rem] border border-white/10 shadow-2xl p-8 space-y-6 animate-zoom-in">
+                        <div className="text-center space-y-2">
+                            <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-rose-500/20">
+                                <svg className="w-8 h-8 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            </div>
+                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Nahlásit závadu</h3>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+                                {selectedIds.size > 0 ? `Týká se ${selectedIds.size} stolů` : 'Běžná závada'}
+                            </p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Popis problému</label>
+                            <textarea
+                                value={defectNotes}
+                                onChange={(e) => setDefectNotes(e.target.value)}
+                                className="w-full p-4 bg-black/40 text-white rounded-2xl border border-white/10 focus:border-rose-500/50 outline-none min-h-[120px] text-sm font-bold"
+                                placeholder="Např. chybějící šrouby, uražený roh panelu..."
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pt-2">
+                            <button
+                                onClick={() => { setShowDefectModal(false); setDefectNotes(''); }}
+                                className="py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-400 font-black uppercase tracking-widest text-xs transition-colors"
+                            >
+                                Zrušit
+                            </button>
+                            <button
+                                onClick={() => {
+                                    handleBulkAction('defect', defectNotes);
+                                    setShowDefectModal(false);
+                                    setDefectNotes('');
+                                    setSelectedIds(new Set());
+                                    setShowRightSidebar(false);
+                                }}
+                                disabled={!defectNotes.trim()}
+                                className="py-4 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-rose-600/20 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                            >
+                                Nahlásit
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

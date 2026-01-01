@@ -89,6 +89,21 @@ const ProjectCardDesktop: React.FC<{
                 <p className="text-sm font-bold text-slate-500 line-clamp-3 leading-relaxed tracking-tight pl-4 border-l-2 border-white/5">
                     {project.description || 'Bez popisu projektu...'}
                 </p>
+
+                <div className="flex flex-wrap gap-4 pl-1">
+                    {project.location && (
+                        <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
+                            <svg className="w-3 h-3 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            {project.location}
+                        </div>
+                    )}
+                    {(project.startDate || project.endDate) && (
+                        <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
+                            <svg className="w-3 h-3 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            {project.startDate ? new Date(project.startDate).toLocaleDateString('cs-CZ') : '?'} - {project.endDate ? new Date(project.endDate).toLocaleDateString('cs-CZ') : '?'}
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="space-y-4 relative z-10 bg-black/20 p-6 rounded-[2.5rem] mt-2 border border-white/5">

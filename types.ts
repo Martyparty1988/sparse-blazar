@@ -15,12 +15,15 @@ export interface Worker {
 export interface Project {
   id?: number;
   name: string;
+  location?: string; // New
   description?: string;
   status: 'active' | 'completed' | 'on_hold';
   tables?: string[];
   planFile?: File;
   googleSpreadsheetId?: string;
   lastSync?: Date;
+  startDate?: string; // New
+  endDate?: string; // New
   createdAt?: Date;
   updatedAt?: Date;
   workerIds?: number[]; // IDs of workers assigned to the project
@@ -32,6 +35,9 @@ export interface TimeRecord {
   projectId: number;
   startTime: Date;
   endTime: Date;
+  workType?: 'hourly' | 'task'; // New
+  quantity?: number; // New: Number of tables/units
+  tableType?: 'small' | 'medium' | 'large'; // New
   description: string;
   tableIds?: string[];
   projectTaskId?: number;

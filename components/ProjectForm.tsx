@@ -18,6 +18,9 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
     const { t } = useI18n();
     const { showToast } = useToast();
     const [name, setName] = useState('');
+    const [location, setLocation] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [status, setStatus] = useState<'active' | 'completed' | 'on_hold'>('active');
     const [workerIds, setWorkerIds] = useState<number[]>([]);
     const allWorkers = useLiveQuery(() => db.workers.toArray(), []);
@@ -37,6 +40,9 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
     useEffect(() => {
         if (project) {
             setName(project.name);
+            setLocation(project.location || '');
+            setStartDate(project.startDate || '');
+            setEndDate(project.endDate || '');
             setStatus(project.status);
             setWorkerIds(project.workerIds || []);
 
@@ -85,6 +91,9 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
         const now = new Date();
         const projectData: Omit<Project, 'id'> = {
             name,
+            location,
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
             status,
             workerIds,
             tables: structuredTables.map(t => t.id),
@@ -147,6 +156,38 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                                     className="w-full px-6 py-5 bg-black/40 text-white text-xl font-black italic tracking-tighter rounded-3xl border border-white/5 focus:border-indigo-500/50 outline-none transition-all"
                                     placeholder="Např. FVE Brno 2"
                                 />
+                            </div>
+
+                            <div className="group relative">
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Lokace</label>
+                                <input
+                                    type="text"
+                                    value={location}
+                                    onChange={(e) => setLocation(e.target.value)}
+                                    className="w-full px-6 py-5 bg-black/40 text-white text-lg font-bold rounded-3xl border border-white/5 focus:border-indigo-500/50 outline-none transition-all"
+                                    placeholder="Např. Brno, Slatina"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="group relative">
+                                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Začátek</label>
+                                    <input
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="w-full px-6 py-5 bg-black/40 text-white font-bold rounded-3xl border border-white/5 focus:border-indigo-500/50 outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="group relative">
+                                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Konec (odhad)</label>
+                                    <input
+                                        type="date"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className="w-full px-6 py-5 bg-black/40 text-white font-bold rounded-3xl border border-white/5 focus:border-indigo-500/50 outline-none transition-all"
+                                    />
+                                </div>
                             </div>
 
                             <div className="space-y-3">

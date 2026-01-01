@@ -51,27 +51,36 @@ const Payroll: React.FC = () => {
 
         return workers.map(w => {
             const workerRecords = filteredRecords.filter(r => r.workerId === w.id);
-            const totalMs = workerRecords.reduce((acc, r) => {
+
+            // 1. Hourly Work
+            const hourlyRecords = workerRecords.filter(r => r.workType !== 'task');
+            const totalMs = hourlyRecords.reduce((acc, r) => {
                 const start = new Date(r.startTime).getTime();
                 const end = new Date(r.endTime).getTime();
                 return acc + (end - start);
             }, 0);
-
             const hours = totalMs / (1000 * 60 * 60);
-            const hourlyEarnings = hours * w.hourlyRate;
+            const hourlyEarnings = hours * (w.hourlyRate || 0);
 
-            // Earnings from project tasks
+            // 2. Task Work (Strings)
+            const taskRecords = workerRecords.filter(r => r.workType === 'task');
+            const totalStrings = taskRecords.reduce((acc, r) => acc + (r.quantity || 0), 0);
+            const stringEarnings = totalStrings * (w.stringPrice || 0);
+
+            // 3. Fixed Price Tasks (ProjectTasks)
             const workerTasks = filteredTasks.filter(t => t.assignedWorkerId === w.id);
-            const taskEarnings = workerTasks.reduce((acc, t) => acc + (t.price || 0), 0);
+            const fixedTaskEarnings = workerTasks.reduce((acc, t) => acc + (t.price || 0), 0);
 
-            const totalEarnings = hourlyEarnings + taskEarnings;
-            const tablesCount = filteredTables.filter(t => t.completedBy === w.id).length;
+            const totalEarnings = hourlyEarnings + stringEarnings + fixedTaskEarnings;
+            const tablesCount = completedTables?.filter(t => t.completedBy === w.id && t.completedAt && new Date(t.completedAt) >= startDate).length || 0;
 
             return {
                 worker: w,
                 hours: hours.toFixed(1),
+                strings: totalStrings.toFixed(1),
                 hourlyEarnings: hourlyEarnings.toFixed(2),
-                taskEarnings: taskEarnings.toFixed(2),
+                stringEarnings: stringEarnings.toFixed(2),
+                fixedTaskEarnings: fixedTaskEarnings.toFixed(2),
                 earnings: totalEarnings.toFixed(2),
                 tables: tablesCount,
                 tasksCount: workerTasks.length
@@ -156,8 +165,9 @@ const Payroll: React.FC = () => {
                         <thead>
                             <tr className="bg-black/40">
                                 <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Pracovník</th>
-                                <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Hodiny / Sazba</th>
-                                <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Úkoly / Pole</th>
+                                <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Hodiny</th>
+                                <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Stringy (Úkol)</th>
+                                <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Bonusy / Pole</th>
                                 <th className="px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Odměna celkem</th>
                             </tr>
                         </thead>
@@ -174,25 +184,42 @@ const Payroll: React.FC = () => {
                                             </div>
                                             <div>
                                                 <p className="text-white font-black uppercase text-sm">{s.worker.name}</p>
-                                                <p className="text-gray-500 text-[10px] font-bold tracking-widest">{s.worker.hourlyRate} € / hod</p>
+                                                <p className="text-gray-500 text-[10px] font-bold tracking-widest">
+                                                    {s.worker.hourlyRate}€/h • {s.worker.stringPrice}€/str
+                                                </p>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
-                                        <p className="text-white font-black text-lg">{s.hours} <span className="text-[10px] text-slate-500 uppercase">h</span></p>
-                                        <p className="text-[10px] font-bold text-slate-500">{s.hourlyEarnings} €</p>
+                                        <div className="flex flex-col">
+                                            <span className="text-white font-black text-lg">{s.hours}<span className="text-[10px] text-slate-500 ml-1">h</span></span>
+                                            <span className="text-[10px] font-bold text-slate-500">{s.hourlyEarnings} €</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <div className="flex flex-col">
+                                            <span className="text-emerald-400 font-black text-lg">{s.strings}<span className="text-[10px] text-slate-500 ml-1">str</span></span>
+                                            <span className="text-[10px] font-bold text-slate-500">{s.stringEarnings} €</span>
+                                        </div>
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="flex flex-col gap-1">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
-                                                <p className="text-white font-black text-sm">{s.tasksCount} úkolů</p>
-                                                <span className="text-[10px] font-bold text-indigo-400">({s.taskEarnings} €)</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                                                <p className="text-gray-400 font-bold text-xs">{s.tables} stolů v poli</p>
-                                            </div>
+                                            {Number(s.fixedTaskEarnings) > 0 && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                                                    <span className="text-white font-bold text-xs">{s.tasksCount} bonusů</span>
+                                                    <span className="text-[10px] font-bold text-indigo-400">({s.fixedTaskEarnings} €)</span>
+                                                </div>
+                                            )}
+                                            {s.tables > 0 && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                                    <span className="text-gray-400 font-bold text-xs">{s.tables} stolů (info)</span>
+                                                </div>
+                                            )}
+                                            {Number(s.fixedTaskEarnings) === 0 && s.tables === 0 && (
+                                                <span className="text-slate-600 text-[10px] font-bold">-</span>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 text-right">

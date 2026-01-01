@@ -31,10 +31,21 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
         editRecord?.workType || (initialTableIds && initialTableIds.length > 0 ? 'task' : (savedWorkType || 'hourly'))
     );
     const [projectId, setProjectId] = useState<number | ''>(editRecord?.projectId || initialProjectId || (savedProjectId ? Number(savedProjectId) : ''));
-    const [workerId] = useState<number>(currentUser?.workerId || -1);
+
+    // Sticky Worker State
+    const [workerId, setWorkerId] = useState<number>(() => {
+        if (editRecord?.workerId) return editRecord.workerId;
+        const saved = localStorage.getItem('last_worker_id');
+        return saved ? Number(saved) : (currentUser?.workerId || -1);
+    });
+
     const [description, setDescription] = useState(editRecord?.description || '');
     const [tableIds, setTableIds] = useState<string[]>(initialTableIds || []);
     const [isListening, setIsListening] = useState(false);
+
+    // Validation State
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
+
 
     // Task Specific States
     const [manualQuantity, setManualQuantity] = useState<number>(editRecord?.quantity || 0);
@@ -47,6 +58,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
 
     // Data
     const projects = useLiveQuery(() => db.projects.where('status').equals('active').toArray());
+    const workers = useLiveQuery(() => db.workers.orderBy('name').toArray());
     const worker = useLiveQuery(() => workerId !== -1 ? db.workers.get(workerId) : undefined, [workerId]);
 
     // Convert string IDs to FieldTable objects for calculation
@@ -108,6 +120,33 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
             setEndTime(toLocalISO(end));
         }
     }, [editRecord]);
+
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                // We need to trigger submit, but handleSubmit expects a FormEvent.
+                // We can create a synthetic one or refactor handleSubmit. 
+                // For now, let's just call it with a mock event or extract logic.
+                // Actually, let's just use a ref to the submit button or similar? 
+                // Easier: just separate logic. But for now, let's cast.
+                document.getElementById('submit-btn')?.click();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
+    // Sticky Worker Saver
+    useEffect(() => {
+        if (workerId !== -1) {
+            localStorage.setItem('last_worker_id', String(workerId));
+        }
+    }, [workerId]);
 
     // Update manual quantity defaulting if simple table selection
     useEffect(() => {
@@ -207,8 +246,12 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validation check
         if (!projectId || workerId === -1) {
+            setTouched({ projectId: true, workerId: true });
             showToast("Chybí projekt nebo pracovník", "error");
+            soundService.playError();
             return;
         }
 
@@ -294,20 +337,79 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
 
-                    {/* Work Type Switcher - Top Priority */}
-                    <div className="grid grid-cols-2 p-1 bg-black/40 rounded-2xl border border-white/5">
-                        <button
-                            onClick={() => setWorkType('hourly')}
-                            className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${workType === 'hourly' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
-                        >
-                            Hodinová
-                        </button>
-                        <button
-                            onClick={() => setWorkType('task')}
-                            className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${workType === 'task' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
-                        >
-                            Úkolová
-                        </button>
+
+
+                    {/* 1. Worker Selection (Top Priority) */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                            Pracovník <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                            <select
+                                value={workerId}
+                                onChange={(e) => setWorkerId(Number(e.target.value))}
+                                className={`w-full bg-black/40 text-white font-bold p-4 rounded-2xl border appearance-none outline-none transition-all ${touched.workerId && workerId === -1 ? 'border-red-500/50 ring-1 ring-red-500/50' : 'border-white/10 focus:border-indigo-500'
+                                    }`}
+                            >
+                                <option value={-1}>Vyberte pracovníka...</option>
+                                {workers?.map(w => (
+                                    <option key={w.id} value={w.id}>{w.name}</option>
+                                ))}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                        </div>
+                        {touched.workerId && workerId === -1 && (
+                            <p className="text-red-400 text-[10px] font-bold ml-1 animate-pulse">❌ Musíte vybrat pracovníka</p>
+                        )}
+                    </div>
+
+                    {/* 2. Project Selection */}
+                    {!initialProjectId && (
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                                Projekt <span className="text-red-500">*</span>
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {sortedProjects?.map(p => (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => { soundService.playClick(); setProjectId(p.id!); }}
+                                        className={`p-3 rounded-xl text-xs font-bold transition-all border text-left truncate ${projectId === p.id
+                                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg'
+                                            : touched.projectId && !projectId
+                                                ? 'bg-red-500/5 border-red-500/30 text-red-300'
+                                                : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
+                                            }`}
+                                    >
+                                        {p.name}
+                                    </button>
+                                ))}
+                            </div>
+                            {touched.projectId && !projectId && (
+                                <p className="text-red-400 text-[10px] font-bold ml-1 animate-pulse">❌ Vyberte projekt</p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* 3. Work Type Switcher */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Typ práce</label>
+                        <div className="grid grid-cols-2 p-1 bg-black/40 rounded-2xl border border-white/5">
+                            <button
+                                onClick={() => setWorkType('hourly')}
+                                className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${workType === 'hourly' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                            >
+                                Hodinová
+                            </button>
+                            <button
+                                onClick={() => setWorkType('task')}
+                                className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${workType === 'task' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                            >
+                                Úkolová
+                            </button>
+                        </div>
                     </div>
 
                     {/* Task Specific Inputs */}
@@ -377,23 +479,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                         </button>
                     )}
 
-                    {/* Project Selection */}
-                    {!initialProjectId && (
-                        <section>
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Vyberte projekt</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {sortedProjects?.map(p => (
-                                    <button
-                                        key={p.id}
-                                        onClick={() => { soundService.playClick(); setProjectId(p.id!); }}
-                                        className={`p-3 rounded-xl text-xs font-bold transition-all border text-left truncate ${projectId === p.id ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'}`}
-                                    >
-                                        {p.name}
-                                    </button>
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                    {/* Project Selection (Moved up) */}
 
                     {/* Quick Time Presets (Visible for both, but maybe less emphasized for Task) */}
                     <section className="space-y-3">
@@ -411,11 +497,11 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                     <div className="grid grid-cols-2 gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
                         <div className="space-y-1">
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Začátek</label>
-                            <input type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full bg-black/40 text-white text-xs p-3 rounded-xl border border-white/10" />
+                            <input type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full bg-black/40 text-white text-base p-3 rounded-xl border border-white/10" />
                         </div>
                         <div className="space-y-1">
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Konec</label>
-                            <input type="datetime-local" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full bg-black/40 text-white text-xs p-3 rounded-xl border border-white/10" />
+                            <input type="datetime-local" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full bg-black/40 text-white text-base p-3 rounded-xl border border-white/10" />
                         </div>
                     </div>
 
@@ -446,11 +532,12 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                     style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
                 >
                     <button
+                        id="submit-btn"
                         onClick={(e) => { soundService.playClick(); handleSubmit(e); }}
-                        disabled={isSending || !projectId}
+                        disabled={isSending}
                         className={`w-full text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-[0.98] transition-all disabled:opacity-30 touch-manipulation ${workType === 'task' ? 'bg-gradient-to-r from-emerald-600 to-teal-600' : 'bg-gradient-to-r from-indigo-600 to-blue-600'}`}
                     >
-                        {isSending ? 'Ukládám...' : workType === 'task' ? 'Potvrdit úkol' : 'Uložit hodiny'}
+                        {isSending ? 'Ukládám...' : workType === 'task' ? 'Potvrdit úkol (Ctrl+S)' : 'Uložit hodiny (Ctrl+S)'}
                     </button>
                 </div>
             </div>

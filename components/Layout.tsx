@@ -11,6 +11,8 @@ import ChatIcon from './icons/ChatIcon';
 import ConnectionStatusIndicator from './ConnectionStatusIndicator';
 import FloatingActionMenu from './FloatingActionMenu';
 import Sidebar from './Sidebar'; // Import the Sidebar
+import TimeRecordForm from './TimeRecordForm';
+import { useState, useEffect } from 'react';
 
 const BottomNavBar: React.FC = () => {
     const { t } = useI18n();
@@ -65,6 +67,22 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const { t } = useI18n();
     const location = useLocation();
+    const [showQuickLog, setShowQuickLog] = useState(false);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Check if active element is input/textarea to avoid triggering while typing
+            const target = e.target as HTMLElement;
+            if (['input', 'textarea'].includes(target.tagName.toLowerCase())) return;
+
+            if (e.key.toLowerCase() === 'z') {
+                e.preventDefault();
+                setShowQuickLog(true);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     return (
         <div className="w-full h-[100dvh] flex bg-transparent overflow-hidden">
@@ -109,11 +127,26 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 {/* Bottom Nav for mobile */}
                 <BottomNavBar />
 
-                {/* Floating Action Menu - visible on mobile */}
-                <div className="md:hidden">
-                    <FloatingActionMenu />
-                </div>
+
             </div>
+
+            {/* Global FAB - Log Work */}
+            <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,20px))] right-4 z-40 md:bottom-10 md:right-10 animate-slide-in-right">
+                <button
+                    onClick={() => setShowQuickLog(true)}
+                    className="w-16 h-16 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-full shadow-[0_10px_30px_rgba(79,70,229,0.5)] flex items-center justify-center text-white active:scale-90 transition-transform hover:scale-110 border border-white/20"
+                    title="Zapsat práci (Z)"
+                >
+                    <ClockIcon className="w-8 h-8 drop-shadow-md" />
+                </button>
+            </div>
+
+            {/* Global Quick Log Modal */}
+            {showQuickLog && (
+                <TimeRecordForm
+                    onClose={() => setShowQuickLog(false)}
+                />
+            )}
         </div>
     );
 };

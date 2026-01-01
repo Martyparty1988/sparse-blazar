@@ -12,7 +12,7 @@ firebase.initializeApp({
     projectId: "mst-marty-solar-2025",
     storageBucket: "mst-marty-solar-2025.firebasestorage.app",
     messagingSenderId: "706935785372",
-    appId: "1:706935785372:web:ccb7e109ba3eccd7e2ea59",
+    appId: "1:706935785372:web:0f21a739f8acbeb3e2ea59",
 });
 
 // Retrieve an instance of Firebase Messaging so that it can handle background

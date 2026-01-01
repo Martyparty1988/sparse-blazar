@@ -50,7 +50,7 @@ const MyTasks: React.FC = () => {
         try {
             await db.projectTasks.update(task.id!, { startTime });
             if (firebaseService.isReady) {
-                await firebaseService.updateRecord('projectTasks', task.id!, { startTime: startTime.toISOString() });
+                await firebaseService.updateRecord('projectTasks', String(task.id!), { startTime: startTime.toISOString() });
             }
             soundService.playClick();
             showToast("Práce zahájena", "success");
@@ -85,7 +85,7 @@ const MyTasks: React.FC = () => {
 
             // 3. Sync to Firebase
             if (firebaseService.isReady) {
-                await firebaseService.updateRecord('projectTasks', task.id!, {
+                await firebaseService.updateRecord('projectTasks', String(task.id!), {
                     endTime: endTime.toISOString(),
                     completionDate: endTime.toISOString()
                 });

@@ -47,7 +47,7 @@ const BottomNavBar: React.FC = () => {
                         {({ isActive }) => (
                             <>
                                 <div className={`relative p-3 rounded-2xl transition-all duration-300 ${isActive ? 'bg-indigo-600 shadow-[0_0_20px_rgba(79,70,229,0.4)] scale-110 -translate-y-2 border border-white/20' : 'bg-transparent scale-100'}`}>
-                                    {isActive ? React.cloneElement(item.icon as React.ReactElement, { className: "w-6 h-6 text-white" }) : React.cloneElement(item.icon as React.ReactElement, { className: "w-6 h-6 text-slate-500" })}
+                                    {isActive ? React.cloneElement(item.icon as React.ReactElement<{ className?: string }>, { className: "w-6 h-6 text-white" }) : React.cloneElement(item.icon as React.ReactElement<{ className?: string }>, { className: "w-6 h-6 text-slate-500" })}
                                 </div>
                                 <span className={`text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${isActive ? 'opacity-100 text-indigo-400 translate-y-0' : 'opacity-0 translate-y-2 hidden'}`}>
                                     {item.title}

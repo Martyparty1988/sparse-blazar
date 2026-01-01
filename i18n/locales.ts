@@ -64,6 +64,8 @@ export const locales = {
     back_to_login: 'Back to Login',
     email: 'Email',
     invalid_email: 'Invalid email address.',
+    edit: 'Edit',
+    delete_record_title: 'Delete Time Record',
 
     // Workers
     workers: 'Workers',
@@ -389,6 +391,8 @@ export const locales = {
     back_to_login: 'Zpět na přihlášení',
     email: 'Email',
     invalid_email: 'Neplatná emailová adresa.',
+    edit: 'Upravit',
+    delete_record_title: 'Smazat záznam času',
 
     // Workers
     workers: 'Pracovníci',

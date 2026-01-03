@@ -88,7 +88,7 @@ const Chat: React.FC = () => {
     }, [currentUser?.workerId]);
 
     useEffect(() => {
-        if (!firebaseService.isReady) return;
+        if (!firebaseService.isReady || !activeChannelId) return;
         const path = `chat/${activeChannelId}`;
         setMessages([]);
 
@@ -99,7 +99,7 @@ const Chat: React.FC = () => {
                 const lastMsg = messageList[messageList.length - 1];
 
                 setMessages(prev => {
-                    if (lastMsg && lastMsg.senderId !== currentUser?.workerId && lastMsg.senderId !== -1) {
+                    if (lastMsg && currentUser?.workerId && lastMsg.senderId !== currentUser?.workerId && lastMsg.senderId !== -1) {
                         const isNewest = prev.length === 0 || !prev.find(m => m.id === lastMsg.id);
                         const msgTime = new Date(lastMsg.timestamp).getTime();
                         if (isNewest && (Date.now() - msgTime < 10000)) {
@@ -115,7 +115,7 @@ const Chat: React.FC = () => {
 
         // Typing Status Subscription
         const unsubTyping = firebaseService.subscribeTypingStatus(activeChannelId, (data) => {
-            if (!currentUser?.workerId) return;
+            if (!currentUser?.workerId || !data) return;
             const names = Object.entries(data)
                 .filter(([uid]) => Number(uid) !== currentUser.workerId)
                 .map(([, info]) => info.name);
@@ -135,11 +135,11 @@ const Chat: React.FC = () => {
         }
 
         return () => {
-            unsubscribe();
-            unsubTyping();
-            unsubSeen();
+            if (unsubscribe) unsubscribe();
+            if (unsubTyping) unsubTyping();
+            if (unsubSeen) unsubSeen();
         };
-    }, [activeChannelId, currentUser?.workerId, showToast, t]);
+    }, [activeChannelId, currentUser?.workerId, showToast, t, firebaseService.isReady]);
 
     const handleTyping = () => {
         if (!currentUser?.workerId) return;

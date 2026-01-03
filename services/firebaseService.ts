@@ -205,6 +205,7 @@ class FirebaseService {
     }
 
     private setupConnectivityListener() {
+        if (!this.rtdb) return;
         const connectedRef = ref(this.rtdb, ".info/connected");
         onValue(connectedRef, (snap) => {
             this.isOnline = snap.val() === true;

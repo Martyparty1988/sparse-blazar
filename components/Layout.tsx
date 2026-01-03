@@ -32,8 +32,8 @@ const BottomNavBar: React.FC = () => {
 
     return (
         <nav
-            className="fixed bottom-0 left-0 z-[100] w-full bg-[#020617]/90 backdrop-blur-2xl border-t border-white/10 md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all pb-safe"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom, 20px)' }}
+            className="fixed bottom-0 left-0 z-[100] w-full bg-[#020617]/90 backdrop-blur-2xl border-t border-white/10 md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
             <div className="flex justify-around items-center px-4 py-4">
                 {visibleItems.map(item => (
@@ -94,14 +94,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 {/* Header - Only for Mobile, as Sidebar has its own */}
                 <header
                     className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#1a1d37]/80 backdrop-blur-md border-b border-white/5 shadow-sm"
-                    style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+                    style={{ paddingTop: 'env(safe-area-inset-top)' }}
                 >
                     <div
                         className="flex justify-between items-center h-16 px-6"
-                        style={{
-                            paddingLeft: 'calc(1.5rem + env(safe-area-inset-left, 0px))',
-                            paddingRight: 'calc(1.5rem + env(safe-area-inset-right, 0px))'
-                        }}
                     >
                         <div className="flex items-center gap-3">
                             <span className="text-xl font-black italic tracking-tighter text-white">MST<span className="text-[var(--color-accent)]">.</span></span>
@@ -117,10 +113,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <main
                     className="flex-1 overflow-y-auto custom-scrollbar p-6 overscroll-contain"
                     style={{
-                        paddingTop: 'calc(4.5rem + env(safe-area-inset-top, 0px))',
-                        paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 0px))',
-                        paddingLeft: 'calc(1.5rem + env(safe-area-inset-left, 0px))',
-                        paddingRight: 'calc(1.5rem + env(safe-area-inset-right, 0px))'
+                        paddingTop: 'calc(4rem + env(safe-area-inset-top))',
+                        paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))'
                     }}
                 >
                     <div key={location.pathname} className="max-w-7xl mx-auto w-full h-full">
@@ -135,7 +129,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </div>
 
             {/* Global FAB - Log Work */}
-            <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,20px))] right-4 z-40 md:bottom-10 md:right-10 animate-slide-in-right">
+            <div 
+                className={`fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-40 md:bottom-10 md:right-10 animate-slide-in-right transition-opacity duration-300 ${location.pathname.includes('/records') || location.pathname.includes('/edit') || location.pathname.includes('/new') ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+            >
                 <button
                     onClick={() => setShowQuickLog(true)}
                     className="w-16 h-16 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-full shadow-[0_10px_30px_rgba(79,70,229,0.5)] flex items-center justify-center text-white active:scale-90 transition-transform hover:scale-110 border border-white/20"

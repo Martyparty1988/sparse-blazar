@@ -88,50 +88,58 @@ const Chat: React.FC = () => {
     }, [currentUser?.workerId]);
 
     useEffect(() => {
-        if (!firebaseService.isReady || !activeChannelId) return;
+        if (!firebaseService || !firebaseService.isReady || !activeChannelId) return;
         const path = `chat/${activeChannelId}`;
         setMessages([]);
 
-        const unsubscribe = firebaseService.subscribe(path, (data) => {
-            if (data) {
-                const messageList: ChatMessage[] = Object.values(data);
-                messageList.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-                const lastMsg = messageList[messageList.length - 1];
+        let unsubscribe: (() => void) | undefined;
+        let unsubTyping: (() => void) | undefined;
+        let unsubSeen: (() => void) | undefined;
 
-                setMessages(prev => {
-                    if (lastMsg && currentUser?.workerId && lastMsg.senderId !== currentUser?.workerId && lastMsg.senderId !== -1) {
-                        const isNewest = prev.length === 0 || !prev.find(m => m.id === lastMsg.id);
-                        const msgTime = new Date(lastMsg.timestamp).getTime();
-                        if (isNewest && (Date.now() - msgTime < 10000)) {
-                            notifyUser(lastMsg, showToast, t);
+        try {
+            unsubscribe = firebaseService.subscribe(path, (data) => {
+                if (data) {
+                    const messageList: ChatMessage[] = Object.values(data);
+                    messageList.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                    const lastMsg = messageList[messageList.length - 1];
+
+                    setMessages(prev => {
+                        if (lastMsg && currentUser?.workerId && lastMsg.senderId !== currentUser?.workerId && lastMsg.senderId !== -1) {
+                            const isNewest = prev.length === 0 || !prev.find(m => m.id === lastMsg.id);
+                            const msgTime = new Date(lastMsg.timestamp).getTime();
+                            if (isNewest && (Date.now() - msgTime < 10000)) {
+                                notifyUser(lastMsg, showToast, t);
+                            }
                         }
-                    }
-                    return messageList.slice(-CHAT_LIMIT);
-                });
-            } else {
-                setMessages([]);
+                        return messageList.slice(-CHAT_LIMIT);
+                    });
+                } else {
+                    setMessages([]);
+                }
+            });
+
+            // Typing Status Subscription
+            unsubTyping = firebaseService.subscribeTypingStatus(activeChannelId, (data) => {
+                if (!currentUser?.workerId || !data) return;
+                const names = Object.entries(data)
+                    .filter(([uid]) => Number(uid) !== currentUser.workerId)
+                    .map(([, info]) => info.name);
+                setTypingUsers(names);
+            });
+
+            // Seen Status Subscription
+            unsubSeen = firebaseService.subscribe(`chat/${activeChannelId}/seen`, (data) => {
+                if (data) setSeenStatus(data);
+            });
+
+            // Mark as seen, clear badge and unread RTDB node
+            if (currentUser?.workerId) {
+                firebaseService.markAsSeen(activeChannelId, currentUser.workerId);
+                firebaseService.updateBadge(0);
+                firebaseService.setData(`unread/${currentUser.workerId}/${activeChannelId}`, null);
             }
-        });
-
-        // Typing Status Subscription
-        const unsubTyping = firebaseService.subscribeTypingStatus(activeChannelId, (data) => {
-            if (!currentUser?.workerId || !data) return;
-            const names = Object.entries(data)
-                .filter(([uid]) => Number(uid) !== currentUser.workerId)
-                .map(([, info]) => info.name);
-            setTypingUsers(names);
-        });
-
-        // Seen Status Subscription
-        const unsubSeen = firebaseService.subscribe(`chat/${activeChannelId}/seen`, (data) => {
-            if (data) setSeenStatus(data);
-        });
-
-        // Mark as seen, clear badge and unread RTDB node
-        if (currentUser?.workerId) {
-            firebaseService.markAsSeen(activeChannelId, currentUser.workerId);
-            firebaseService.updateBadge(0);
-            firebaseService.setData(`unread/${currentUser.workerId}/${activeChannelId}`, null);
+        } catch (err) {
+            console.error('Chat subscriptions failed:', err);
         }
 
         return () => {
@@ -139,7 +147,7 @@ const Chat: React.FC = () => {
             if (unsubTyping) unsubTyping();
             if (unsubSeen) unsubSeen();
         };
-    }, [activeChannelId, currentUser?.workerId, showToast, t, firebaseService.isReady]);
+    }, [activeChannelId, currentUser?.workerId, showToast, t]);
 
     const handleTyping = () => {
         if (!currentUser?.workerId) return;

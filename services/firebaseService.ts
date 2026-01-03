@@ -160,6 +160,10 @@ class FirebaseService {
 
     public async requestNotificationPermission(workerId?: number) {
         if (!this.messaging) return null;
+        if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+            console.warn('Notifications not supported in this environment');
+            return null;
+        }
         try {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {

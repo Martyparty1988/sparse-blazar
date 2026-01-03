@@ -19,7 +19,8 @@ const notifyUser = (message: ChatMessage, showToast: (msg: string, type?: any) =
         (navigator as any).setAppBadge().catch(() => { });
     }
 
-    if (Notification.permission === 'granted' && document.hidden) {
+    const canShowNotification = typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.hidden;
+    if (canShowNotification) {
         new Notification(`${message.senderName}`, {
             body: message.text,
             icon: '/icon-192.svg',

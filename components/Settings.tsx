@@ -47,6 +47,8 @@ const Settings: React.FC = () => {
         </details>
     );
 
+    const notificationPermission = typeof Notification !== 'undefined' ? Notification.permission : 'denied';
+
     return (
         <div className="pb-24 max-w-6xl mx-auto px-4">
             <div className="md:hidden mb-8">
@@ -93,8 +95,8 @@ const Settings: React.FC = () => {
                         <div className="flex items-center justify-between flex-wrap gap-6">
                             <div className="space-y-2">
                                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Aktuální stav</p>
-                                <h3 className={`text-2xl font-black italic tracking-tighter uppercase ${Notification.permission === 'granted' ? 'text-emerald-500' : 'text-slate-400'}`}>
-                                    {Notification.permission === 'granted' ? 'Aktivní' : Notification.permission === 'denied' ? 'Zakázáno' : 'Čeká se'}
+                                <h3 className={`text-2xl font-black italic tracking-tighter uppercase ${notificationPermission === 'granted' ? 'text-emerald-500' : 'text-slate-400'}`}>
+                                    {notificationPermission === 'granted' ? 'Aktivní' : notificationPermission === 'denied' ? 'Zakázáno' : 'Čeká se'}
                                 </h3>
                             </div>
 
@@ -103,7 +105,9 @@ const Settings: React.FC = () => {
                                     const token = await firebaseService.requestNotificationPermission(user?.workerId);
                                     if (token) {
                                         showToast('Oznámení povolena!', 'success');
-                                        new Notification("MST System", { body: "Oznámení byla úspěšně aktivována." });
+                                        if (typeof Notification !== 'undefined') {
+                                            new Notification("MST System", { body: "Oznámení byla úspěšně aktivována." });
+                                        }
                                     } else {
                                         showToast('Povolte oznámení v prohlížeči', 'error');
                                     }

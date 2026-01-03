@@ -27,13 +27,13 @@ import { getAuth, Auth } from 'firebase/auth';
 import { db } from './db'; // Import Dexie instance
 
 const firebaseConfig = {
-    apiKey: "AIzaSyC0wgEBrqvx4Uge7upoSqZXFkSwXKb9hqE",
-    authDomain: "mst-marty-solar-2025.firebaseapp.com",
-    databaseURL: "https://mst-marty-solar-2025-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "mst-marty-solar-2025",
-    storageBucket: "mst-marty-solar-2025.firebasestorage.app",
-    messagingSenderId: "706935785372",
-    appId: "1:706935785372:web:0f21a739f8acbeb3e2ea59"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 export interface SyncResult {
@@ -161,8 +161,7 @@ class FirebaseService {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
                 const token = await getToken(this.messaging, {
-                    // This is a placeholder, a real VAPID key is needed from Firebase Console > Settings > Cloud Messaging
-                    vapidKey: 'BM6F-pXyU3R_5e7H8u1X2zR_L6VqW6X0H_Z0z2X0W_z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z'
+                    vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
                 });
 
                 if (token) {

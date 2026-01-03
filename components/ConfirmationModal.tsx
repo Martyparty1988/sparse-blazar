@@ -41,9 +41,9 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={onCancel}></div>
-      <div className="relative w-full max-w-md p-10 bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.7)] border border-white/20 transform transition-all scale-100">
+      <div className="relative w-full max-h-[90vh] overflow-y-auto md:max-w-md p-10 bg-slate-900/90 backdrop-blur-2xl rounded-t-[3rem] md:rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.7)] border-t md:border border-white/20 transform transition-all scale-100 pb-[calc(2.5rem+env(safe-area-inset-bottom))] md:pb-10">
         <div className="flex flex-col items-center text-center">
           <div className={`p-6 rounded-full mb-8 border-2 ${getIconStyles()} shadow-inner`}>
             <TrashIcon className="w-12 h-12" />

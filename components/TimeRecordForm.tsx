@@ -318,7 +318,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
 
         // Validation check
         if (!projectId || workerId === -1) {
@@ -673,7 +673,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
 
                 <div
                     className="p-6 bg-black/40 border-t border-white/5"
-                    style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+                    style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom, 0px))' }}
                 >
                     <button
                         id="submit-btn"

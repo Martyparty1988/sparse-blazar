@@ -135,7 +135,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         const tableIdsFromInput = tableList.split(/[\n,]+/).map(t => t.trim()).filter(t => t.length > 0);
 
         if (tableIdsFromInput.length > 0 && !isTablesProcessed) {
@@ -414,7 +414,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                 </form>
 
                 {/* Modal Footer */}
-                <div className="p-8 border-t border-white/5 bg-white/[0.01] flex flex-col md:flex-row gap-4">
+                <div className="p-8 border-t border-white/5 bg-white/[0.01] flex flex-col md:flex-row gap-4 pb-[calc(2.5rem + env(safe-area-inset-bottom))] md:pb-8">
                     <button
                         type="button"
                         onClick={onClose}
@@ -423,8 +423,8 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                         Zrušit
                     </button>
                     <button
-                        type="submit"
-                        onClick={handleSubmit}
+                        type="button"
+                        onClick={() => handleSubmit(undefined as any)}
                         className="flex-1 px-12 py-5 bg-white text-black font-black rounded-[2.5rem] hover:bg-indigo-600 hover:text-white transition-all shadow-[0_20px_40px_rgba(255,255,255,0.05)] uppercase tracking-[0.2em] text-[11px]"
                     >
                         Uložit konfiguraci projektu

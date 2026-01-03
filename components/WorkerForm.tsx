@@ -44,8 +44,8 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     const workerData: Omit<Worker, 'id'> = {
       name,
       hourlyRate: user?.role === 'admin' ? (Number(hourlyRate) || 0) : (worker?.hourlyRate ?? 0),
@@ -206,7 +206,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
         </form>
 
         {/* Modal Footer */}
-        <div className="p-8 border-t border-white/5 bg-white/[0.01] flex flex-col md:flex-row gap-4">
+        <div className="p-8 border-t border-white/5 bg-white/[0.01] flex flex-col md:flex-row gap-4 pb-[calc(2.5rem + env(safe-area-inset-bottom))] md:pb-8">
           <button
             type="button"
             onClick={onClose}
@@ -215,8 +215,8 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
             {t('cancel')}
           </button>
           <button
-            type="submit"
-            onClick={handleSubmit}
+            type="button"
+            onClick={() => handleSubmit()}
             className="flex-1 px-12 py-5 bg-white text-black font-black rounded-[2rem] hover:bg-indigo-600 hover:text-white transition-all shadow-[0_15px_30px_rgba(255,255,255,0.1)] uppercase tracking-[0.2em] text-[11px]"
           >
             {t('save')}

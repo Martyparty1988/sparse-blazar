@@ -1,9 +1,0 @@
-{
-  "name": "T - Marty solar trucker 🫡",
-  "description": "A frontend-only PWA for managing workers, projects, and time records with offline capabilities, statistics, and data backup features.",
-  "requestFramePermissions": [
-    "geolocation",
-    "camera",
-    "microphone"
-  ]
-}

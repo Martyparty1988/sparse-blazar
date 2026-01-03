@@ -1,4 +1,4 @@
-import { initializeApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, FirebaseApp, getApps, getApp } from 'firebase/app';
 import {
     getFirestore,
     collection,
@@ -56,10 +56,13 @@ class FirebaseService {
 
     constructor() {
         try {
-            this.app = initializeApp(firebaseConfig);
-            this.db = initializeFirestore(this.app, {
-                localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-            });
+            if (!getApps().length) {
+                this.app = initializeApp(firebaseConfig);
+            } else {
+                this.app = getApp();
+            }
+            
+            this.db = getFirestore(this.app);
             this.rtdb = getDatabase(this.app);
             this.auth = getAuth(this.app);
 
@@ -69,7 +72,7 @@ class FirebaseService {
             this.isInitialized = true;
             this.setupConnectivityListener();
             this.setupForegroundMessageListener();
-            console.log('🔥 Firebase (Firestore) initialized with Persistence');
+            console.log('🔥 Firebase initialized');
         } catch (error) {
             console.error('Firebase auto-init failed:', error);
             this.app = null as any; this.db = null as any; this.rtdb = null as any;

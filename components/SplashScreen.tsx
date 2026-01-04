@@ -63,7 +63,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onUnlock }) => {
       handleSequence('admin');
     }
   }, [handleSequence]);
-  
+
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -75,20 +75,27 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onUnlock }) => {
   }, [handleKeyDown]);
 
   return (
-    <div 
-      className="min-h-screen w-full flex items-center justify-center bg-cover bg-center bg-no-repeat" 
+    <div
+      className="min-h-screen w-full flex items-center justify-center bg-cover bg-center bg-no-repeat"
       style={{ background: 'var(--bg-gradient)' }}
       onTouchStart={handleTouchStart}
     >
       <div className="absolute inset-0 bg-black/30"></div>
       <div className="relative text-center">
         <div className="cursor-pointer inline-block select-none p-4">
-          <h1 
-            className="text-8xl md:text-9xl font-bold tracking-wider" 
+          <h1
+            className="text-7xl sm:text-8xl md:text-9xl font-bold tracking-wider"
           >
             <span className="text-shimmer">MST</span>
           </h1>
           <p className="text-white/80 text-xl md:text-2xl mt-2">Martyho Solar Tracker</p>
+          <div className="mt-12 flex flex-col items-center gap-2 animate-pulse">
+            <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em]">Tap to start</p>
+            <div className="flex gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

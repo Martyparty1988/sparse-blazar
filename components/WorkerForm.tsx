@@ -75,11 +75,15 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
         if (isAssigned && !wasAssigned) {
           const newWorkerIds = [...(project.workerIds || []), finalId!];
           await db.projects.update(project.id!, { workerIds: newWorkerIds });
-          firebaseService.updateRecord('projects', project.id!, { workerIds: newWorkerIds });
+          if (project.firebaseId) {
+            firebaseService.updateRecord('projects', project.firebaseId, { workerIds: newWorkerIds });
+          }
         } else if (!isAssigned && wasAssigned) {
           const newWorkerIds = project.workerIds?.filter(id => id !== finalId!);
           await db.projects.update(project.id!, { workerIds: newWorkerIds });
-          firebaseService.updateRecord('projects', project.id!, { workerIds: newWorkerIds });
+          if (project.firebaseId) {
+            firebaseService.updateRecord('projects', project.firebaseId, { workerIds: newWorkerIds });
+          }
         }
       }
     }
@@ -206,7 +210,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ worker, onClose }) => {
         </form>
 
         {/* Modal Footer */}
-        <div className="p-8 border-t border-white/5 bg-white/[0.01] flex flex-col md:flex-row gap-4 pb-[calc(2.5rem + env(safe-area-inset-bottom))] md:pb-8">
+        <div className="p-8 border-t border-white/5 bg-white/[0.01] flex flex-col md:flex-row gap-4 pb-safe md:pb-8">
           <button
             type="button"
             onClick={onClose}

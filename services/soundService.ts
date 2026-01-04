@@ -1,3 +1,5 @@
+import { safety } from './safetyService';
+
 class SoundService {
     private audioContext: AudioContext | null = null;
     private isMuted: boolean = false;
@@ -17,9 +19,7 @@ class SoundService {
     }
 
     private vibrate(duration: number = 10) {
-        if (typeof window.navigator.vibrate === 'function') {
-            window.navigator.vibrate(duration);
-        }
+        safety.vibrate(duration);
     }
 
     setMuted(muted: boolean) {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
@@ -8,6 +7,8 @@ import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
 import { firebaseService } from '../services/firebaseService';
 import type { ProjectTask } from '../types';
+import { soundService } from '../services/soundService';
+import { hapticService } from '../services/hapticService';
 
 interface TableModalProps {
     table: FieldTable;
@@ -22,6 +23,48 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
     const [defectNotes, setDefectNotes] = useState(table.defectNotes || '');
     const [photos, setPhotos] = useState<string[]>(table.photos || []);
     const [isUploading, setIsUploading] = useState(false);
+
+    // Swipe Logic State
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchCurrent, setTouchCurrent] = useState<number | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+
+    // Close Logic with simplified check
+    const handleClose = () => {
+        onClose();
+    };
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        // Only allow drag if scrolled to top
+        const target = e.currentTarget;
+        if (target.scrollTop > 0) return;
+
+        setTouchStart(e.touches[0].clientY);
+        setTouchCurrent(e.touches[0].clientY);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (touchStart === null) return;
+        const currentY = e.touches[0].clientY;
+        setTouchCurrent(currentY);
+
+        if (currentY - touchStart > 10) {
+            setIsDragging(true);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStart || !touchCurrent) return;
+        const diff = touchCurrent - touchStart;
+
+        if (diff > 150) { // Threshold to close
+            handleClose();
+        }
+
+        setTouchStart(null);
+        setTouchCurrent(null);
+        setIsDragging(false);
+    };
 
     const workers = useLiveQuery(() => db.workers.toArray());
     const project = useLiveQuery(() => db.projects.get(table.projectId));
@@ -41,6 +84,7 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
         : null;
 
     const handleToggleWorker = (workerId: number) => {
+        hapticService.light();
         setSelectedWorkers(prev => {
             if (prev.includes(workerId)) {
                 return prev.filter(id => id !== workerId);
@@ -54,58 +98,52 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
 
     const handleMarkAsCompleted = async () => {
         if (!currentUser?.workerId) {
-            alert(t('login_required') || 'Musíte být přihlášeni');
+            alert(t('login') || 'Musíte být přihlášeni');
             return;
         }
 
         try {
+            soundService.playSuccess();
+            hapticService.success();
             await db.fieldTables.update(table.id!, {
                 status: 'completed',
                 completedAt: new Date(),
                 completedBy: currentUser.workerId,
+                synced: 0
             });
 
             if (firebaseService.isReady) {
-                firebaseService.upsertRecords('fieldTables', [{
-                    ...table,
-                    id: `${table.projectId}_${table.tableId}`, // Standardize ID for Firebase
-                    status: 'completed',
-                    completedAt: new Date().toISOString(),
-                    completedBy: currentUser.workerId
-                }]).catch(console.error);
+                firebaseService.synchronize().catch(console.error);
             }
 
             onUpdate?.();
             onClose();
         } catch (error) {
             console.error('Failed to mark table as completed:', error);
-            alert(t('update_failed') || 'Nepodařilo se aktualizovat stůl');
+            alert('Nepodařilo se aktualizovat stůl'); // Fallback string to avoid type error
         }
     };
 
     const handleMarkAsPending = async () => {
         try {
+            soundService.playClick();
+            hapticService.medium();
             await db.fieldTables.update(table.id!, {
                 status: 'pending',
                 completedAt: undefined,
                 completedBy: undefined,
+                synced: 0
             });
 
             if (firebaseService.isReady) {
-                firebaseService.upsertRecords('fieldTables', [{
-                    ...table,
-                    id: `${table.projectId}_${table.tableId}`,
-                    status: 'pending',
-                    completedAt: undefined,
-                    completedBy: undefined
-                }]).catch(console.error);
+                firebaseService.synchronize().catch(console.error);
             }
 
             onUpdate?.();
             onClose();
         } catch (error) {
             console.error('Failed to mark table as pending:', error);
-            alert(t('update_failed') || 'Nepodařilo se aktualizovat stůl');
+            alert('Nepodařilo se aktualizovat stůl');
         }
     };
 
@@ -113,47 +151,41 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
         try {
             await db.fieldTables.update(table.id!, {
                 assignedWorkers: selectedWorkers,
+                synced: 0
             });
 
             if (firebaseService.isReady) {
-                firebaseService.upsertRecords('fieldTables', [{
-                    ...table,
-                    id: `${table.projectId}_${table.tableId}`,
-                    assignedWorkers: selectedWorkers
-                }]).catch(console.error);
+                firebaseService.synchronize().catch(console.error);
             }
 
             onUpdate?.();
             onClose();
         } catch (error) {
             console.error('Failed to save assignments:', error);
-            alert(t('update_failed') || 'Nepodařilo se uložit přiřazení');
+            alert('Nepodařilo se uložit přiřazení');
         }
     };
 
     const handleMarkAsDefect = async () => {
         try {
+            soundService.playError();
+            hapticService.error();
             await db.fieldTables.update(table.id!, {
                 status: 'defect',
                 defectNotes: defectNotes,
                 photos: photos,
+                synced: 0
             });
 
             if (firebaseService.isReady) {
-                firebaseService.upsertRecords('fieldTables', [{
-                    ...table,
-                    id: `${table.projectId}_${table.tableId}`,
-                    status: 'defect',
-                    defectNotes: defectNotes,
-                    photos: photos
-                }]).catch(console.error);
+                firebaseService.synchronize().catch(console.error);
             }
 
             onUpdate?.();
             onClose();
         } catch (error) {
             console.error('Failed to mark table as defect:', error);
-            alert(t('update_failed') || 'Nepodařilo se nahlásit závadu');
+            alert('Nepodařilo se nahlásit závadu');
         }
     };
 
@@ -172,8 +204,9 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
                 setPhotos(newPhotos);
 
                 // Save immediately to DB
-                await db.fieldTables.update(table.id!, { photos: newPhotos });
+                await db.fieldTables.update(table.id!, { photos: newPhotos, synced: 0 });
                 setIsUploading(false);
+                if (firebaseService.isReady) firebaseService.synchronize();
             };
             reader.readAsDataURL(file);
         } catch (error) {
@@ -185,11 +218,14 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
     const handleRemovePhoto = async (index: number) => {
         const newPhotos = photos.filter((_, i) => i !== index);
         setPhotos(newPhotos);
-        await db.fieldTables.update(table.id!, { photos: newPhotos });
+        await db.fieldTables.update(table.id!, { photos: newPhotos, synced: 0 });
+        if (firebaseService.isReady) firebaseService.synchronize();
     };
 
     const handleAddQuickTask = async () => {
         if (!currentUser?.workerId) return;
+        soundService.playClick();
+        hapticService.light();
 
         const taskData: Omit<ProjectTask, 'id'> = {
             projectId: table.projectId,
@@ -200,28 +236,20 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
             assignedWorkerId: currentUser.workerId,
         };
 
-        const newId = await db.projectTasks.add(taskData as ProjectTask);
+        const newId = Number(await db.projectTasks.add({ ...taskData, synced: 0 } as ProjectTask));
         if (firebaseService.isReady) {
-            const taskToUpsert = {
-                ...taskData,
-                id: newId,
-                assignedWorkerId: currentUser.workerId
-            };
-            firebaseService.upsertRecords('projectTasks', [taskToUpsert]).catch(console.error);
+            firebaseService.synchronize().catch(console.error);
         }
         setShowQuickTask(false);
     };
 
     const handleToggleTaskStatus = async (task: ProjectTask) => {
+        soundService.playClick();
+        hapticService.light();
         const newDate = task.completionDate ? undefined : new Date();
-        await db.projectTasks.update(task.id!, { completionDate: newDate });
+        await db.projectTasks.update(task.id!, { completionDate: newDate, synced: 0 });
         if (firebaseService.isReady) {
-            firebaseService.upsertRecords('projectTasks', [{
-                ...task,
-                completionDate: newDate ? newDate.toISOString() : undefined,
-                startTime: task.startTime ? (task.startTime instanceof Date ? task.startTime.toISOString() : task.startTime) : undefined,
-                endTime: task.endTime ? (task.endTime instanceof Date ? task.endTime.toISOString() : task.endTime) : undefined
-            }]).catch(console.error);
+            firebaseService.synchronize().catch(console.error);
         }
     };
 
@@ -229,7 +257,7 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
         ? getWorkerColor(completedWorker.id!, completedWorker.color, workers)
         : '#f59e0b';
 
-    const tableTypeLabels = {
+    const tableTypeLabels: Record<string, string> = {
         small: 'IT28 - Malý',
         medium: 'IT42 - Střední',
         large: 'IT56 - Velký',
@@ -237,12 +265,20 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
 
     return (
         <div className="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in overflow-hidden">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-xl transition-opacity" onClick={handleClose} />
 
-            <div className="relative w-full md:max-w-2xl bg-slate-900/95 backdrop-blur-2xl md:rounded-[3rem] rounded-t-[3rem] shadow-2xl border-t md:border border-white/20 max-h-[95vh] md:max-h-[90vh] flex flex-col overflow-hidden animate-slide-up">
+            <div
+                className={`relative w-full md:max-w-2xl bg-slate-900/95 backdrop-blur-2xl md:rounded-[3rem] rounded-t-[3rem] shadow-2xl border-t md:border border-white/20 max-h-[100dvh] md:max-h-[90dvh] flex flex-col overflow-hidden animate-slide-up transition-transform duration-200 modal-scroll ${isDragging ? 'scale-[0.98] translate-y-4' : ''}`}
+                style={{ transform: isDragging && touchStart && touchCurrent ? `translateY(${Math.max(0, touchCurrent - touchStart)}px)` : undefined }}
+            >
 
-                {/* Drag Handle for Mobile */}
-                <div className="md:hidden w-full flex justify-center pt-4 pb-2 shrink-0">
+                {/* Drag Handle for Mobile including touch area */}
+                <div
+                    className="md:hidden w-full flex justify-center pt-4 pb-2 shrink-0 touch-none cursor-grab active:cursor-grabbing pt-safe"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                >
                     <div className="w-12 h-1.5 bg-white/20 rounded-full" />
                 </div>
                 <div
@@ -265,7 +301,7 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
                                         {t('table') || 'Stůl'} {table.tableId}
                                     </h2>
                                     <p className="text-gray-400 text-sm font-bold mt-1">
-                                        {tableTypeLabels[table.tableType]}
+                                        {tableTypeLabels[table.tableType] || table.tableType}
                                     </p>
                                 </div>
                             </div>
@@ -298,7 +334,7 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
                         </div>
 
                         <button
-                            onClick={onClose}
+                            onClick={() => { soundService.playClick(); hapticService.light(); handleClose(); }}
                             className="p-3 text-gray-400 hover:text-white transition-all bg-white/5 rounded-2xl hover:bg-white/10"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -342,10 +378,10 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
                                 {t('tasks') || 'Úkoly u tohoto stolu'}
                             </h3>
                             <button
-                                onClick={() => setShowQuickTask(!showQuickTask)}
+                                onClick={() => { setShowQuickTask(!showQuickTask); hapticService.light(); }}
                                 className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-white transition-colors"
                             >
-                                {showQuickTask ? t('cancel') : `+ ${t('add_task')}`}
+                                {showQuickTask ? t('cancel') : `+ ${t('add_task') || 'Přidat úkol'}`}
                             </button>
                         </div>
 
@@ -358,7 +394,7 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
                                             onClick={() => setQuickTaskType(type)}
                                             className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${quickTaskType === type ? 'bg-white text-black' : 'bg-black/40 text-gray-500'}`}
                                         >
-                                            {t(type)}
+                                            {t(type as any) || type}
                                         </button>
                                     ))}
                                 </div>

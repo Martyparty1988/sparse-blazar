@@ -236,10 +236,10 @@ const StatsPage: React.FC = () => {
                         <span className="h-1.5 w-16 bg-cyan-500 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.6)]"></span>
                         <span className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.5em]">{t('analytics') || 'Analytics'}</span>
                     </div>
-                    <h1 className="text-7xl md:text-9xl font-black text-white tracking-tighter uppercase italic leading-[0.7] drop-shadow-2xl" style={{ fontSize: 'clamp(4rem, 12vw, 8rem)' }}>
+                    <h1 className="text-5xl sm:text-7xl md:text-9xl font-black text-white tracking-tighter uppercase italic leading-[0.8] drop-shadow-2xl" style={{ fontSize: 'clamp(3rem, 12vw, 8rem)' }}>
                         {t('statistics')}<span className="text-cyan-500 font-normal">.</span>
                     </h1>
-                    <p className="text-slate-400 font-bold tracking-tight max-w-2xl border-l-4 border-cyan-500/50 pl-6 py-2 uppercase italic bg-cyan-500/5 pr-10 rounded-r-2xl" style={{ fontSize: 'clamp(14px, 4vw, 18px)' }}>
+                    <p className="text-slate-400 font-bold tracking-tight max-w-2xl border-l-4 border-cyan-500/50 pl-4 md:pl-6 py-2 uppercase italic bg-cyan-500/5 pr-6 md:pr-10 rounded-r-2xl" style={{ fontSize: 'clamp(12px, 4vw, 18px)' }}>
                         {t('statistics_dashboard_desc') || "Analýza výkonu a technologického postupu v reálném čase."}
                     </p>
                 </div>
@@ -265,7 +265,7 @@ const StatsPage: React.FC = () => {
                     {/* KPI Cards: Premium Tiles */}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
                         {/* Total Installed kWp */}
-                        <div className="group relative overflow-hidden p-10 glass-dark rounded-[3rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05] hover:scale-[1.03] hover:shadow-cyan-500/10">
+                        <div className="group relative overflow-hidden p-6 md:p-10 glass-dark rounded-[2.5rem] md:rounded-[3rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05] hover:scale-[1.03] hover:shadow-cyan-500/10">
                             <div className="absolute -top-16 -right-16 w-56 h-56 bg-emerald-500/10 rounded-full blur-[80px] group-hover:bg-emerald-500/20 transition-all duration-700"></div>
                             <div className="relative z-10 space-y-6">
                                 <div className="flex items-center gap-4">
@@ -295,7 +295,7 @@ const StatsPage: React.FC = () => {
                         </div>
 
                         {/* Total Cost (Financials) */}
-                        <div className="group relative overflow-hidden p-10 glass-dark rounded-[3rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05] hover:scale-[1.03] hover:shadow-yellow-500/10">
+                        <div className="group relative overflow-hidden p-6 md:p-10 glass-dark rounded-[2.5rem] md:rounded-[3rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05] hover:scale-[1.03] hover:shadow-yellow-500/10">
                             <div className="absolute -top-16 -right-16 w-56 h-56 bg-yellow-500/10 rounded-full blur-[80px] group-hover:bg-yellow-500/20 transition-all duration-700"></div>
                             <div className="relative z-10 space-y-6">
                                 <div className="flex items-center gap-4">
@@ -320,7 +320,7 @@ const StatsPage: React.FC = () => {
                         </div>
 
                         {/* Total Strings */}
-                        <div className="group relative overflow-hidden p-10 glass-dark rounded-[3rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05] hover:scale-[1.03] hover:shadow-amber-500/10">
+                        <div className="group relative overflow-hidden p-6 md:p-10 glass-dark rounded-[2.5rem] md:rounded-[3rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05] hover:scale-[1.03] hover:shadow-amber-500/10">
                             <div className="absolute -top-16 -right-16 w-56 h-56 bg-amber-500/10 rounded-full blur-[80px] group-hover:bg-amber-500/20 transition-all duration-700"></div>
                             <div className="relative z-10 space-y-6">
                                 <div className="flex items-center gap-4">
@@ -350,7 +350,7 @@ const StatsPage: React.FC = () => {
                         </div>
 
                         {/* Active Team */}
-                        <div className="group relative overflow-hidden p-10 glass-dark rounded-[3rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05] hover:scale-[1.03] hover:shadow-blue-500/10">
+                        <div className="group relative overflow-hidden p-6 md:p-10 glass-dark rounded-[2.5rem] md:rounded-[3rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05] hover:scale-[1.03] hover:shadow-blue-500/10">
                             <div className="absolute -top-16 -right-16 w-56 h-56 bg-blue-500/10 rounded-full blur-[80px] group-hover:bg-blue-500/20 transition-all duration-700"></div>
                             <div className="relative z-10 space-y-6">
                                 <div className="flex items-center gap-4">
@@ -381,7 +381,7 @@ const StatsPage: React.FC = () => {
                     {/* Charts Grid */}
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                         {/* Daily Progress - Line Chart */}
-                        <div className="xl:col-span-2 group relative overflow-hidden p-10 glass-dark rounded-[3.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05]">
+                        <div className="xl:col-span-2 group relative overflow-hidden p-6 md:p-10 glass-dark rounded-[2.5rem] md:rounded-[3.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05]">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-3">
@@ -442,7 +442,7 @@ const StatsPage: React.FC = () => {
                         </div>
 
                         {/* Worker Performance - Bar Chart */}
-                        <div className="group relative overflow-hidden p-10 glass-dark rounded-[3.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05]">
+                        <div className="group relative overflow-hidden p-6 md:p-10 glass-dark rounded-[2.5rem] md:rounded-[3.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05]">
                             <div className="space-y-2 mb-12">
                                 <div className="flex items-center gap-3">
                                     <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.6)]"></div>
@@ -515,7 +515,7 @@ const StatsPage: React.FC = () => {
                         </div>
 
                         {/* Status Distribution - Pie Chart */}
-                        <div className="group relative overflow-hidden p-10 glass-dark rounded-[3.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05]">
+                        <div className="group relative overflow-hidden p-6 md:p-10 glass-dark rounded-[2.5rem] md:rounded-[3.5rem] border border-white/5 shadow-2xl transition-all hover:bg-white/[0.05]">
                             <div className="space-y-2 mb-12">
                                 <div className="flex items-center gap-3">
                                     <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.6)]"></div>

@@ -47,9 +47,9 @@ const Attendance: React.FC = () => {
             await db.dailyLogs.add(logData);
         }
     }, [selectedDate, logsMap]);
-    
+
     const getStatusClasses = (status: AttendanceStatus) => {
-        switch(status) {
+        switch (status) {
             case 'present': return 'bg-green-600/80 text-white';
             case 'absent': return 'bg-red-600/80 text-white';
             case 'sick': return 'bg-yellow-600/80 text-white';
@@ -81,11 +81,11 @@ const Attendance: React.FC = () => {
             <div className="bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-lg overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-white/10">
-                        <thead className="bg-white/10">
+                        <thead className="bg-white/10 uppercase tracking-widest text-[10px]">
                             <tr>
-                                <th className="px-6 py-4 text-left text-sm font-bold text-gray-200 uppercase tracking-wider">{t('worker_name')}</th>
-                                <th className="px-6 py-4 text-left text-sm font-bold text-gray-200 uppercase tracking-wider">{t('status')}</th>
-                                <th className="px-6 py-4 text-left text-sm font-bold text-gray-200 uppercase tracking-wider">{t('notes')}</th>
+                                <th className="px-4 py-3 text-left font-black text-slate-400">{t('worker_name')}</th>
+                                <th className="px-4 py-3 text-left font-black text-slate-400">{t('status')}</th>
+                                <th className="px-4 py-3 text-left font-black text-slate-400">{t('notes')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/10">
@@ -95,9 +95,9 @@ const Attendance: React.FC = () => {
                                 const notes = log?.notes || '';
 
                                 return (
-                                    <tr key={worker.id} className="hover:bg-white/10 transition-colors">
-                                        <td className="px-6 py-5 whitespace-nowrap text-lg font-bold text-white">{worker.name}</td>
-                                        <td className="px-6 py-5">
+                                    <tr key={worker.id} className="hover:bg-white/5 transition-colors group">
+                                        <td className="px-4 py-2 whitespace-nowrap text-base font-bold text-white group-hover:text-indigo-400 transition-colors">{worker.name}</td>
+                                        <td className="px-4 py-2">
                                             <select
                                                 value={status}
                                                 onChange={(e) => handleLogChange(worker.id!, e.target.value as AttendanceStatus)}
@@ -109,7 +109,7 @@ const Attendance: React.FC = () => {
                                                 <option value="holiday" className="bg-gray-800">{t('holiday')}</option>
                                             </select>
                                         </td>
-                                        <td className="px-6 py-5">
+                                        <td className="px-4 py-2">
                                             <input
                                                 type="text"
                                                 value={notes}

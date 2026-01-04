@@ -14,6 +14,7 @@ import ConfirmationModal from './ConfirmationModal';
 import BackupManager from './BackupManager';
 import ShareIcon from './icons/ShareIcon';
 import BackButton from './BackButton';
+import { safety } from '../services/safetyService';
 
 
 const Settings: React.FC = () => {
@@ -55,12 +56,16 @@ const Settings: React.FC = () => {
                 <BackButton />
             </div>
 
-            <header className="mb-16 space-y-4">
-                <h1 className="text-7xl font-black text-white italic uppercase tracking-tighter leading-none">
-                    NASTAVENÍ<span className="text-indigo-500">.</span>
+            <header className="mb-16 space-y-6">
+                <div className="flex items-center gap-3">
+                    <span className="w-1.5 h-6 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.4)]"></span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Systémové nastavení</span>
+                </div>
+                <h1 className="text-6xl sm:text-8xl font-black text-white italic uppercase tracking-tighter leading-[0.85] break-words">
+                    NASTAVENÍ<span className="text-indigo-500 not-italic">.</span>
                 </h1>
-                <p className="text-slate-500 font-bold uppercase tracking-[0.3em] ml-2">Konfigurace systému a správa dat</p>
-                <div className="h-2 w-32 bg-indigo-600 rounded-full ml-2 shadow-[0_4px_20px_rgba(79,70,229,0.5)]" />
+                <p className="text-slate-500 font-bold uppercase tracking-[0.3em] pl-1 border-l-2 border-white/10 ml-1">Konfigurace systému a správa dat</p>
+                <div className="h-2 w-32 bg-indigo-600 rounded-full shadow-[0_4px_20px_rgba(79,70,229,0.5)]" />
             </header>
 
             <div className="space-y-10">
@@ -105,8 +110,10 @@ const Settings: React.FC = () => {
                                     const token = await firebaseService.requestNotificationPermission(user?.workerId);
                                     if (token) {
                                         showToast('Oznámení povolena!', 'success');
-                                        if (typeof Notification !== 'undefined') {
-                                            new Notification("MST System", { body: "Oznámení byla úspěšně aktivována." });
+                                        if (safety.notification) {
+                                            try {
+                                                new safety.notification("MST System", { body: "Oznámení byla úspěšně aktivována." });
+                                            } catch (e) { console.error('Notification failed', e); }
                                         }
                                     } else {
                                         showToast('Povolte oznámení v prohlížeči', 'error');

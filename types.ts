@@ -10,6 +10,8 @@ export interface Worker {
   color?: string;
   createdAt: Date;
   projectIds?: number[]; // IDs of projects the worker is assigned to
+  synced?: number;
+  firebaseId?: string;
 }
 
 export interface Project {
@@ -28,6 +30,8 @@ export interface Project {
   createdAt?: Date;
   updatedAt?: Date;
   workerIds?: number[]; // IDs of workers assigned to the project
+  synced?: number;
+  firebaseId?: string;
 }
 
 export interface TimeRecord {
@@ -42,6 +46,8 @@ export interface TimeRecord {
   description: string;
   tableIds?: string[];
   projectTaskId?: number;
+  synced?: number;
+  firebaseId?: string;
 }
 
 export interface User {
@@ -61,6 +67,8 @@ export interface FieldTable {
   completedBy?: number;
   defectNotes?: string;
   photos?: string[];
+  synced?: number;
+  firebaseId?: string;
 }
 
 export interface SolarTable {
@@ -119,6 +127,8 @@ export interface ProjectTask {
   completionDate?: Date;
   startTime?: Date;
   endTime?: Date;
+  synced?: number;
+  firebaseId?: string;
 }
 
 export interface ProjectComponent {
@@ -211,6 +221,8 @@ export interface Tool {
   lastInspection?: Date;
   location?: string;
   condition?: 1 | 2 | 3 | 4 | 5; // 1 = New, 5 = Ready for scrap
+  synced?: number;
+  firebaseId?: string;
 }
 
 export interface ToolLog {
@@ -231,6 +243,8 @@ export interface DailyReport {
   issues: string;
   managerEmail?: string;
   sentAt?: Date;
+  synced?: number;
+  firebaseId?: string;
 }
 
 export interface ChatMessage {

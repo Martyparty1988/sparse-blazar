@@ -1,6 +1,6 @@
-
 import React, { useState, Suspense, useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from './contexts/AuthContext';
 import { BackupProvider } from './contexts/BackupContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -39,9 +39,50 @@ const PageLoader = () => (
   </div>
 );
 
+// Animated Routes Component to handle transitions
+const AnimatedRoutes = () => {
+  const location = useLocation();
+  const { user } = useAuth();
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="h-full"
+      >
+        <Suspense fallback={<PageLoader />}>
+          <Routes location={location}>
+            <Route path="/" element={user?.role === 'admin' ? <Dashboard /> : <Navigate to="/my-tasks" />} />
+            <Route path="/my-tasks" element={<MyTasks />} />
+            <Route path="/workers" element={<Workers />} />
+            <Route path="/workers/:id" element={<WorkerDetail />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/field-plans" element={<FieldPlans />} />
+            <Route path="/statistics" element={<Statistics />} />
+            <Route path="/stats" element={<StatsPage />} />
+            <Route path="/records" element={<TimeRecords />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/attendance" element={<Attendance />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/tools" element={<ToolManager />} />
+            <Route path="/daily-reports" element={<DailyReports />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/payroll" element={<Payroll />} />
+            <Route path="/import" element={<DataImporter />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Suspense>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 const App: React.FC = () => {
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
-  // const [isSyncing, setIsSyncing] = useState(true); // Removed blocking state
 
   useEffect(() => {
     const performInitialSync = async () => {
@@ -80,7 +121,6 @@ const App: React.FC = () => {
     </div>
   );
   if (!isAuthenticated) return <Login />;
-  // if (isSyncing) return <SplashScreen />; // Non-blocking sync
 
   return (
     <ToastProvider>
@@ -88,28 +128,7 @@ const App: React.FC = () => {
         <HashRouter>
           <Layout>
             <ErrorBoundary>
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  <Route path="/" element={user?.role === 'admin' ? <Dashboard /> : <Navigate to="/my-tasks" />} />
-                  <Route path="/my-tasks" element={<MyTasks />} />
-                  <Route path="/workers" element={<Workers />} />
-                  <Route path="/workers/:id" element={<WorkerDetail />} />
-                  <Route path="/projects" element={<Projects />} />
-                  <Route path="/field-plans" element={<FieldPlans />} />
-                  <Route path="/statistics" element={<Statistics />} />
-                  <Route path="/stats" element={<StatsPage />} />
-                  <Route path="/records" element={<TimeRecords />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/attendance" element={<Attendance />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/tools" element={<ToolManager />} />
-                  <Route path="/daily-reports" element={<DailyReports />} />
-                  <Route path="/chat" element={<Chat />} />
-                  <Route path="/payroll" element={<Payroll />} />
-                  <Route path="/import" element={<DataImporter />} />
-                  <Route path="*" element={<Navigate to="/" />} />
-                </Routes>
-              </Suspense>
+              <AnimatedRoutes />
             </ErrorBoundary>
           </Layout>
         </HashRouter>

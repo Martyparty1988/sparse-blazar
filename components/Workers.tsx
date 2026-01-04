@@ -27,7 +27,7 @@ const WorkerCard: React.FC<{
   return (
     <div
       onClick={() => onClick(worker.id!)}
-      className="group glass-dark rounded-[3rem] p-8 border border-white/5 hover:border-indigo-500/30 transition-all duration-500 flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-5 overflow-hidden relative shadow-2xl hover:scale-[1.02] cursor-pointer"
+      className="group glass-dark rounded-[1.5rem] p-4 border border-white/5 hover:border-indigo-500/30 transition-all duration-500 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-5 overflow-hidden relative shadow-2xl hover:scale-[1.01] cursor-pointer"
       style={{ animationDelay: `${index * 0.05}s` }}
     >
       {/* Decorative Blur */}
@@ -39,16 +39,16 @@ const WorkerCard: React.FC<{
       </div>
 
       <div className="flex items-start justify-between relative z-10">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-20 h-20 rounded-[2rem] flex items-center justify-center text-3xl font-black text-white shadow-2xl group-hover:scale-105 transition-transform duration-500 border border-white/10" style={{ backgroundColor: worker.color || '#6366f1' }}>
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-black text-white shadow-2xl group-hover:scale-105 transition-transform duration-500 border border-white/10" style={{ backgroundColor: worker.color || '#6366f1' }}>
               {worker.name.substring(0, 2).toUpperCase()}
             </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-4 border-[#0a0c1a] shadow-lg"></div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#0a0c1a] shadow-lg"></div>
           </div>
-          <div className="space-y-1">
-            <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none">{worker.name}</h3>
-            <p className="text-[10px] font-black text-indigo-400/60 uppercase tracking-[0.3em] font-mono">Specialista montáže</p>
+          <div className="space-y-0.5">
+            <h3 className="text-lg font-black text-white italic tracking-tighter uppercase leading-none">{worker.name}</h3>
+            <p className="text-[8px] font-black text-indigo-400/60 uppercase tracking-[0.3em] font-mono">Specialista montáže</p>
           </div>
         </div>
 
@@ -56,35 +56,35 @@ const WorkerCard: React.FC<{
           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => onEdit(worker)}
-              className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10"
+              className="w-11 h-11 flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10"
             >
-              <PencilIcon className="w-4 h-4" />
+              <PencilIcon className="w-5 h-5" />
             </button>
             <button
               onClick={() => onDelete(worker)}
-              className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:bg-rose-500/5 rounded-xl transition-all border border-transparent hover:border-rose-500/10"
+              className="w-11 h-11 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:bg-rose-500/5 rounded-xl transition-all border border-transparent hover:border-rose-500/10"
             >
-              <TrashIcon className="w-4 h-4" />
+              <TrashIcon className="w-5 h-5" />
             </button>
           </div>
         )}
       </div>
 
       {isAdmin && (
-        <div className="space-y-4 relative z-10 pt-2">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/5 group/stat hover:bg-white/[0.05] transition-colors">
-              <span className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5 opacity-60">Sazba / h</span>
-              <span className="text-xl font-black text-white italic tracking-tighter">€{Number(worker.hourlyRate || 0).toFixed(2)}</span>
+        <div className="space-y-2 relative z-10 pt-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white/[0.03] p-3 rounded-xl border border-white/5 group/stat hover:bg-white/[0.05] transition-colors">
+              <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5 opacity-60">Sazba / h</span>
+              <span className="text-lg font-black text-white italic tracking-tighter">€{Number(worker.hourlyRate || 0).toFixed(2)}</span>
             </div>
-            <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/5 group/stat hover:bg-white/[0.05] transition-colors">
-              <span className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5 opacity-60">Projekty</span>
-              <span className="text-xl font-black text-white italic tracking-tighter">{worker.projectIds?.length || 0}</span>
+            <div className="bg-white/[0.03] p-3 rounded-xl border border-white/5 group/stat hover:bg-white/[0.05] transition-colors">
+              <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5 opacity-60">Projekty</span>
+              <span className="text-lg font-black text-white italic tracking-tighter">{worker.projectIds?.length || 0}</span>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-indigo-500/[0.08] to-transparent p-6 rounded-[2rem] border border-white/5">
-            <div className="grid grid-cols-3 gap-6">
+          <div className="bg-gradient-to-br from-indigo-500/[0.08] to-transparent p-4 rounded-[1.5rem] border border-white/5">
+            <div className="grid grid-cols-3 gap-4">
               <div className="text-center group/rate">
                 <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2 opacity-50">Panel</span>
                 <span className="text-sm font-black text-indigo-300 italic">€{worker.panelPrice}</span>
@@ -175,19 +175,19 @@ const Workers: React.FC = () => {
   };
 
   return (
-    <div className="space-y-16 pb-24 max-w-7xl mx-auto px-4">
+    <div className="space-y-8 pb-24 max-w-7xl mx-auto px-4">
       <div className="md:hidden pt-4">
         <BackButton />
       </div>
 
-      <header className="space-y-12">
+      <header className="space-y-8">
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-10">
           <div className="space-y-6 max-w-3xl">
-            <div className="space-y-2">
-              <h1 className="text-8xl md:text-9xl font-black text-white tracking-tighter uppercase italic leading-[0.7]">
+            <div className="space-y-4 w-full overflow-hidden">
+              <h1 className="text-6xl sm:text-8xl md:text-9xl font-black text-white tracking-tighter uppercase italic leading-[0.85] break-words">
                 {t('team')}<span className="text-indigo-500 not-italic">.</span>
               </h1>
-              <div className="h-2 w-48 bg-indigo-600 rounded-full shadow-[0_4px_20px_rgba(79,70,229,0.5)]" />
+              <div className="h-2 w-32 md:w-48 bg-indigo-600 rounded-full shadow-[0_4px_20px_rgba(79,70,229,0.5)]" />
             </div>
             <p className="text-2xl text-slate-400 font-bold tracking-tight pl-2 border-l-4 border-white/5 py-2">
               Správa montážních čet a jejich výkonnosti v reálném čase.

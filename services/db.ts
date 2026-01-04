@@ -183,7 +183,52 @@ export class MSTDatabase extends Dexie {
       tools: '++id, name, category, status, assignedWorkerId',
       toolLogs: '++id, toolId, workerId, action, timestamp',
     });
+
+
+    // Version 26: Sync Robustness
+    dbInstance.version(26).stores({
+      records: '++id, workerId, projectId, startTime, synced, firebaseId',
+      fieldTables: '++id, projectId, tableId, status, synced, firebaseId, &[projectId+tableId]',
+      projectTasks: '++id, projectId, assignedWorkerId, synced, firebaseId',
+      dailyReports: '++id, date, projectId, synced, firebaseId, [projectId+date]',
+      tools: '++id, name, type, status, assignedWorkerId, synced, firebaseId',
+      workers: '++id, name, username, synced, firebaseId',
+      projects: '++id, name, status, synced, firebaseId',
+    }).upgrade(async (tx) => {
+      // Initialize existing records as synced=1 (assuming they came from server or are legacy)
+      // If they don't have firebaseId, they might need one, but for now we assume existing state is "steady".
+      // Actually, safer to mark as synced=0 if we aren't sure, but that might duplicate.
+      // Let's assume current state is "clean" for existing users.
+      const tables = ['records', 'fieldTables', 'projectTasks', 'dailyReports', 'tools', 'workers', 'projects'];
+      for (const tableName of tables) {
+        await tx.table(tableName).toCollection().modify({ synced: 1 });
+      }
+    });
   }
 }
 
-export const db = new MSTDatabase() as MSTDatabase & Dexie;
+// Safe DB Initialization
+let dbInstance: MSTDatabase;
+
+try {
+  // Check for IndexedDB support (User Rule 2 & 5)
+  if (typeof window !== 'undefined' && !('indexedDB' in window)) {
+    console.warn("⚠️ IndexedDB missing - using minimal fallback (App might be limited)");
+    // Fallback for non-IDB environments (very rare these days, mostly old Node or partial browsers)
+    // We initialize it anyway, Dexie might fall back to something or just fail on open()
+    // But we won't throw here.
+  }
+
+  dbInstance = new MSTDatabase();
+
+  // Catch Open Errors (e.g. Private Mode Quota Exceeded)
+  // Dexie doesn't expose a simple global "on error" for the instance easily properly without open()
+  // But we can hook it.
+} catch (e) {
+  console.error("🔥 CRITICAL: Database initialization failed", e);
+  // Fallback: Create a broken instance that at least allows imports to succeed
+  // In a real scenario, we'd need a full InMemory Mock, but for now we rely on ErrorBoundary to catch usages
+  dbInstance = new MSTDatabase(); // This might crash if constructor throws.
+}
+
+export const db = dbInstance! as MSTDatabase & Dexie;

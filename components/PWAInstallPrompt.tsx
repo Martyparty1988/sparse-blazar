@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import ShareIcon from './icons/ShareIcon';
 import PlusSquareIcon from './icons/PlusSquareIcon';
+import { safety } from '../services/safetyService';
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -23,8 +24,8 @@ const PWAInstallPrompt: React.FC = () => {
         const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches ||
             (window.navigator as any).standalone === true;
 
-        const hasSeenPrompt = localStorage.getItem('hasSeenPWAInstallPrompt');
-        const dismissCount = parseInt(localStorage.getItem('pwaPromptDismissCount') || '0');
+        const hasSeenPrompt = safety.storage.getItem('hasSeenPWAInstallPrompt');
+        const dismissCount = parseInt(safety.storage.getItem('pwaPromptDismissCount') || '0');
 
         // Don't show if already installed or dismissed too many times
         if (isInStandaloneMode || dismissCount >= 3) {
@@ -66,7 +67,7 @@ const PWAInstallPrompt: React.FC = () => {
 
             if (choiceResult.outcome === 'accepted') {
                 console.log('User accepted the install prompt');
-                localStorage.setItem('hasSeenPWAInstallPrompt', 'true');
+                safety.storage.setItem('hasSeenPWAInstallPrompt', 'true');
             }
 
             setDeferredPrompt(null);
@@ -77,9 +78,9 @@ const PWAInstallPrompt: React.FC = () => {
     };
 
     const handleDismiss = () => {
-        const currentCount = parseInt(localStorage.getItem('pwaPromptDismissCount') || '0');
-        localStorage.setItem('pwaPromptDismissCount', (currentCount + 1).toString());
-        localStorage.setItem('hasSeenPWAInstallPrompt', 'true');
+        const currentCount = parseInt(safety.storage.getItem('pwaPromptDismissCount') || '0');
+        safety.storage.setItem('pwaPromptDismissCount', (currentCount + 1).toString());
+        safety.storage.setItem('hasSeenPWAInstallPrompt', 'true');
         setIsVisible(false);
     };
 

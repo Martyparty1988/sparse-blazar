@@ -60,9 +60,9 @@ const ProjectCardMobile: React.FC<{
         onDelete(project);
         setIsSwiped(false);
     };
-    
+
     const handleCardClick = () => {
-        if(isSwiped) {
+        if (isSwiped) {
             setIsSwiped(false);
         } else {
             onManageTasks(project);
@@ -70,13 +70,13 @@ const ProjectCardMobile: React.FC<{
     }
 
     return (
-        <div className="relative w-full overflow-hidden rounded-2xl" ref={cardRef}>
+        <div className="relative w-full overflow-hidden rounded-xl" ref={cardRef}>
             <div
                 className={`transition-transform duration-300 ease-in-out transform ${isSwiped ? '-translate-x-32' : 'translate-x-0'}`}
                 {...swipeHandlers}
                 onClick={handleCardClick}
             >
-                <div className="bg-slate-800/50 backdrop-blur-md p-4 border border-white/10 flex flex-col gap-4 active:bg-slate-700 transition-colors">
+                <div className="bg-slate-800/50 backdrop-blur-md p-3.5 border border-white/10 flex flex-col gap-3 active:bg-slate-700 transition-colors">
                     <div className="flex justify-between items-start">
                         <h3 className="font-bold text-white text-lg line-clamp-2 pr-2">{project.name}</h3>
                         <div className={`shrink-0 px-3 py-1 text-xs font-semibold rounded-full text-white flex items-center gap-2 ${getStatusColor(project.status)}`}>

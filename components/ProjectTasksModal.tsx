@@ -340,10 +340,10 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                 <div className="flex-grow overflow-y-auto px-6 md:px-8 space-y-4 custom-scrollbar">
                     {filteredTasks && filteredTasks.length > 0 ? (
                         filteredTasks.map(task => (
-                            <div key={task.id} className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 ${task.completionDate ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-white/5 border-white/10 hover:border-white/20'}`}>
+                            <div key={task.id} className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 ${task.completionDate ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-white/5 border-white/10 hover:border-white/20'}`}>
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none"></div>
-                                <div className="p-5 md:p-6 flex flex-col md:flex-row md:items-center gap-6 relative z-10">
-                                    <div className="flex-grow space-y-3">
+                                <div className="p-3.5 md:p-5 flex flex-col md:flex-row md:items-center gap-4 relative z-10">
+                                    <div className="flex-grow space-y-2">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-2.5 py-1 rounded-full border ${task.completionDate ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
                                                 {t(task.taskType)}
@@ -358,37 +358,35 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                                                 </div>
                                             )}
                                         </div>
-                                        <h4 className={`text-xl font-bold tracking-tight leading-snug ${task.completionDate ? 'text-slate-500 italic' : 'text-white'}`}>
+                                        <h4 className={`text-lg font-bold tracking-tight leading-snug ${task.completionDate ? 'text-slate-500 italic' : 'text-white'}`}>
                                             {task.description}
                                         </h4>
-                                        {task.tableIds && task.tableIds.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 pt-1">
-                                                {task.tableIds.map(tid => (
-                                                    <span key={tid} className="flex items-center gap-1.5 px-2 py-0.5 bg-black/20 border border-white/5 rounded-lg text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                                                        <div className="w-0.5 h-1.5 bg-slate-500/50 rounded-full"></div>
-                                                        {tid}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
+                                        <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                            {task.tableIds.map(tid => (
+                                                <span key={tid} className="flex items-center gap-1.5 px-2 py-0.5 bg-black/20 border border-white/5 rounded-lg text-[8px] font-black text-slate-500 uppercase tracking-widest">
+                                                    <div className="w-0.5 h-1.5 bg-slate-500/50 rounded-full"></div>
+                                                    {tid}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
 
-                                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 flex-shrink-0">
-                                        <div className="w-full sm:w-auto flex flex-col items-center sm:items-end justify-center px-6 py-3 rounded-2xl bg-black/30 border border-white/5 shadow-inner min-w-[120px]">
-                                            <div className="text-lg font-mono font-black text-white">€{task.price.toFixed(2)}</div>
+                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                        <div className="flex-1 sm:flex-none flex flex-col items-end justify-center px-4 py-2.5 rounded-xl bg-black/30 border border-white/5 shadow-inner min-w-[100px]">
+                                            <div className="text-base font-mono font-black text-white">€{task.price.toFixed(2)}</div>
                                             {task.hoursSpent && task.hoursSpent > 0 && (
-                                                <div className="text-[9px] font-bold text-emerald-400/70 uppercase tracking-widest mt-0.5">
+                                                <div className="text-[8px] font-bold text-emerald-400/70 uppercase tracking-widest mt-0.5">
                                                     €{(task.price / task.hoursSpent).toFixed(2)}/h
                                                 </div>
                                             )}
                                         </div>
 
-                                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                                            <div className="relative group/select flex-1 sm:flex-none">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="relative group/select">
                                                 <select
                                                     value={task.assignedWorkerId || ''}
                                                     onChange={(e) => handleAssignWorker(task.id!, e.target.value === '' ? '' : Number(e.target.value))}
-                                                    className={`w-full sm:w-auto pl-4 pr-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest appearance-none border transition-all cursor-pointer focus:ring-2 focus:ring-indigo-500/50 ${task.assignedWorkerId
+                                                    className={`pl-3 pr-8 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest appearance-none border transition-all cursor-pointer focus:ring-2 focus:ring-indigo-500/50 ${task.assignedWorkerId
                                                         ? 'bg-indigo-600/10 text-indigo-300 border-indigo-500/30'
                                                         : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'
                                                         } [&>option]:bg-slate-900`}
@@ -404,28 +402,28 @@ const ProjectTasksModal: React.FC<ProjectTasksModalProps> = ({ project, onClose 
                                                         );
                                                     })}
                                                 </select>
-                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
                                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
                                                 </div>
                                             </div>
 
                                             <button
                                                 onClick={() => handleToggleCompletion(task)}
-                                                className={`p-3.5 rounded-2xl transition-all shadow-xl active:scale-95 ${task.completionDate
+                                                className={`p-2.5 rounded-xl transition-all shadow-xl active:scale-95 ${task.completionDate
                                                     ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                                                     : 'bg-emerald-500 text-black border border-emerald-400'
                                                     }`}
                                                 title={task.completionDate ? t('mark_as_incomplete') : t('mark_as_complete')}
                                             >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                                             </button>
 
                                             <button
                                                 onClick={() => setTaskToDelete(task.id!)}
-                                                className="p-3.5 bg-white/5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-2xl transition-all border border-white/5 hover:border-rose-500/20 active:scale-90"
+                                                className="p-2.5 bg-white/5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all border border-white/5 hover:border-rose-500/20 active:scale-90"
                                                 title={t('delete')}
                                             >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </button>
                                         </div>
                                     </div>

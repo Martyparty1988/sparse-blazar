@@ -115,13 +115,13 @@ const MyTasks: React.FC = () => {
     const getProjectName = (projectId: number) => projects?.find(p => p.id === projectId)?.name || 'Neznámý projekt';
 
     return (
-        <div className="space-y-12 pb-24 animate-fade-in max-w-5xl mx-auto p-6 md:p-8">
+        <div className="space-y-6 pb-24 animate-fade-in max-w-5xl mx-auto p-4 md:p-6">
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative">
-                <div className="space-y-2 relative z-10">
-                    <h1 className="text-8xl md:text-9xl font-black text-white tracking-tighter uppercase italic leading-[0.7]">
+                <div className="space-y-2 relative z-10 w-full overflow-hidden">
+                    <h1 className="text-5xl sm:text-7xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.85] break-words">
                         Moje<br /><span className="text-indigo-500">Úkoly.</span>
                     </h1>
-                    <div className="h-2 w-32 bg-indigo-600 rounded-full shadow-[0_4px_20px_rgba(79,70,229,0.5)] mt-4" />
+                    <div className="h-1.5 w-24 bg-indigo-600 rounded-full shadow-[0_4px_20px_rgba(79,70,229,0.5)] mt-3" />
                 </div>
 
                 <div className="glass-dark px-8 py-4 rounded-[2rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl relative z-10">
@@ -135,7 +135,7 @@ const MyTasks: React.FC = () => {
 
             {/* Active Task Section */}
             {activeTask ? (
-                <section className="relative overflow-hidden rounded-[3rem] p-10 shadow-[0_30px_60px_-15px_rgba(79,70,229,0.3)] border border-white/10 group">
+                <section className="relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-8 shadow-[0_30px_60px_-15px_rgba(79,70,229,0.3)] border border-white/10 group">
                     {/* Dynamic Gradient Background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-blue-700 opacity-90 transition-all duration-1000 group-hover:scale-105" />
                     <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-150 mix-blend-soft-light" />
@@ -150,7 +150,7 @@ const MyTasks: React.FC = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <h2 className="text-5xl md:text-6xl font-black text-white uppercase italic tracking-tighter leading-[0.9] drop-shadow-lg">
+                                <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-white uppercase italic tracking-tighter leading-[1] drop-shadow-lg">
                                     {activeTask.description}
                                 </h2>
                                 <div className="flex items-center gap-3 opacity-90">
@@ -161,9 +161,9 @@ const MyTasks: React.FC = () => {
                         </div>
 
                         <div className="flex flex-col items-end gap-6">
-                            <div className="text-right bg-black/20 p-8 rounded-[2.5rem] border border-white/10 backdrop-blur-md min-w-[200px] shadow-2xl">
-                                <p className="text-[10px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-2 opacity-80">Doba trvání</p>
-                                <p className="text-5xl font-mono font-black text-white tracking-tight">{formatDuration(new Date(activeTask.startTime!), now)}</p>
+                            <div className="text-left md:text-right bg-black/20 p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-white/10 backdrop-blur-md min-w-full md:min-w-[180px] shadow-2xl">
+                                <p className="text-[9px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1 opacity-80">Doba trvání</p>
+                                <p className="text-3xl md:text-4xl font-mono font-black text-white tracking-tight">{formatDuration(new Date(activeTask.startTime!), now)}</p>
                             </div>
                         </div>
                     </div>
@@ -202,7 +202,7 @@ const MyTasks: React.FC = () => {
             )}
 
             {/* Tasks Queue */}
-            <section className="space-y-8">
+            <section className="space-y-4">
                 <div className="flex items-center gap-4 px-2">
                     <div className="w-1.5 h-8 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
                     <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Fronta Úkolů <span className="text-indigo-500 text-lg not-italic align-top">({pendingTasks?.length || 0})</span></h3>
@@ -212,35 +212,29 @@ const MyTasks: React.FC = () => {
                     {pendingTasks?.map((task, idx) => (
                         <div
                             key={task.id}
-                            className="group glass-dark rounded-[2.5rem] p-8 border border-white/5 hover:border-indigo-500/30 transition-all duration-500 hover:scale-[1.02] relative overflow-hidden"
+                            onClick={() => handleStartTask(task)}
+                            className="group glass-dark rounded-[1.5rem] p-5 border border-white/5 hover:border-indigo-500/30 transition-all duration-500 hover:scale-[1.01] relative overflow-hidden cursor-pointer"
                             style={{ animationDelay: `${idx * 0.05}s` }}
                         >
-                            <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-                                <div className="w-20 h-20 bg-indigo-500/20 blur-[40px] rounded-full" />
+                            <div className="absolute top-0 right-0 p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                                <div className="w-16 h-16 bg-indigo-500/20 blur-[30px] rounded-full" />
                             </div>
 
-                            <div className="flex justify-between items-start mb-6 relative z-10">
-                                <div className="p-4 bg-white/[0.03] rounded-2xl text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all shadow-lg border border-white/5">
-                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                            <div className="flex justify-between items-start mb-4 relative z-10">
+                                <div className="p-3 bg-white/[0.03] rounded-xl text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all shadow-lg border border-white/5">
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                                 </div>
-                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] bg-black/20 px-4 py-2 rounded-full border border-white/5 group-hover:border-indigo-500/20 transition-all">Přiřazeno</span>
+                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] bg-black/20 px-3 py-1.5 rounded-full border border-white/5 group-hover:border-indigo-500/20 transition-all">Přiřazeno</span>
                             </div>
 
-                            <div className="space-y-4 relative z-10 mb-8">
-                                <h4 className="text-2xl font-black text-white leading-none tracking-tight group-hover:text-indigo-300 transition-colors line-clamp-2">{task.description}</h4>
-                                <div className="flex items-center gap-3">
-                                    <div className="h-px w-6 bg-slate-700 group-hover:bg-indigo-500/50 transition-colors" />
-                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{getProjectName(task.projectId)}</p>
+                            <div className="space-y-2 relative z-10">
+                                <h4 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-indigo-300 transition-colors line-clamp-2">{task.description}</h4>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-px w-4 bg-slate-700 group-hover:bg-indigo-500/50 transition-colors" />
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{getProjectName(task.projectId)}</p>
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => handleStartTask(task)}
-                                className="w-full bg-white/5 hover:bg-white text-white hover:text-black py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] transition-all border border-white/5 hover:border-transparent active:scale-95 shadow-lg relative overflow-hidden group/btn"
-                            >
-                                <span className="relative z-10">Začít pracovat</span>
-                                <div className="absolute inset-0 bg-white opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
-                            </button>
                         </div>
                     ))}
 

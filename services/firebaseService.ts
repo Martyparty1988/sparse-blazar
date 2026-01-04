@@ -25,6 +25,7 @@ import { getDatabase, ref, set, push, onValue, off, remove, goOnline, goOffline,
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth, Auth } from 'firebase/auth';
 import { db } from './db'; // Import Dexie instance
+import { safety } from './safetyService';
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -61,7 +62,7 @@ class FirebaseService {
             } else {
                 this.app = getApp();
             }
-            
+
             this.db = getFirestore(this.app);
             this.rtdb = getDatabase(this.app);
             this.auth = getAuth(this.app);
@@ -118,21 +119,29 @@ class FirebaseService {
 
     public async markAsSeen(channelId: string, userId: number) {
         if (!this.rtdb) return;
-        const path = `chat/${channelId}/seen/${userId}`;
-        await set(ref(this.rtdb, path), new Date().toISOString());
+        try {
+            const path = `chat/${channelId}/seen/${userId}`;
+            await set(ref(this.rtdb, path), new Date().toISOString());
+        } catch (error) {
+            console.warn('markAsSeen failed:', error);
+        }
     }
 
     public async setTypingStatus(channelId: string, userId: number, userName: string, isTyping: boolean) {
         if (!this.rtdb) return;
-        const path = `chat/${channelId}/typing/${userId}`;
-        const typingRef = ref(this.rtdb, path);
+        try {
+            const path = `chat/${channelId}/typing/${userId}`;
+            const typingRef = ref(this.rtdb, path);
 
-        if (isTyping) {
-            // Set timestamp and remove on disconnect
-            await set(typingRef, { name: userName, timestamp: serverTimestamp() });
-            onDisconnect(typingRef).remove();
-        } else {
-            await set(typingRef, null);
+            if (isTyping) {
+                // Set timestamp and remove on disconnect
+                await set(typingRef, { name: userName, timestamp: serverTimestamp() });
+                onDisconnect(typingRef).remove();
+            } else {
+                await set(typingRef, null);
+            }
+        } catch (error) {
+            console.warn('setTypingStatus failed:', error);
         }
     }
 
@@ -160,12 +169,15 @@ class FirebaseService {
 
     public async requestNotificationPermission(workerId?: number) {
         if (!this.messaging) return null;
-        if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+
+        // Safety check using SafetyService or direct check
+        if (!safety.notification) {
             console.warn('Notifications not supported in this environment');
             return null;
         }
+
         try {
-            const permission = await Notification.requestPermission();
+            const permission = await safety.notification.requestPermission();
             if (permission === 'granted') {
                 const token = await getToken(this.messaging, {
                     vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
@@ -189,7 +201,7 @@ class FirebaseService {
     }
 
     public updateBadge(count: number) {
-        if ('setAppBadge' in navigator) {
+        if (safety.has('navigator') && 'setAppBadge' in navigator) {
             if (count > 0) {
                 (navigator as any).setAppBadge(count).catch(console.error);
             } else {
@@ -226,101 +238,220 @@ class FirebaseService {
     }
 
     // ========== NEW: CENTRALIZED SYNC LOGIC ==========
+    private isSyncing = false;
+
     public async synchronize(forceFull: boolean = false): Promise<SyncResult> {
         if (!this.isReady) return { success: false, error: 'Firebase not ready' };
+
+        // Debounce: prevent overlapping syncs (User Rule 5: prevent spam)
+        if (this.isSyncing) {
+            console.log('⏳ Sync already in progress, skipping...');
+            return { success: true, error: 'In Progress' };
+        }
+
+        // Phase 0: Check Online Status
+        if (!this.isOnline) {
+            console.log('⚠️ Skipping sync: App is Offline');
+            return { success: false, error: 'Offline' };
+        }
+
+        this.isSyncing = true;
         console.log(`🔄 Starting sync... ${forceFull ? '(Full Sync)' : '(Incremental Sync)'}`);
 
         this.pendingOps++;
         this.notify();
 
         try {
-            const lastSyncTimestamp = localStorage.getItem('lastSyncTimestamp');
-            const lastSyncDate = (lastSyncTimestamp && !forceFull) ? new Date(parseInt(lastSyncTimestamp, 10)) : null;
+            // Phase 1: Push Local Changes (Upstream)
+            await this.pushLocalChanges();
 
-            const collectionsToSync = {
-                workers: db.workers,
-                projects: db.projects,
-                tools: db.tools,
-                fieldTables: db.fieldTables,
-                dailyReports: db.dailyReports,
-                records: db.records,
-                projectTasks: db.projectTasks
-            };
+            // Phase 2: Pull Remote Changes (Downstream)
+            const result = await this.pullRemoteChanges(forceFull);
 
-            const newSyncTime = new Date();
-
-            // 1. Fetch all data from Firebase first (outside of Dexie transaction)
-            const syncedData: { [key: string]: any[] } = {};
-            let fetchedCount = 0;
-
-            console.log('Fetching data from Firebase...');
-            const fetchPromises = Object.entries(collectionsToSync).map(async ([name, table]) => { // eslint-disable-line @typescript-eslint/no-unused-vars
-                const q = lastSyncDate
-                    ? query(collection(this.db, name), where("updatedAt", ">", Timestamp.fromDate(lastSyncDate)))
-                    : collection(this.db, name);
-
-                const snapshot = await getDocs(q);
-                if (snapshot.empty) return;
-
-                const records: any[] = [];
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const record: { [key: string]: any } = { id: doc.id };
-                    // Convert Timestamps to Dates for Dexie
-                    for (const key in data) {
-                        if (data[key] instanceof Timestamp) {
-                            record[key] = data[key].toDate();
-                        } else {
-                            record[key] = data[key];
-                        }
-                    }
-                    records.push(record);
-                });
-                syncedData[name] = records;
-                fetchedCount += records.length;
-                console.log(`Fetched ${records.length} records for ${name}`);
-            });
-
-            await Promise.all(fetchPromises);
-
-            // 2. Write to Dexie in a single transaction
-            console.log(`Writing ${fetchedCount} records to Dexie...`);
-            let totalSynced = 0;
-
-            await db.transaction('rw', Object.values(collectionsToSync), async () => {
-                // If full sync, clear tables first
-                if (lastSyncDate === null) {
-                    console.log('Clearing local tables for full sync...');
-                    const clearPromises = Object.values(collectionsToSync).map(table => table.clear());
-                    await Promise.all(clearPromises);
-                }
-
-                // Bulk Put
-                const putPromises = Object.entries(syncedData).map(async ([name, records]) => {
-                    if (records.length > 0) {
-                        const table = collectionsToSync[name as keyof typeof collectionsToSync];
-                        if (table) {
-                            await (table as any).bulkPut(records);
-                            totalSynced += records.length;
-                        }
-                    }
-                });
-                await Promise.all(putPromises);
-            });
-
-            localStorage.setItem('lastSyncTimestamp', String(newSyncTime.getTime()));
-            console.log(`✅ Sync finished. Synced ${totalSynced} records.`);
-            return { success: true, syncedRecords: totalSynced };
-
+            return result;
         } catch (error: any) {
+            // Handle Permission Denied Gracefully (User Request C)
+            if (error.code === 'permission-denied' || error.message?.includes('permission-denied')) {
+                console.warn('⛔ Firebase Permission Denied - Switching to Offline Mode effectively.');
+                return { success: false, error: 'Permission Denied' };
+            }
+
             console.error('Sync failed:', error);
-            // In case of error, remove timestamp to force full sync next time
-            localStorage.removeItem('lastSyncTimestamp');
             return { success: false, error: error.message };
         } finally {
+            this.isSyncing = false;
             this.pendingOps = Math.max(0, this.pendingOps - 1);
             this.notify();
         }
+    }
+
+    private async pushLocalChanges() {
+        console.log('📤 Pushing local changes...');
+        const tables = [
+            { name: 'records', table: db.records },
+            { name: 'fieldTables', table: db.fieldTables, idField: (r: any) => `${r.projectId}_${r.tableId}` },
+            { name: 'projectTasks', table: db.projectTasks },
+            { name: 'dailyReports', table: db.dailyReports },
+            { name: 'tools', table: db.tools }
+        ];
+
+        let pushedCount = 0;
+
+        for (const { name, table, idField } of tables) {
+            // Find records that are NOT synced (0)
+            // Check if 'synced' field exists first (it should based on schema update)
+            const unsynced = await table.where('synced').equals(0).toArray();
+
+            if (unsynced.length > 0) {
+                console.log(`Found ${unsynced.length} unsynced items in ${name}`);
+
+                const batch = writeBatch(this.db);
+                // We need to track which Dexie IDs correspond to which Firebase IDs to update them back
+                const updates: { id: number, firebaseId: string }[] = [];
+
+                unsynced.forEach(record => {
+                    // Determine ID: use firebaseId if exists, otherwise generate or use specialized ID
+                    let finalId = record.firebaseId;
+                    if (!finalId) {
+                        // Logic for special tables
+                        if (idField) {
+                            finalId = idField(record);
+                        } else {
+                            // Generate new ID if needed. 
+                            finalId = doc(collection(this.db, name)).id;
+                        }
+                    }
+
+                    const docRef = doc(this.db, name, String(finalId));
+
+                    // Prepare data: remove local-only fields
+                    const { id, synced, firebaseId, ...dataToUpload } = record;
+
+                    // Add standard metadata
+                    const payload = {
+                        ...dataToUpload,
+                        id: finalId, // Ensure ID is in document body too
+                        updatedAt: serverTimestamp(),
+                        syncedBy: this.auth.currentUser?.uid
+                    };
+
+                    batch.set(docRef, payload, { merge: true });
+                    updates.push({ id: record.id!, firebaseId: finalId });
+                });
+
+                await batch.commit();
+
+                // Mark local as synced
+                await db.transaction('rw', table, async () => {
+                    for (const update of updates) {
+                        await table.update(update.id, {
+                            synced: 1,
+                            firebaseId: update.firebaseId
+                        });
+                    }
+                });
+
+                pushedCount += unsynced.length;
+            }
+        }
+        console.log(`✅ Pushed ${pushedCount} local records.`);
+    }
+
+    private async pullRemoteChanges(forceFull: boolean): Promise<SyncResult> {
+        const lastSyncTimestamp = localStorage.getItem('lastSyncTimestamp');
+        const lastSyncDate = (lastSyncTimestamp && !forceFull) ? new Date(parseInt(lastSyncTimestamp, 10)) : null;
+
+        const collectionsToSync = {
+            workers: db.workers,
+            projects: db.projects,
+            tools: db.tools,
+            fieldTables: db.fieldTables,
+            dailyReports: db.dailyReports,
+            records: db.records,
+            projectTasks: db.projectTasks
+        };
+
+        const newSyncTime = new Date();
+
+        // 1. Fetch data
+        const syncedData: { [key: string]: any[] } = {};
+        let fetchedCount = 0;
+
+        console.log('📥 Pulling data from Firebase...');
+        const fetchPromises = Object.entries(collectionsToSync).map(async ([name, table]) => {
+            const q = lastSyncDate
+                ? query(collection(this.db, name), where("updatedAt", ">", Timestamp.fromDate(lastSyncDate)))
+                : collection(this.db, name);
+
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) return;
+
+            const records: any[] = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const record: { [key: string]: any } = {
+                    ...data,
+                    // Map Firebase ID to local field
+                    firebaseId: doc.id,
+                    synced: 1 // Coming from server, so it is synced
+                };
+
+                // Convert Timestamps
+                for (const key in record) {
+                    if (record[key] instanceof Timestamp) {
+                        record[key] = record[key].toDate();
+                    }
+                }
+                records.push(record);
+            });
+            syncedData[name] = records;
+            fetchedCount += records.length;
+        });
+
+        await Promise.all(fetchPromises);
+
+        // 2. Write to Dexie safely
+        console.log(`Writing ${fetchedCount} records to Dexie...`);
+        let totalSynced = 0;
+
+        await db.transaction('rw', Object.values(collectionsToSync), async () => {
+            // Full Sync Policy: Only delete SYNCED records. Keep unsynced (offline work).
+            if (lastSyncDate === null) {
+                console.log('Cleaning up old synced data...');
+                for (const table of Object.values(collectionsToSync)) {
+                    // Delete where synced == 1. 
+                    await table.where('synced').equals(1).delete();
+                }
+            }
+
+            // Upsert Logic
+            for (const [name, records] of Object.entries(syncedData)) {
+                if (records.length > 0) {
+                    const table = collectionsToSync[name as keyof typeof collectionsToSync];
+
+                    for (const record of records) {
+                        // Check if exists by firebaseId
+                        const existing = await table.where('firebaseId').equals(record.firebaseId).first();
+
+                        if (existing) {
+                            // Update, preserving Dexie ID
+                            await table.put({ ...record, id: existing.id });
+                        } else {
+                            // Insert new (auto-increment Dexie ID)
+                            // Remove conflicting 'id' from data if it's a string from firebase
+                            // We shouldn't use the firebase ID as the Dexie Key if the Dexie table uses ++id
+                            const { id, ...dataWithoutId } = record;
+                            await table.add(dataWithoutId as any);
+                        }
+                    }
+                    totalSynced += records.length;
+                }
+            }
+        });
+
+        localStorage.setItem('lastSyncTimestamp', String(newSyncTime.getTime()));
+        console.log(`✅ Sync finished. Synced ${totalSynced} records.`);
+        return { success: true, syncedRecords: totalSynced };
     }
 
 
@@ -368,8 +499,6 @@ class FirebaseService {
             return { success: true };
         } catch (error: any) { return { success: false, error: error.message }; }
     }
-
-    // ... other methods from original file (getData, setData, etc.)
 
 }
 

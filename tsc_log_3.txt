@@ -1,0 +1,8 @@
+components/ProjectFinder.tsx(55,20): error TS2339: Property 'aistudio' does not exist on type 'Window & typeof globalThis'.
+components/ProjectFinder.tsx(56,39): error TS2339: Property 'aistudio' does not exist on type 'Window & typeof globalThis'.
+components/ProjectFinder.tsx(139,27): error TS2339: Property 'aistudio' does not exist on type 'Window & typeof globalThis'.
+components/Projects.tsx(38,35): error TS2339: Property 'syncAll' does not exist on type 'FirebaseService'.
+components/WorkerForm.tsx(78,52): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+components/WorkerForm.tsx(82,52): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+i18n/locales.ts(826,5): error TS1117: An object literal cannot have multiple properties with the same name.
+i18n/locales.ts(865,5): error TS1117: An object literal cannot have multiple properties with the same name.

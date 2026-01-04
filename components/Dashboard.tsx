@@ -36,11 +36,11 @@ const KPICard: React.FC<{
   color: string;
   trend?: string;
 }> = ({ label, value, icon, color, trend }) => (
-  <div className="glass-dark p-8 rounded-[2.5rem] relative overflow-hidden group shadow-2xl transition-all hover:scale-[1.02] border border-white/5">
+  <div className="glass-dark p-5 rounded-[2rem] relative overflow-hidden group shadow-2xl transition-all hover:scale-[1.02] border border-white/5">
     <div className={`absolute -right-8 -top-8 w-32 h-32 rounded-full blur-3xl opacity-20 ${color}`}></div>
     <div className="flex justify-between items-start mb-6">
-      <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-white group-hover:scale-110 transition-transform">
-        {icon}
+      <div className="p-3 bg-white/5 rounded-2xl border border-white/10 text-white group-hover:scale-110 transition-transform">
+        {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-5 h-5' })}
       </div>
       {trend && (
         <span className="text-[10px] font-black text-emerald-400 bg-emerald-400/10 px-3 py-1.5 rounded-full uppercase tracking-widest border border-emerald-400/20">
@@ -129,15 +129,15 @@ const Dashboard: React.FC = () => {
         time: new Date(t.completedAt || 0),
         title: `Stůl ${t.tableId} dokončen`,
         subtitle: pMap.get(t.projectId)?.name || 'Neznámý projekt',
-        icon: <MapIcon className="w-4 h-4" />
+        icon: <MapIcon className="w-[18px] h-[18px]" />
       })),
       ...records.map(r => ({
         id: `record-${r.id}`,
         type: 'work',
         time: new Date(r.startTime),
-        title: `Zapsána práce: ${r.description.substring(0, 20)}...`,
+        title: `Zapsat práci: ${r.description.substring(0, 20)}...`,
         subtitle: wMap.get(r.workerId)?.name || 'Neznámý pracovník',
-        icon: <ClockIcon className="w-4 h-4" />
+        icon: <ClockIcon className="w-[18px] h-[18px]" />
       }))
     ]
       .sort((a, b) => b.time.getTime() - a.time.getTime())
@@ -147,7 +147,7 @@ const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-12 pb-32 animate-in fade-in slide-in-from-bottom-5 duration-700 relative">
+    <div className="space-y-6 pb-24 animate-in fade-in slide-in-from-bottom-5 duration-700 relative">
 
       {/* Pull to refresh UI */}
       <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${isRefreshing ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-90 pointer-events-none'}`}>
@@ -166,7 +166,7 @@ const Dashboard: React.FC = () => {
             <div className={`ml-4 flex items-center gap-2 px-3 py-1 rounded-full border ${syncStatus.pending > 0 ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : syncStatus.online ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
               {syncStatus.pending > 0 ? (
                 <>
-                  <RedoIcon className="w-3 h-3 animate-spin" />
+                  <RedoIcon className="w-3.5 h-3.5 animate-spin" />
                   <span className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap">Odesílám ({syncStatus.pending})</span>
                 </>
               ) : syncStatus.online ? (
@@ -182,7 +182,7 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           </div>
-          <h1 className="text-6xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-[0.8]">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-[0.9] sm:leading-[0.8] break-words">
             Vítejte, {user?.username || 'Marty'}<span className="text-indigo-500 font-normal">.</span>
           </h1>
           <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{t('dashboard_subtitle') || 'Sledujte svůj pokrok v reálném čase'}</p>
@@ -203,20 +203,20 @@ const Dashboard: React.FC = () => {
       </header>
 
       {/* KPI Section */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 px-4 md:px-0">
-        <KPICard label="Aktivní Projekty" value={stats.activeProjects} icon={<ProjectsIcon className="w-7 h-7" />} color="bg-blue-500" />
-        <KPICard label="Dnešní Pokrok" value={stats.completedTablesToday} icon={<ChartBarIcon className="w-7 h-7" />} color="bg-emerald-500" trend="+12%" />
-        <KPICard label="Celková Hotovost" value={`${Math.round((stats.completedTables / (stats.totalTables || 1)) * 100)}%`} icon={<CalendarIcon className="w-7 h-7" />} color="bg-amber-500" />
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-4 md:px-0">
+        <KPICard label="Aktivní Projekty" value={stats.activeProjects} icon={<ProjectsIcon />} color="bg-blue-500" />
+        <KPICard label="Dnešní Pokrok" value={stats.completedTablesToday} icon={<ChartBarIcon />} color="bg-emerald-500" trend="+12%" />
+        <KPICard label="Celková Hotovost" value={`${Math.round((stats.completedTables / (stats.totalTables || 1)) * 100)}%`} icon={<CalendarIcon />} color="bg-amber-500" />
         <div className="sm:col-span-1">
-          <KPICard label="Pracovníci" value={user?.role === 'admin' ? '8 +' : 'Tým A'} icon={<WorkersIcon className="w-7 h-7" />} color="bg-indigo-500" />
+          <KPICard label="Pracovníci" value={user?.role === 'admin' ? '8 +' : 'Tým A'} icon={<WorkersIcon />} color="bg-indigo-500" />
         </div>
       </section>
 
       {/* Charts & Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 px-4 md:px-0">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-0">
         {/* Weekly Activity */}
-        <div className="lg:col-span-2 space-y-10">
-          <div className="glass-dark rounded-[3rem] p-10 shadow-3xl overflow-hidden relative group border border-white/5">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="glass-dark rounded-[2rem] p-6 shadow-3xl overflow-hidden relative group border border-white/5">
             <div className="flex justify-between items-center mb-10">
               <div className="space-y-1">
                 <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">{t('weekly_activity') || 'Týdenní Aktivita'}</h3>
@@ -266,7 +266,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Live Activity Feed */}
-          <div className="glass-dark rounded-[3rem] p-10 border border-white/5 space-y-8">
+          <div className="glass-dark rounded-[2rem] p-6 border border-white/5 space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">{t('live_activity') || 'Živý přenos aktivit'}</h3>
@@ -279,7 +279,7 @@ const Dashboard: React.FC = () => {
 
             <div className="space-y-4">
               {recentActivity?.map((act, i) => (
-                <div key={act.id} className="group flex items-center gap-6 p-4 rounded-2xl hover:bg-white/5 transition-all border border-transparent hover:border-white/5 animate-slide-up" style={{ animationDelay: `${i * 100}ms` }}>
+                <div key={act.id} className="group flex items-center gap-4 p-3 rounded-2xl hover:bg-white/5 transition-all border border-transparent hover:border-white/5 animate-slide-up" style={{ animationDelay: `${i * 100}ms` }}>
                   <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
                     {act.icon}
                   </div>
@@ -288,7 +288,11 @@ const Dashboard: React.FC = () => {
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{act.subtitle}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">{act.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">
+                      {act.time instanceof Date && !isNaN(act.time.getTime())
+                        ? act.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : '...'}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -308,10 +312,10 @@ const Dashboard: React.FC = () => {
           <div className="grid grid-cols-1 gap-4">
             <button
               onClick={() => navigate('/field-plans')}
-              className="flex items-center gap-6 p-6 glass-dark rounded-[2rem] border border-white/5 hover:border-indigo-500/30 transition-all group shadow-xl"
+              className="flex items-center gap-4 p-4 glass-dark rounded-[1.5rem] border border-white/5 hover:border-indigo-500/30 transition-all group shadow-xl"
             >
-              <div className="p-4 bg-indigo-500/10 rounded-2xl text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
-                <MapIcon className="w-7 h-7" />
+              <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                <MapIcon className="w-6 h-6" />
               </div>
               <div className="text-left space-y-1">
                 <p className="text-sm font-black text-white uppercase tracking-tighter italic">{t('plan')}</p>
@@ -321,10 +325,10 @@ const Dashboard: React.FC = () => {
 
             <button
               onClick={() => navigate('/attendance')}
-              className="flex items-center gap-6 p-6 glass-dark rounded-[2rem] border border-white/5 hover:border-amber-500/30 transition-all group shadow-xl"
+              className="flex items-center gap-4 p-4 glass-dark rounded-[1.5rem] border border-white/5 hover:border-amber-500/30 transition-all group shadow-xl"
             >
-              <div className="p-4 bg-amber-500/10 rounded-2xl text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition-all">
-                <CalendarIcon className="w-7 h-7" />
+              <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                <CalendarIcon className="w-6 h-6" />
               </div>
               <div className="text-left space-y-1">
                 <p className="text-sm font-black text-white uppercase tracking-tighter italic">{t('attendance')}</p>
@@ -334,10 +338,10 @@ const Dashboard: React.FC = () => {
 
             <button
               onClick={() => navigate('/stats')}
-              className="flex items-center gap-6 p-6 glass-dark rounded-[2rem] border border-white/5 hover:border-blue-500/30 transition-all group shadow-xl"
+              className="flex items-center gap-4 p-4 glass-dark rounded-[1.5rem] border border-white/5 hover:border-blue-500/30 transition-all group shadow-xl"
             >
-              <div className="p-4 bg-blue-500/10 rounded-2xl text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all">
-                <ChartBarIcon className="w-7 h-7" />
+              <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                <ChartBarIcon className="w-6 h-6" />
               </div>
               <div className="text-left space-y-1">
                 <p className="text-sm font-black text-white uppercase tracking-tighter italic">Stats</p>
@@ -347,10 +351,10 @@ const Dashboard: React.FC = () => {
 
             <button
               onClick={() => navigate('/projects')}
-              className="flex items-center gap-6 p-6 glass-dark rounded-[2rem] border border-white/5 hover:border-emerald-500/30 transition-all group shadow-xl"
+              className="flex items-center gap-4 p-4 glass-dark rounded-[1.5rem] border border-white/5 hover:border-emerald-500/30 transition-all group shadow-xl"
             >
-              <div className="p-4 bg-emerald-500/10 rounded-2xl text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                <ProjectsIcon className="w-7 h-7" />
+              <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                <ProjectsIcon className="w-6 h-6" />
               </div>
               <div className="text-left space-y-1">
                 <p className="text-sm font-black text-white uppercase tracking-tighter italic">{t('projects')}</p>

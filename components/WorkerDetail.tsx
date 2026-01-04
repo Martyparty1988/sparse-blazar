@@ -96,7 +96,7 @@ const WorkerDetail: React.FC = () => {
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Profil pracovníka</span>
                         </div>
-                        <h1 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">
+                        <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-none break-words">
                             {worker.name}<span className="text-indigo-500 font-normal">.</span>
                         </h1>
                     </div>

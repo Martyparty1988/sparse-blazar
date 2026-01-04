@@ -1,0 +1,33 @@
+{
+    "rules": {
+        "chat": {
+            "$channelId": {
+                ".read": "auth != null",
+                ".write": "auth != null",
+                "$messageId": {
+                    ".validate": "newData.hasChildren(['text', 'senderId', 'senderName', 'timestamp'])"
+                },
+                "seen": {
+                    ".read": "auth != null",
+                    ".write": "auth != null"
+                },
+                "typing": {
+                    ".read": "auth != null",
+                    ".write": "auth != null"
+                }
+            }
+        },
+        "unread": {
+            "$workerId": {
+                ".read": "auth != null",
+                ".write": "auth != null"
+            }
+        },
+        "workers": {
+            "$workerId": {
+                ".read": "auth != null",
+                ".write": "auth != null"
+            }
+        }
+    }
+}

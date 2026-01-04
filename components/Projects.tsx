@@ -35,7 +35,7 @@ const Projects: React.FC = () => {
 
     const handleDataRefresh = useCallback(async () => {
         try {
-            await firebaseService.syncAll();
+            await firebaseService.synchronize();
             showToast('Data byla obnovena', 'success');
         } catch (error) {
             console.error("Failed to refresh data:", error);
@@ -97,11 +97,11 @@ const Projects: React.FC = () => {
             <header className="space-y-12">
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-10">
                     <div className="space-y-6 max-w-3xl">
-                        <div className="space-y-2">
-                            <h1 className="text-8xl md:text-9xl font-black text-white tracking-tighter uppercase italic leading-[0.7]">
+                        <div className="space-y-4 w-full overflow-hidden">
+                            <h1 className="text-6xl sm:text-8xl md:text-9xl font-black text-white tracking-tighter uppercase italic leading-[0.85] break-words">
                                 {t('projects')}<span className="text-indigo-500 not-italic">.</span>
                             </h1>
-                            <div className="h-2 w-48 bg-indigo-600 rounded-full shadow-[0_4px_20px_rgba(79,70,229,0.5)]" />
+                            <div className="h-2 w-32 md:w-48 bg-indigo-600 rounded-full shadow-[0_4px_20px_rgba(79,70,229,0.5)]" />
                         </div>
                         <p className="text-2xl text-slate-400 font-bold tracking-tight pl-2 border-l-4 border-white/5 py-2">
                             Správa a monitoring solárních parků s maximální efektivitou.

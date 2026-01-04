@@ -1,4 +1,7 @@
 {
+    "database": {
+        "rules": "database.rules.json"
+    },
     "firestore": {
         "rules": "firestore.rules"
     },
@@ -17,11 +20,28 @@
         ],
         "headers": [
             {
-                "source": "**/*.@(js|css)",
+                "source": "**/*.js",
                 "headers": [
                     {
+                        "key": "Content-Type",
+                        "value": "application/javascript; charset=utf-8"
+                    },
+                    {
                         "key": "Cache-Control",
-                        "value": "max-age=31536000"
+                        "value": "public, max-age=31536000, immutable"
+                    }
+                ]
+            },
+            {
+                "source": "**/*.css",
+                "headers": [
+                    {
+                        "key": "Content-Type",
+                        "value": "text/css; charset=utf-8"
+                    },
+                    {
+                        "key": "Cache-Control",
+                        "value": "public, max-age=31536000, immutable"
                     }
                 ]
             },
@@ -30,7 +50,7 @@
                 "headers": [
                     {
                         "key": "Cache-Control",
-                        "value": "max-age=31536000"
+                        "value": "public, max-age=31536000"
                     }
                 ]
             }

@@ -97,7 +97,7 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center p-6 bg-[#020617] relative overflow-hidden">
+        <div className="min-h-[100dvh] w-full flex items-center justify-center p-6 bg-[#020617] relative overflow-hidden pt-safe pb-safe">
             {/* Premium Animated Background Layer */}
             <div className="absolute inset-0 z-0">
                 <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px] rounded-full animate-pulse" />

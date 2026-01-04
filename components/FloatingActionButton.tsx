@@ -12,7 +12,7 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ onClick, va
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-[calc(80px+env(safe-area-inset-bottom))] right-6 md:bottom-12 md:right-12 z-50 p-5 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] text-white shadow-2xl hover:scale-110 active:scale-90 transition-all border border-white/20 animate-float group"
+      className="fixed bottom-[calc(80px+var(--safe-bottom)+20px)] right-6 md:bottom-12 md:right-12 z-50 p-5 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] text-white shadow-2xl hover:scale-110 active:scale-90 transition-all border border-white/20 animate-float group"
       aria-label={variant === 'add' ? 'Add new item' : 'Log work'}
     >
       <div className="relative">

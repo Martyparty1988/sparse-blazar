@@ -160,13 +160,13 @@ const TimeRecords: React.FC = () => {
     };
 
     return (
-        <div className="space-y-12 pb-24 max-w-5xl mx-auto p-6 md:p-8">
+        <div className="space-y-6 pb-24 max-w-5xl mx-auto p-4 md:p-6">
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
                 <div className="space-y-2 relative z-10">
-                    <h1 className="text-7xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8]">
+                    <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-[0.8]">
                         PRÁCE<span className="text-indigo-500">.</span>
                     </h1>
-                    <div className="h-2 w-32 bg-indigo-600 rounded-full shadow-[0_4px_20px_rgba(79,70,229,0.5)] mt-4" />
+                    <div className="h-1.5 w-24 bg-indigo-600 rounded-full shadow-[0_4px_20px_rgba(79,70,229,0.5)] mt-3" />
                 </div>
 
                 <button
@@ -179,29 +179,30 @@ const TimeRecords: React.FC = () => {
                 </button>
             </header>
 
-            <div className="space-y-6 relative z-10">
+            <div className="space-y-3 relative z-10">
                 {/* Decorative Background for List */}
                 <div className="absolute -top-20 -right-20 w-96 h-96 bg-indigo-500/5 blur-[100px] rounded-full pointer-events-none" />
 
                 {activityFeed.length > 0 ? activityFeed.map((item, idx) => (
                     <div
                         key={item.id}
-                        className="group glass-dark p-8 rounded-[2.5rem] border border-white/5 hover:border-indigo-500/30 transition-all duration-500 hover:scale-[1.01] animate-in fade-in slide-in-from-bottom-4 relative overflow-hidden"
+                        onClick={() => item.type === 'record' && handleEdit(item)}
+                        className={`group glass-dark p-4 rounded-[1.5rem] border border-white/5 hover:border-indigo-500/30 transition-all duration-500 hover:scale-[1.01] animate-in fade-in slide-in-from-bottom-4 relative overflow-hidden cursor-pointer ${item.type !== 'record' && 'cursor-default'}`}
                         style={{ animationDelay: `${idx * 0.05}s` }}
                     >
-                        <div className="flex flex-col md:flex-row justify-between items-start gap-6 relative z-10">
-                            <div className="flex gap-6 items-start">
-                                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-lg border border-white/5 ${item.type === 'record' ? 'bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white' :
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-4 relative z-10">
+                            <div className="flex gap-4 items-center">
+                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-lg border border-white/5 ${item.type === 'record' ? 'bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white' :
                                     item.type === 'task' ? 'bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white' :
                                         'bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white'
                                     } transition-all duration-500`}>
-                                    {item.type === 'record' ? <ClockIcon className="w-7 h-7" /> :
-                                        item.type === 'task' ? <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg> :
-                                            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                                    {item.type === 'record' ? <ClockIcon className="w-5 h-5" /> :
+                                        item.type === 'task' ? <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg> :
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                                 </div>
-                                <div className="space-y-2">
-                                    <p className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none group-hover:text-indigo-200 transition-colors">{item.description}</p>
-                                    <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                                <div className="space-y-0.5">
+                                    <p className="text-lg font-black text-white italic uppercase tracking-tighter leading-none group-hover:text-indigo-200 transition-colors">{item.description}</p>
+                                    <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.2em] text-slate-500">
                                         <span>{item.workerName}</span>
                                         <span className="w-1 h-1 rounded-full bg-slate-700" />
                                         <span className="text-indigo-400">{item.projectName}</span>
@@ -209,24 +210,17 @@ const TimeRecords: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="flex flex-row md:flex-col justify-between items-center md:items-end w-full md:w-auto gap-4 pl-22 md:pl-0">
+                            <div className="flex items-center gap-4 ml-auto">
                                 <div className="text-right">
-                                    <p className="font-mono text-xl font-bold text-white">{item.details}</p>
-                                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                    <p className="font-mono text-sm font-bold text-white">{item.details}</p>
+                                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                 </div>
 
                                 {item.type === 'record' && (
-                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
-                                        <button
-                                            onClick={() => handleEdit(item)}
-                                            className="w-10 h-10 flex items-center justify-center bg-blue-500/10 text-blue-400 rounded-xl hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20 hover:border-transparent cursor-pointer"
-                                            title={t('edit') || 'Upravit'}
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                        </button>
+                                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                                         <button
                                             onClick={() => setDeletingId(item.originalId)}
-                                            className="w-10 h-10 flex items-center justify-center bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20 hover:border-transparent cursor-pointer"
+                                            className="w-9 h-9 flex items-center justify-center bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20 hover:border-transparent opacity-0 group-hover:opacity-100"
                                             title={t('delete') || 'Smazat'}
                                         >
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>

@@ -218,10 +218,10 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
             if (project && project.tables && project.tables.length > 0) {
                 console.log(`Initializing fieldTables for project ${projectId}...`);
                 setIsInitializing(true);
-                const newTables: FieldTable[] = project.tables.map(tableId => ({
+                const newTables: FieldTable[] = project.tables.map(tDef => ({
                     projectId,
-                    tableId,
-                    tableType: 'medium',
+                    tableId: tDef.id,
+                    tableType: tDef.type === 'S' ? 'small' : tDef.type === 'L' ? 'large' : 'medium',
                     status: 'pending',
                     assignedWorkers: []
                 }));

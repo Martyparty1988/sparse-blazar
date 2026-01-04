@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
@@ -8,6 +7,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { firebaseService } from '../services/firebaseService';
 import { useToast } from '../contexts/ToastContext';
 import { soundService } from '../services/soundService';
+import { hapticService } from '../services/hapticService';
+import { safety } from '../services/safetyService';
 import RedoIcon from './icons/RedoIcon';
 
 interface WorkLogFormProps {
@@ -23,8 +24,8 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
     const { currentUser } = useAuth();
 
     // Smart Defaults
-    const savedWorkType = localStorage.getItem('last_work_type') as 'hourly' | 'task' | null;
-    const savedProjectId = localStorage.getItem('last_project_id');
+    const savedWorkType = safety.storage.getItem('last_work_type') as 'hourly' | 'task' | null;
+    const savedProjectId = safety.storage.getItem('last_project_id');
 
     // States
     const [workType, setWorkType] = useState<'hourly' | 'task'>(
@@ -35,7 +36,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
     // Sticky Worker State
     const [workerId, setWorkerId] = useState<number>(() => {
         if (editRecord?.workerId) return editRecord.workerId;
-        const saved = localStorage.getItem('last_worker_id');
+        const saved = safety.storage.getItem('last_worker_id');
         return saved ? Number(saved) : (currentUser?.workerId || -1);
     });
 
@@ -45,6 +46,36 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
 
     // Validation State
     const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+    // Swipe Logic
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchCurrent, setTouchCurrent] = useState<number | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        // Only allow drag if scrolled to top
+        const target = e.currentTarget;
+        if (target.scrollTop > 0) return;
+        setTouchStart(e.touches[0].clientY);
+        setTouchCurrent(e.touches[0].clientY);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (touchStart === null) return;
+        const currentY = e.touches[0].clientY;
+        setTouchCurrent(currentY);
+        if (currentY - touchStart > 10) setIsDragging(true);
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStart || !touchCurrent) return;
+        const diff = touchCurrent - touchStart;
+        if (diff > 150) onClose();
+
+        setTouchStart(null);
+        setTouchCurrent(null);
+        setIsDragging(false);
+    };
 
 
     // Task Specific States
@@ -87,10 +118,6 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
             .toArray();
 
         // 2. Find all TimeRecords for today to check if these tables are already logged
-        // This is a bit expensive but necessary to avoid duplicates.
-        // Optimization: Just check if tableId is in any of today's records.
-        // Actually, we can just suggest them. The user can decide. 
-        // But better UX: filter out used ones.
         const todayRecords = await db.records
             .where('workerId').equals(workerId)
             .filter(r => {
@@ -115,7 +142,10 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
         setTableIds(pendingTables.map(t => t.tableId));
         setDescription(`Dokončeno ${pendingTables.length} stolů (Smart Fill)`);
 
+        setDescription(`Dokončeno ${pendingTables.length} stolů (Smart Fill)`);
+
         soundService.playSuccess();
+        hapticService.success();
         showToast(`Načteno ${pendingTables.length} stolů z mapy`, 'success');
     };
 
@@ -139,13 +169,10 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
     }, [workType, selectedTables, manualQuantity, manualTableType]);
 
     // Check if we need to show the size selector
-    // We show it if ANY of the selected tables is missing a type OR if the project doesn't have predefined sizes
     const needsSizeSelection = useMemo(() => {
         if (workType !== 'task') return false;
         if (tableIds.length === 0) return true; // Always show for manual entry
         if (!selectedProject?.hasPredefinedSizes) return true;
-
-        // Advanced project: only show if some tables are missing type (shouldn't happen but for safety)
         return selectedTables?.some(t => !t.tableType) || false;
     }, [workType, tableIds, selectedProject, selectedTables]);
 
@@ -159,7 +186,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
         );
     }, [selectedTables, workerId]);
 
-    // Memoize sorted projects to put the last used one on top
+    // Memoize sorted projects
     const sortedProjects = useMemo(() => {
         if (!projects) return [];
         const lastPid = Number(savedProjectId);
@@ -184,11 +211,8 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
         } else {
             const now = new Date();
             const start = new Date(now);
-            // Default to 'now' minus 8 hours if not set, or just common work hours
             start.setHours(7, 0, 0, 0);
             const end = new Date(now);
-            // end.setHours(15, 30, 0, 0);
-
             setStartTime(toLocalISO(start));
             setEndTime(toLocalISO(end));
         }
@@ -202,11 +226,6 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
             }
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
-                // We need to trigger submit, but handleSubmit expects a FormEvent.
-                // We can create a synthetic one or refactor handleSubmit. 
-                // For now, let's just call it with a mock event or extract logic.
-                // Actually, let's just use a ref to the submit button or similar? 
-                // Easier: just separate logic. But for now, let's cast.
                 document.getElementById('submit-btn')?.click();
             }
         };
@@ -217,17 +236,9 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
     // Sticky Worker Saver
     useEffect(() => {
         if (workerId !== -1) {
-            localStorage.setItem('last_worker_id', String(workerId));
+            safety.storage.setItem('last_worker_id', String(workerId));
         }
     }, [workerId]);
-
-    // Update manual quantity defaulting if simple table selection
-    useEffect(() => {
-        if (selectedTables && selectedTables.length > 0 && manualQuantity === 0) {
-            // We don't set manual quantity here because we use calculatedStrings.
-            // Only relevant if we want to pre-fill manual inputs for fallback.
-        }
-    }, [selectedTables]);
 
     const handleQuickTime = (type: 'now' | 'full_day' | 'half_day') => {
         const now = new Date();
@@ -243,8 +254,10 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
             const e = new Date(now); e.setHours(11, 0, 0, 0);
             setStartTime(toLocalISO(s));
             setEndTime(toLocalISO(e));
+            setEndTime(toLocalISO(e));
         }
         soundService.playClick();
+        hapticService.medium();
     };
 
     const handleRepeatLast = async () => {
@@ -260,7 +273,6 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                 if (lastRecord.workType) setWorkType(lastRecord.workType);
                 if (lastRecord.tableIds) setTableIds(lastRecord.tableIds);
 
-                // Smart Time: Use yesterday's times but for TODAY
                 const now = new Date();
                 const lastStart = new Date(lastRecord.startTime);
                 const lastEnd = new Date(lastRecord.endTime);
@@ -276,6 +288,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
 
                 showToast("Načten poslední záznam", "info");
                 soundService.playClick();
+                hapticService.medium();
             } else {
                 showToast("Žádný předchozí záznam nenalezen", "warning");
             }
@@ -348,7 +361,8 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                 workType,
                 // Store the calculated STRINGS as quantity, so stats are easy
                 quantity: workType === 'task' ? calculatedStrings : undefined,
-                tableType: workType === 'task' && tableIds.length === 0 ? manualTableType : undefined
+                tableType: workType === 'task' && tableIds.length === 0 ? manualTableType : undefined,
+                synced: 0
             };
 
             let finalId: number;
@@ -356,17 +370,12 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                 await db.records.update(editRecord.id, recordData);
                 finalId = editRecord.id;
             } else {
-                finalId = await db.records.add(recordData as TimeRecord);
+                finalId = Number(await db.records.add(recordData as TimeRecord));
             }
 
-            // Sync with Firebase
+            // Trigger background sync
             if (firebaseService.isReady) {
-                await firebaseService.upsertRecords('timeRecords', [{
-                    ...recordData,
-                    id: finalId,
-                    startTime: recordData.startTime.toISOString(),
-                    endTime: recordData.endTime.toISOString()
-                }]);
+                firebaseService.synchronize().catch(console.error);
             }
 
             // If Task-based and has tables, update their status!
@@ -379,27 +388,26 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                     const updates = {
                         status: 'completed' as const,
                         completedAt: new Date(),
-                        completedBy: workerId
+                        completedBy: workerId,
+                        synced: 0
                     };
                     if (table.id !== undefined) {
                         await db.fieldTables.update(table.id as number, updates);
                     }
+                }
 
-                    if (firebaseService.isReady) {
-                        firebaseService.upsertRecords('fieldTables', [{
-                            ...table,
-                            ...updates,
-                            id: `${table.projectId}_${table.tableId}`
-                        }]).catch(console.error);
-                    }
+                // Trigger sync for updated tables
+                if (firebaseService.isReady) {
+                    firebaseService.synchronize().catch(console.error);
                 }
             }
 
-            localStorage.setItem('last_work_type', workType);
-            localStorage.setItem('last_project_id', String(projectId));
+            safety.storage.setItem('last_work_type', workType);
+            safety.storage.setItem('last_project_id', String(projectId));
 
             showToast("Zapsáno ✅", "success");
             soundService.playSuccess();
+            hapticService.success();
             onClose();
         } catch (err) {
             console.error(err);
@@ -411,16 +419,28 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
 
     return (
         <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-md p-0 md:p-4 animate-fade-in">
-            <div className="w-full max-h-[95vh] md:max-w-lg bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden animate-slide-up">
+            <div
+                className={`w-full max-h-[100dvh] md:max-w-lg bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden animate-slide-up transition-transform duration-200 modal-scroll`}
+                style={{ transform: isDragging && touchStart && touchCurrent ? `translateY(${Math.max(0, touchCurrent - touchStart)}px)` : undefined }}
+            >
 
-                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                <div
+                    className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02] touch-none pt-safe"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                >
                     <h2 className="text-xl font-black text-white uppercase italic tracking-tight">Rychlý zápis práce</h2>
-                    <button onClick={() => { soundService.playClick(); onClose(); }} className="p-2 text-slate-400 hover:text-white transition-colors"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                    <button
+                        onClick={() => { soundService.playClick(); onClose(); }}
+                        className="p-2 -mr-2 text-slate-400 hover:text-white transition-colors z-50 touch-manipulation"
+                        aria-label="Zavřít"
+                    >
+                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-
-
 
                     {/* 1. Worker Selection (Top Priority) */}
                     <div className="space-y-2">
@@ -431,6 +451,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                             <select
                                 value={workerId}
                                 onChange={(e) => setWorkerId(Number(e.target.value))}
+                                onBlur={() => setTouched(prev => ({ ...prev, workerId: true }))}
                                 className={`w-full bg-black/40 text-white font-bold p-4 rounded-2xl border appearance-none outline-none transition-all ${touched.workerId && workerId === -1 ? 'border-red-500/50 ring-1 ring-red-500/50' : 'border-white/10 focus:border-indigo-500'
                                     }`}
                             >
@@ -481,13 +502,13 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Typ práce</label>
                         <div className="grid grid-cols-2 p-1 bg-black/40 rounded-2xl border border-white/5">
                             <button
-                                onClick={() => setWorkType('hourly')}
+                                onClick={() => { setWorkType('hourly'); hapticService.light(); }}
                                 className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${workType === 'hourly' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
                             >
                                 Hodinová
                             </button>
                             <button
-                                onClick={() => setWorkType('task')}
+                                onClick={() => { setWorkType('task'); hapticService.light(); }}
                                 className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${workType === 'task' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
                             >
                                 Úkolová
@@ -623,9 +644,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                         </button>
                     )}
 
-                    {/* Project Selection (Moved up) */}
-
-                    {/* Quick Time Presets (Visible for both, but maybe less emphasized for Task) */}
+                    {/* Quick Time Presets */}
                     <section className="space-y-3">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">
                             {workType === 'task' ? 'Čas realizace (pro statistiku)' : 'Odpracovaný čas (pro výplatu)'}

@@ -98,13 +98,19 @@
       box-sizing: border-box;
     }
 
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       background: var(--bg-gradient);
-      background-attachment: fixed;
+      background-attachment: scroll;
       color: #f8fafc;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      margin: 0;
-      height: 100dvh;
+      height: 100%;
       overflow: hidden;
       max-width: 100vw;
       /* Prevent pull-to-refresh on mobile */
@@ -364,7 +370,7 @@
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root" style="height: 100%;"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
 

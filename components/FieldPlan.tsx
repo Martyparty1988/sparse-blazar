@@ -207,7 +207,177 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
     const [contextMenu, setContextMenu] = useState<{ table: FieldTable, x: number, y: number } | null>(null);
     const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
     const [isInitializing, setIsInitializing] = useState(false);
-    const [activeTool, setActiveTool] = useState<'cursor' | 'complete' | 'defect' | 'pending'>('cursor'); // Paint Mode State
+    const [activeTool, setActiveTool] = useState<'cursor' | 'complete' | 'defect' | 'pending'>('cursor');
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Zoom/Pan State
+    const [zoom, setZoom] = useState(1);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+    // Refs for performance/stability
+    const isDragging = useRef(false);
+    const startPos = useRef({ x: 0, y: 0 });
+    const containerRef = useRef<HTMLDivElement>(null);
+    const selectedIdsRef = useRef<Set<string>>(new Set());
+    const lastSelectedIdRef = useRef<string | null>(null);
+    const filteredTablesRef = useRef<FieldTable[]>([]);
+
+    // Memoized Calculations
+    const filteredTables = useMemo(() => {
+        if (!tables) return [];
+        return tables.filter(t => {
+            if (filterStatus !== 'all' && t.status !== filterStatus) return false;
+            if (filterWorker !== 'all') {
+                if (filterStatus === 'completed' && t.completedBy !== filterWorker) return false;
+                if (filterStatus !== 'completed' && !t.assignedWorkers?.includes(filterWorker as number)) return false;
+            }
+            if (searchQuery && !t.tableId.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+            return true;
+        });
+    }, [tables, filterStatus, filterWorker, searchQuery]);
+
+    const stats = useMemo(() => {
+        if (!tables) return { total: 0, completed: 0, pending: 0, defect: 0, inProgress: 0 };
+        return {
+            total: tables.length,
+            completed: tables.filter(t => t.status === 'completed').length,
+            pending: tables.filter(t => t.status === 'pending' && (!t.assignedWorkers || t.assignedWorkers.length === 0)).length,
+            inProgress: tables.filter(t => t.status === 'pending' && t.assignedWorkers && t.assignedWorkers.length > 0).length,
+            defect: tables.filter(t => t.status === 'defect').length,
+        };
+    }, [tables]);
+
+    useEffect(() => {
+        filteredTablesRef.current = filteredTables;
+    }, [filteredTables]);
+
+    const handleContextMenu = useCallback((e: React.MouseEvent, table: FieldTable) => {
+        setContextMenu({ table, x: e.clientX, y: e.clientY });
+    }, []);
+
+    const handleBulkAction = useCallback(async (action: string, data?: any) => {
+        const ids = Array.from(selectedIdsRef.current).map(Number);
+        if (ids.length === 0) return;
+
+        try {
+            const updates: any = {};
+            if (action === 'complete') {
+                updates.status = 'completed';
+                updates.completedAt = new Date();
+                updates.completedBy = user?.workerId || 0;
+            } else if (action === 'pending') {
+                updates.status = 'pending';
+                updates.completedAt = undefined;
+                updates.completedBy = undefined;
+                updates.assignedWorkers = [];
+            } else if (action === 'defect') {
+                updates.status = 'defect';
+                updates.completedAt = undefined;
+                updates.completedBy = undefined;
+                updates.defectNotes = data || '';
+            } else if (action === 'assign') {
+                const currentTables = tables?.filter(t => ids.includes(t.id!)) || [];
+                for (const t of currentTables) {
+                    const existing = t.assignedWorkers || [];
+                    const newAssigned = existing.includes(data) ? existing.filter(id => id !== data) : [...existing, data].slice(-2);
+                    await db.fieldTables.update(t.id!, { assignedWorkers: newAssigned });
+                }
+                soundService.playSuccess();
+                return;
+            }
+
+            for (const id of ids) {
+                await db.fieldTables.update(id, updates);
+            }
+
+            if (firebaseService.isReady) {
+                const recordsToSync = tables?.filter(t => ids.includes(t.id!)).map(t => ({
+                    ...t,
+                    ...updates,
+                    id: `${t.projectId}_${t.tableId}`
+                })) || [];
+                firebaseService.upsertRecords('fieldTables', recordsToSync).catch(console.error);
+            }
+
+            soundService.playSuccess();
+        } catch (err) {
+            console.error('Bulk action failed', err);
+        }
+    }, [tables, user?.workerId]);
+
+    const handleToggleSelect = useCallback((e: React.MouseEvent | undefined, id: string) => {
+        if (activeTool !== 'cursor') {
+            const table = tables?.find(t => t.id!.toString() === id);
+            if (!table) return;
+
+            if (activeTool === 'defect') {
+                const updates = { status: 'defect' as const, defectNotes: '' };
+                db.fieldTables.update(table.id!, updates);
+                if (firebaseService.isReady) {
+                    firebaseService.upsertRecords('fieldTables', [{
+                        ...table,
+                        ...updates,
+                        id: `${table.projectId}_${table.tableId}`
+                    }]).catch(console.error);
+                }
+                soundService.playError();
+                return;
+            }
+
+            let updates: any = {};
+            if (activeTool === 'complete') {
+                updates.status = 'completed';
+                updates.completedAt = new Date();
+                updates.completedBy = user?.workerId || 0;
+            } else if (activeTool === 'pending') {
+                updates.status = 'pending';
+                updates.completedAt = undefined;
+                updates.completedBy = undefined;
+                updates.assignedWorkers = [];
+            }
+
+            db.fieldTables.update(table.id!, updates);
+            if (firebaseService.isReady) {
+                firebaseService.upsertRecords('fieldTables', [{
+                    ...table,
+                    ...updates,
+                    id: `${table.projectId}_${table.tableId}`
+                }]).catch(console.error);
+            }
+            soundService.playSuccess();
+            return;
+        }
+
+        const newSelected = new Set(selectedIdsRef.current);
+
+        if (e?.shiftKey && lastSelectedIdRef.current && tables) {
+            const tableList = filteredTablesRef.current;
+            const idx1 = tableList.findIndex(t => t.id!.toString() === lastSelectedIdRef.current);
+            const idx2 = tableList.findIndex(t => t.id!.toString() === id);
+            if (idx1 !== -1 && idx2 !== -1) {
+                const start = Math.min(idx1, idx2);
+                const end = Math.max(idx1, idx2);
+                for (let i = start; i <= end; i++) {
+                    newSelected.add(tableList[i].id!.toString());
+                }
+            }
+        } else if (e?.ctrlKey || e?.metaKey) {
+            if (newSelected.has(id)) newSelected.delete(id);
+            else newSelected.add(id);
+        } else {
+            if (newSelected.has(id) && newSelected.size === 1) newSelected.clear();
+            else {
+                newSelected.clear();
+                newSelected.add(id);
+            }
+        }
+
+        selectedIdsRef.current = newSelected;
+        lastSelectedIdRef.current = id;
+        setSelectedIds(newSelected);
+        setShowRightSidebar(newSelected.size > 0);
+        soundService.playClick();
+    }, [activeTool, user?.workerId, tables]);
 
     // Auto-initialize tables if missing
     useEffect(() => {
@@ -240,129 +410,17 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
         }
     }, []);
 
-    // Zoom/Pan State
-    const [zoom, setZoom] = useState(1);
-    const [offset, setOffset] = useState({ x: 0, y: 0 });
-    const isDragging = useRef(false);
-    const startPos = useRef({ x: 0, y: 0 });
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    // Filtered Tables logic
-    const filteredTables = useMemo(() => {
-        if (!tables) return [];
-        return tables.filter(t => {
-            if (filterStatus !== 'all' && t.status !== filterStatus) return false;
-            if (filterWorker !== 'all') {
-                if (filterStatus === 'completed' && t.completedBy !== filterWorker) return false;
-                if (filterStatus !== 'completed' && !t.assignedWorkers?.includes(filterWorker as number)) return false;
-            }
-            return true;
-        });
-    }, [tables, filterStatus, filterWorker]);
-
-    // Statistics
-    const stats = useMemo(() => {
-        if (!tables) return { total: 0, completed: 0, pending: 0, defect: 0, inProgress: 0 };
-        return {
-            total: tables.length,
-            completed: tables.filter(t => t.status === 'completed').length,
-            pending: tables.filter(t => t.status === 'pending' && (!t.assignedWorkers || t.assignedWorkers.length === 0)).length,
-            inProgress: tables.filter(t => t.status === 'pending' && t.assignedWorkers && t.assignedWorkers.length > 0).length,
-            defect: tables.filter(t => t.status === 'defect').length,
-        };
-    }, [tables]);
-
     // Handlers
-    const handleToggleSelect = useCallback((e: React.MouseEvent, id: string) => {
-        if (activeTool !== 'cursor') {
-            // Paint Mode Logic
-            const table = tables?.find(t => t.id!.toString() === id);
-            if (!table) return;
-
-            // Handle Defect separately (needs modal usually, or quick tag?)
-            if (activeTool === 'defect') {
-                // For quick paint, maybe just mark as defect with empty note?
-                // Or open modal? Let's open modal to be safe, but it interrupts flow.
-                // Better: Mark as defect, if they want to add note, they long press or click details.
-                // Compromise: Just mark it.
-                const updates = { status: 'defect', defectNotes: '' };
-                db.fieldTables.update(table.id!, updates);
-                if (firebaseService.isReady) {
-                    firebaseService.upsertRecords('fieldTables', [{
-                        ...table,
-                        ...updates,
-                        id: `${table.projectId}_${table.tableId}`
-                    }]).catch(console.error);
-                }
-                soundService.playError(); // Different sound for defect
-                return;
-            }
-
-            let updates: any = {};
-            if (activeTool === 'complete') {
-                updates.status = 'completed';
-                updates.completedAt = new Date();
-                updates.completedBy = user?.workerId || 0;
-            } else if (activeTool === 'pending') {
-                updates.status = 'pending';
-                updates.completedAt = undefined;
-                updates.completedBy = undefined;
-                updates.assignedWorkers = [];
-            }
-
-            // apply update
-            db.fieldTables.update(table.id!, updates);
-            if (firebaseService.isReady) {
-                firebaseService.upsertRecords('fieldTables', [{
-                    ...table,
-                    ...updates,
-                    id: `${table.projectId}_${table.tableId}`
-                }]).catch(console.error);
-            }
-            soundService.playSuccess();
-            return;
-        }
-
-        const newSelected = new Set(selectedIds);
-
-        if (e.shiftKey && lastSelectedId && tables) {
-            // Find range
-            const tableList = filteredTables;
-            const idx1 = tableList.findIndex(t => t.id!.toString() === lastSelectedId);
-            const idx2 = tableList.findIndex(t => t.id!.toString() === id);
-            if (idx1 !== -1 && idx2 !== -1) {
-                const start = Math.min(idx1, idx2);
-                const end = Math.max(idx1, idx2);
-                for (let i = start; i <= end; i++) {
-                    newSelected.add(tableList[i].id!.toString());
-                }
-            }
-        } else if (e.ctrlKey || e.metaKey) {
-            if (newSelected.has(id)) newSelected.delete(id);
-            else newSelected.add(id);
-        } else {
-            // Single select toggle or clear
-            if (newSelected.has(id) && newSelected.size === 1) newSelected.clear();
-            else {
-                newSelected.clear();
-                newSelected.add(id);
-            }
-        }
-
-        setSelectedIds(newSelected);
-        setLastSelectedId(id);
-        setShowRightSidebar(newSelected.size > 0);
-        soundService.playClick();
-    }, [selectedIds, lastSelectedId, filteredTables, tables, activeTool]);
 
     // Keyboard Shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 setSelectedIds(new Set());
+                selectedIdsRef.current = new Set();
                 setShowRightSidebar(false);
             }
-            if (selectedIds.size > 0) {
+            if (selectedIdsRef.current.size > 0) {
                 if (e.key === 'c') handleBulkAction('complete');
                 if (e.key === 'p') handleBulkAction('pending');
                 if (e.key === 'd') handleBulkAction('defect');
@@ -371,7 +429,7 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedIds]);
+    }, [handleBulkAction]);
 
     // Zoom/Pan Handlers
     const handleWheel = (e: React.WheelEvent) => {
@@ -422,55 +480,6 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
         isDragging.current = false;
     };
 
-    const handleBulkAction = async (action: string, data?: any) => {
-        const ids = Array.from(selectedIds).map(Number);
-        if (ids.length === 0) return;
-
-        try {
-            const updates: any = {};
-            if (action === 'complete') {
-                updates.status = 'completed';
-                updates.completedAt = new Date();
-                updates.completedBy = user?.workerId || 0;
-            } else if (action === 'pending') {
-                updates.status = 'pending';
-                updates.completedAt = undefined;
-                updates.completedBy = undefined;
-                updates.assignedWorkers = [];
-            } else if (action === 'defect') {
-                updates.status = 'defect';
-                updates.completedAt = undefined;
-                updates.completedBy = undefined;
-                updates.defectNotes = data || ''; // Save notes
-            } else if (action === 'assign') {
-                const currentTables = tables?.filter(t => ids.includes(t.id!)) || [];
-                for (const t of currentTables) {
-                    const existing = t.assignedWorkers || [];
-                    const newAssigned = existing.includes(data) ? existing.filter(id => id !== data) : [...existing, data].slice(-2);
-                    await db.fieldTables.update(t.id!, { assignedWorkers: newAssigned });
-                }
-                soundService.playSuccess();
-                return;
-            }
-
-            for (const id of ids) {
-                await db.fieldTables.update(id, updates);
-            }
-
-            if (firebaseService.isReady) {
-                const recordsToSync = tables?.filter(t => ids.includes(t.id!)).map(t => ({
-                    ...t,
-                    ...updates,
-                    id: `${t.projectId}_${t.tableId}`
-                })) || [];
-                firebaseService.upsertRecords('fieldTables', recordsToSync).catch(console.error);
-            }
-
-            soundService.playSuccess();
-        } catch (err) {
-            console.error('Bulk action failed', err);
-        }
-    };
 
     return (
         <div className="relative w-full h-[85vh] min-h-[700px] flex overflow-hidden bg-[#020617] font-sans rounded-[3rem] border border-white/5 shadow-[0_0_100px_rgba(0,0,0,0.5)]">
@@ -487,6 +496,17 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
                                 <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-[0.8] mb-1">FIELD<span className="text-indigo-500">.</span>PLAN</h2>
                                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">Interaktivní</p>
                             </div>
+                        </div>
+
+                        <div className="relative group">
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Vyhledat stůl..."
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 transition-all font-bold text-sm"
+                            />
+                            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                         </div>
                     </header>
 
@@ -593,7 +613,7 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
                                         assignedWorkers={table.assignedWorkers?.map(id => workers?.find(w => w.id === id)).filter(Boolean) as Worker[]}
                                         tasks={tasks?.filter(t => t.tableIds?.includes(table.tableId)) || []}
                                         onToggle={handleToggleSelect}
-                                        onContextMenu={(e, t) => setContextMenu({ table: t, x: e.clientX, y: e.clientY })}
+                                        onContextMenu={handleContextMenu}
                                     />
                                 </div>
                             ))}

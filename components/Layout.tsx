@@ -96,7 +96,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }, []);
 
     return (
-        <div className="w-full h-[100dvh] flex bg-transparent overflow-hidden">
+        <div className="w-full h-full flex bg-transparent overflow-hidden">
             {/* Sidebar for desktop */}
             <Sidebar />
 

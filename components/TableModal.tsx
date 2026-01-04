@@ -268,7 +268,7 @@ const TableModal: React.FC<TableModalProps> = ({ table, onClose, onUpdate }) => 
             <div className="absolute inset-0 bg-black/70 backdrop-blur-xl transition-opacity" onClick={handleClose} />
 
             <div
-                className={`relative w-full md:max-w-2xl bg-slate-900/95 backdrop-blur-2xl md:rounded-[3rem] rounded-t-[3rem] shadow-2xl border-t md:border border-white/20 max-h-[100dvh] md:max-h-[90dvh] flex flex-col overflow-hidden animate-slide-up transition-transform duration-200 modal-scroll ${isDragging ? 'scale-[0.98] translate-y-4' : ''}`}
+                className={`relative w-full md:max-w-2xl bg-slate-900/95 backdrop-blur-2xl md:rounded-[3rem] rounded-t-[3rem] shadow-2xl border-t md:border border-white/20 max-h-full md:max-h-[90dvh] flex flex-col overflow-hidden animate-slide-up transition-transform duration-200 modal-scroll ${isDragging ? 'scale-[0.98] translate-y-4' : ''}`}
                 style={{ transform: isDragging && touchStart && touchCurrent ? `translateY(${Math.max(0, touchCurrent - touchStart)}px)` : undefined }}
             >
 

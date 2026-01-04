@@ -195,14 +195,44 @@ export class MSTDatabase extends Dexie {
       workers: '++id, name, username, synced, firebaseId',
       projects: '++id, name, status, synced, firebaseId',
     }).upgrade(async (tx) => {
-      // Initialize existing records as synced=1 (assuming they came from server or are legacy)
-      // If they don't have firebaseId, they might need one, but for now we assume existing state is "steady".
-      // Actually, safer to mark as synced=0 if we aren't sure, but that might duplicate.
-      // Let's assume current state is "clean" for existing users.
       const tables = ['records', 'fieldTables', 'projectTasks', 'dailyReports', 'tools', 'workers', 'projects'];
       for (const tableName of tables) {
         await tx.table(tableName).toCollection().modify({ synced: 1 });
       }
+    });
+
+    // Version 27: Index consistency & Enhanced Sync Schema
+    dbInstance.version(27).stores({
+      records: '++id, workerId, projectId, startTime, synced, firebaseId',
+      fieldTables: '++id, projectId, tableId, status, synced, firebaseId, &[projectId+tableId]',
+      projectTasks: '++id, projectId, assignedWorkerId, completionDate, synced, firebaseId',
+      dailyReports: '++id, date, projectId, synced, firebaseId, [projectId+date]',
+      tools: '++id, name, type, status, assignedWorkerId, synced, firebaseId',
+      workers: '++id, name, username, synced, firebaseId',
+      projects: '++id, name, status, synced, firebaseId',
+      attendanceSessions: '++id, workerId, synced, firebaseId',
+      dailyLogs: '++id, date, workerId, synced, firebaseId, &[date+workerId]',
+    }).upgrade(async (tx) => {
+      // 1. Data Integrity: Fix risky v26 migration
+      // If a record doesn't have a firebaseId, it MUST NOT be marked as synced.
+      const syncTables = ['records', 'fieldTables', 'projectTasks', 'dailyReports', 'tools', 'workers', 'projects'];
+      for (const tableName of syncTables) {
+        await tx.table(tableName).toCollection().modify(item => {
+          if (!item.firebaseId) {
+            item.synced = 0;
+          }
+        });
+      }
+
+      // 2. Schema Expansion: Prepare attendance and logs for sync
+      await tx.table('attendanceSessions').toCollection().modify(item => {
+        item.synced = item.synced ?? 1;
+        item.firebaseId = item.firebaseId ?? null;
+      });
+      await tx.table('dailyLogs').toCollection().modify(item => {
+        item.synced = item.synced ?? 1;
+        item.firebaseId = item.firebaseId ?? null;
+      });
     });
   }
 }

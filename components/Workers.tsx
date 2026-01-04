@@ -13,6 +13,7 @@ import SearchIcon from './icons/SearchIcon';
 import PencilIcon from './icons/PencilIcon';
 import TrashIcon from './icons/TrashIcon';
 import BackButton from './BackButton';
+import { hapticService } from '../services/hapticService';
 
 const WorkerCard: React.FC<{
   worker: Worker;
@@ -24,10 +25,27 @@ const WorkerCard: React.FC<{
 }> = ({ worker, index, isAdmin, onEdit, onDelete, onClick }) => {
   const { t } = useI18n();
 
+  const handleCardClick = () => {
+    hapticService.light();
+    onClick(worker.id!);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    hapticService.light();
+    onEdit(worker);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    hapticService.error();
+    onDelete(worker);
+  };
+
   return (
     <div
-      onClick={() => onClick(worker.id!)}
-      className="group glass-dark rounded-[1.5rem] p-4 border border-white/5 hover:border-indigo-500/30 transition-all duration-500 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-5 overflow-hidden relative shadow-2xl hover:scale-[1.01] cursor-pointer"
+      onClick={handleCardClick}
+      className="group glass-dark rounded-[1.5rem] p-4 border border-white/5 hover:border-indigo-500/30 transition-all duration-300 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-5 overflow-hidden relative shadow-2xl hover:scale-[1.01] active:scale-[0.97] cursor-pointer"
       style={{ animationDelay: `${index * 0.05}s` }}
     >
       {/* Decorative Blur */}
@@ -48,21 +66,21 @@ const WorkerCard: React.FC<{
           </div>
           <div className="space-y-0.5">
             <h3 className="text-lg font-black text-white italic tracking-tighter uppercase leading-none">{worker.name}</h3>
-            <p className="text-[8px] font-black text-indigo-400/60 uppercase tracking-[0.3em] font-mono">Specialista montáže</p>
+            <p className="text-[8px] font-black text-indigo-400/60 uppercase tracking-[0.3em] font-mono">{t('assembly_specialist')}</p>
           </div>
         </div>
 
         {isAdmin && (
-          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex gap-2">
             <button
-              onClick={() => onEdit(worker)}
-              className="w-11 h-11 flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10"
+              onClick={handleEdit}
+              className="w-11 h-11 flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10 active:scale-90"
             >
               <PencilIcon className="w-5 h-5" />
             </button>
             <button
-              onClick={() => onDelete(worker)}
-              className="w-11 h-11 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:bg-rose-500/5 rounded-xl transition-all border border-transparent hover:border-rose-500/10"
+              onClick={handleDelete}
+              className="w-11 h-11 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:bg-rose-500/5 rounded-xl transition-all border border-transparent hover:border-rose-500/10 active:scale-90"
             >
               <TrashIcon className="w-5 h-5" />
             </button>
@@ -74,11 +92,11 @@ const WorkerCard: React.FC<{
         <div className="space-y-2 relative z-10 pt-2">
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white/[0.03] p-3 rounded-xl border border-white/5 group/stat hover:bg-white/[0.05] transition-colors">
-              <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5 opacity-60">Sazba / h</span>
+              <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5 opacity-60">{t('hourly_rate')}</span>
               <span className="text-lg font-black text-white italic tracking-tighter">€{Number(worker.hourlyRate || 0).toFixed(2)}</span>
             </div>
             <div className="bg-white/[0.03] p-3 rounded-xl border border-white/5 group/stat hover:bg-white/[0.05] transition-colors">
-              <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5 opacity-60">Projekty</span>
+              <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5 opacity-60">{t('projects')}</span>
               <span className="text-lg font-black text-white italic tracking-tighter">{worker.projectIds?.length || 0}</span>
             </div>
           </div>
@@ -86,15 +104,15 @@ const WorkerCard: React.FC<{
           <div className="bg-gradient-to-br from-indigo-500/[0.08] to-transparent p-4 rounded-[1.5rem] border border-white/5">
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center group/rate">
-                <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2 opacity-50">Panel</span>
+                <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2 opacity-50">{t('panel_price')}</span>
                 <span className="text-sm font-black text-indigo-300 italic">€{worker.panelPrice}</span>
               </div>
               <div className="text-center border-l border-white/5 group/rate">
-                <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2 opacity-50">String</span>
+                <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2 opacity-50">{t('string_price')}</span>
                 <span className="text-sm font-black text-indigo-300 italic">€{worker.stringPrice}</span>
               </div>
               <div className="text-center border-l border-white/5 group/rate">
-                <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2 opacity-50">Metr</span>
+                <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2 opacity-50">{t('meter_price')}</span>
                 <span className="text-sm font-black text-indigo-300 italic">€{worker.meterPrice}</span>
               </div>
             </div>
@@ -105,8 +123,8 @@ const WorkerCard: React.FC<{
       {!isAdmin && (
         <div className="pt-4 border-t border-white/5 mt-auto">
           <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            <span>Přiřazené úkoly</span>
-            <span className="text-white font-black">12 aktivních</span>
+            <span>{t('assigned_tasks')}</span>
+            <span className="text-white font-black">12 {t('active_plural')}</span>
           </div>
         </div>
       )}
@@ -163,13 +181,18 @@ const Workers: React.FC = () => {
 
   const handleDelete = async () => {
     if (workerToDelete?.id) {
-      await db.workers.delete(workerToDelete.id);
-      setWorkerToDelete(null);
+      try {
+        await db.workers.delete(workerToDelete.id);
+        setWorkerToDelete(null);
 
-      // Sync Delete to Firebase
-      if (firebaseService.isReady) {
-        firebaseService.deleteRecords('workers', [String(workerToDelete.id)])
-          .catch(console.error);
+        // Sync Delete to Firebase
+        if (firebaseService.isReady) {
+          firebaseService.deleteRecords('workers', [String(workerToDelete.id)])
+            .catch(console.error);
+        }
+      } catch (error) {
+        console.error('Failed to delete worker:', error);
+        alert(t('delete_error') || 'Chyba při mazání');
       }
     }
   };
@@ -190,7 +213,7 @@ const Workers: React.FC = () => {
               <div className="h-2 w-32 md:w-48 bg-indigo-600 rounded-full shadow-[0_4px_20px_rgba(79,70,229,0.5)]" />
             </div>
             <p className="text-2xl text-slate-400 font-bold tracking-tight pl-2 border-l-4 border-white/5 py-2">
-              Správa montážních čet a jejich výkonnosti v reálném čase.
+              {t('workers_desc')}
             </p>
           </div>
           {user?.role === 'admin' && (
@@ -210,10 +233,10 @@ const Workers: React.FC = () => {
         {/* Team Stats Quick Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { label: 'Celkem expertů', value: workers?.length || 0, icon: 'Users' },
-            { label: 'Nasazení dnes', value: workers?.length ? Math.floor(workers.length * 0.8) : 0, color: 'text-emerald-500' },
-            { label: 'Pracovní hodiny', value: '142h', color: 'text-indigo-400' },
-            { label: 'Efektivita', value: '94%', color: 'text-amber-500' }
+            { label: t('workers_total'), value: workers?.length || 0, icon: 'Users' },
+            { label: t('on_shift_today'), value: workers?.length ? Math.floor(workers.length * 0.8) : 0, color: 'text-emerald-500' },
+            { label: t('working_hours_total'), value: '142h', color: 'text-indigo-400' },
+            { label: t('efficiency'), value: '94%', color: 'text-amber-500' }
           ].map((stat, i) => (
             <div key={i} className="glass-dark p-8 rounded-[3rem] border border-white/5 flex flex-col justify-between h-40 group hover:border-indigo-500/30 transition-all duration-500">
               <div className="flex items-center justify-between">
@@ -249,16 +272,16 @@ const Workers: React.FC = () => {
           {/* Sorting and Range Filters */}
           <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
             <div className="space-y-4">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-1">Seřadit</label>
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-1">{t('sort_by')}</label>
               <div className="relative group">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
                   className="w-full px-6 py-6 bg-white/[0.03] text-white border border-white/5 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:bg-white/[0.05] focus:border-indigo-500/30 text-[10px] font-black uppercase tracking-widest transition-all appearance-none cursor-pointer [&>option]:bg-slate-900"
                 >
-                  <option value="name">Jméno (A-Z)</option>
-                  <option value="rate_asc">Sazba (Vzestupně)</option>
-                  <option value="rate_desc">Sazba (Sestupně)</option>
+                  <option value="name">{t('sort_name_az')}</option>
+                  <option value="rate_asc">{t('sort_rate_asc')}</option>
+                  <option value="rate_desc">{t('sort_rate_desc')}</option>
                 </select>
                 <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-600 group-hover:text-indigo-500 transition-colors">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M19 9l-7 7-7-7" /></svg>

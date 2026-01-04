@@ -420,7 +420,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
     return (
         <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-md p-0 md:p-4 animate-fade-in">
             <div
-                className={`w-full max-h-[100dvh] md:max-w-lg bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden animate-slide-up transition-transform duration-200 modal-scroll`}
+                className={`w-full max-h-full md:max-w-lg bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden animate-slide-up transition-transform duration-200 modal-scroll`}
                 style={{ transform: isDragging && touchStart && touchCurrent ? `translateY(${Math.max(0, touchCurrent - touchStart)}px)` : undefined }}
             >
 

@@ -12,6 +12,173 @@ import ChatDebug from './ChatDebug'; // Debug panel
 
 const IS_DEV = import.meta.env.DEV;
 
+const MessageItem = React.memo<{
+    msg: ChatMessage;
+    senderMe: boolean;
+    senderName: string;
+    isLastInGroup: boolean;
+    workers: Worker[] | undefined;
+    currentUser: any;
+    messages: ChatMessage[];
+    onToggleReaction: (msgId: string, emoji: string) => void;
+    onReply: (msg: ChatMessage) => void;
+    seenStatus: Record<string, string>;
+}>(({ msg, senderMe, senderName, isLastInGroup, workers, currentUser, messages, onToggleReaction, onReply, seenStatus }) => {
+    return (
+        <div className={`relative transition-all group/bubble ${msg.isSystem ? 'w-full flex justify-center py-4' : ''}`}>
+            {msg.isSystem ? (
+                <div className="bg-indigo-500/10 border border-indigo-500/20 px-6 py-3 rounded-full flex items-center gap-3 max-w-[90%] backdrop-blur-sm shadow-xl animate-fade-in">
+                    <span className="text-lg">📢</span>
+                    <span className="text-xs font-bold text-indigo-300 uppercase tracking-wide text-center leading-relaxed">
+                        {msg.text}
+                    </span>
+                </div>
+            ) : (
+                <div className="relative">
+                    {/* Reaction Toolbar */}
+                    <div className={`absolute -top-10 z-[100] flex gap-2 p-2 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl opacity-0 scale-90 pointer-events-none group-hover/bubble:opacity-100 group-hover/bubble:scale-100 group-hover/bubble:pointer-events-auto transition-all ${senderMe ? 'right-0' : 'left-0'}`}>
+                        {['👍', '❤️', '🔥', '👏', '😂', '😮'].map(emoji => (
+                            <button
+                                key={emoji}
+                                onClick={() => onToggleReaction(msg.id, emoji)}
+                                onMouseDown={(e) => e.preventDefault()}
+                                className="w-8 h-8 flex items-center justify-center hover:scale-125 transition-transform text-lg"
+                            >
+                                {emoji}
+                            </button>
+                        ))}
+                        <div className="w-px h-6 bg-white/10 mx-1"></div>
+                        <button
+                            onClick={() => onReply(msg)}
+                            onMouseDown={(e) => e.preventDefault()}
+                            className="px-3 text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-white transition-colors"
+                        >
+                            Odpovědět
+                        </button>
+                    </div>
+
+                    <div
+                        className={`px-3.5 py-2 rounded-2xl text-[15px] leading-snug shadow-lg backdrop-blur-sm transition-all hover:scale-[1.01] relative max-w-[78%] break-words ${senderMe
+                            ? 'bg-indigo-600 text-white rounded-tr-sm hover:bg-indigo-500 shadow-indigo-900/20'
+                            : 'bg-white/10 text-slate-200 rounded-tl-sm hover:bg-white/15 shadow-black/20'}`}
+                    >
+                        {msg.replyTo && (
+                            <div className="mb-3 p-3 bg-black/20 rounded-xl border-l-4 border-white/20 text-xs opacity-70 italic truncate">
+                                {messages.find(m => m.id === msg.replyTo)?.text || 'Původní zpráva smazána'}
+                            </div>
+                        )}
+                        {msg.text}
+                        <span className={`text-[8px] font-black uppercase tracking-widest opacity-40 block text-right mt-1 ${senderMe ? 'text-indigo-200' : 'text-slate-400'}`}>
+                            {msg.timestamp && !isNaN(new Date(msg.timestamp).getTime())
+                                ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                : '...'}
+                        </span>
+                    </div>
+
+                    {/* Display Reactions */}
+                    {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                        <div className={`flex flex-wrap gap-1 mt-1.5 ${senderMe ? 'justify-end' : 'justify-start'}`}>
+                            {Object.entries(msg.reactions).map(([emoji, userIds]) => {
+                                const reactedByMe = userIds.includes(currentUser?.workerId || -1);
+                                return (
+                                    <button
+                                        key={emoji}
+                                        onClick={() => onToggleReaction(msg.id, emoji)}
+                                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-black transition-all ${reactedByMe ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300' : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/10'}`}
+                                    >
+                                        <span className="text-xs">{emoji}</span>
+                                        <span>{userIds.length}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Seen Status Avatars */}
+                    {isLastInGroup && (
+                        <div className={`flex items-center gap-1 mt-1.5 ${senderMe ? 'justify-end' : 'justify-start'}`}>
+                            {Object.entries(seenStatus)
+                                .filter(([uid, timestamp]) => {
+                                    const userIdNum = Number(uid);
+                                    if (userIdNum === (currentUser?.workerId || -1)) return false;
+                                    const sTime = new Date(timestamp).getTime();
+                                    const mTime = new Date(msg.timestamp).getTime();
+                                    if (isNaN(sTime) || isNaN(mTime)) return false;
+                                    return sTime >= mTime;
+                                })
+                                .map(([uid]) => {
+                                    const w = workers?.find(worker => String(worker.id) === uid);
+                                    return (
+                                        <div
+                                            key={uid}
+                                            className="w-4 h-4 rounded-full border border-white/20 text-[6px] font-black flex items-center justify-center text-white shadow-sm"
+                                            style={{ backgroundColor: w?.color || '#334155' }}
+                                            title={`Viděno: ${w?.name}`}
+                                        >
+                                            {(w?.name || '?').substring(0, 1).toUpperCase()}
+                                        </div>
+                                    );
+                                })}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
+
+const MessageGroup = React.memo<{
+    group: { date: string; items: { senderId: number; name: string; messages: ChatMessage[] }[] };
+    workers: Worker[] | undefined;
+    isMe: (msg: ChatMessage) => boolean;
+    currentUser: any;
+    allMessages: ChatMessage[];
+    onToggleReaction: (msgId: string, emoji: string) => void;
+    onReply: (msg: ChatMessage) => void;
+    seenStatus: Record<string, string>;
+}>(({ group, workers, isMe, currentUser, allMessages, onToggleReaction, onReply, seenStatus }) => {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-4 py-2 opacity-60">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] bg-black/20 px-3 py-1 rounded-full border border-white/5 backdrop-blur-sm">{group.date}</span>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+            </div>
+            {group.items.map((item, idx) => {
+                const senderMe = isMe({ senderId: item.senderId } as any);
+                return (
+                    <div key={idx} className={`flex gap-2 ${senderMe ? 'flex-row-reverse' : 'flex-row'} animate-slide-up group/msg max-w-[85%] md:max-w-4xl ${senderMe ? 'ml-auto' : 'mr-auto'}`}>
+                        <div
+                            className="w-8 h-8 rounded-[0.8rem] flex items-center justify-center text-[9px] font-black text-white shrink-0 shadow-lg border-2 border-white/5 bg-cover bg-center"
+                            style={{ backgroundColor: workers?.find(w => w.id === item.senderId)?.color || '#3b82f6' }}
+                        >
+                            {(item?.name || 'User').substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className={`flex flex-col space-y-0.5 ${senderMe ? 'items-end' : 'items-start'} flex-1 min-w-0`}>
+                            {!senderMe && <span className="text-[9px] font-black text-slate-400 uppercase px-1 tracking-wider opacity-0 group-hover/msg:opacity-100 transition-opacity">{item.name}</span>}
+                            {item.messages.map((msg, msgIdx) => (
+                                <MessageItem
+                                    key={msg.id}
+                                    msg={msg}
+                                    senderMe={senderMe}
+                                    senderName={item.name}
+                                    isLastInGroup={msgIdx === item.messages.length - 1}
+                                    workers={workers}
+                                    currentUser={currentUser}
+                                    messages={allMessages}
+                                    onToggleReaction={onToggleReaction}
+                                    onReply={onReply}
+                                    seenStatus={seenStatus}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+});
+
 const notifyUser = (message: ChatMessage, showToast: (msg: string, type?: any) => void, t: any) => {
     soundService.playMessageReceived();
     safety.vibrate(200);
@@ -90,18 +257,19 @@ const Chat: React.FC = () => {
 
         const handleViewportChange = () => {
             const viewport = window.visualViewport!;
-            const offset = window.innerHeight - viewport.height - viewport.offsetTop;
+            // Calculate how much of the screen the keyboard is taking
+            const offset = window.innerHeight - viewport.height;
             setKeyboardOffset(Math.max(0, offset));
 
-            // Auto-scroll to bottom on keyboard open if was already at bottom
+            // Faster and more consistent scroll to bottom on keyboard open
             if (offset > 0) {
                 const container = scrollRef.current;
                 if (container) {
-                    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+                    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
                     if (isNearBottom) {
-                        setTimeout(() => {
-                            container.scrollTop = container.scrollHeight;
-                        }, 100);
+                        requestAnimationFrame(() => {
+                            container.scrollTo({ top: container.scrollHeight, behavior: 'auto' });
+                        });
                     }
                 }
             }
@@ -115,16 +283,29 @@ const Chat: React.FC = () => {
         };
     }, []);
 
-    // Smart Auto-scroll Logic
+    // Scroll to bottom on channel change or mobile view switch
+    useEffect(() => {
+        const container = scrollRef.current;
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+    }, [activeChannelId, mobileView]);
+
+    // Smart Auto-scroll Logic for new messages
+    const lastMessageCount = useRef(messages.length);
     useEffect(() => {
         const container = scrollRef.current;
         if (!container) return;
 
-        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
-        if (isNearBottom) {
-            container.scrollTop = container.scrollHeight;
+        // Only auto-scroll if message count increased
+        if (messages.length > lastMessageCount.current) {
+            const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 250;
+            if (isNearBottom) {
+                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+            }
         }
-    }, [messages, mobileView]);
+        lastMessageCount.current = messages.length;
+    }, [messages]);
 
     useEffect(() => {
         if (currentUser?.workerId) {
@@ -310,8 +491,10 @@ const Chat: React.FC = () => {
         <div
             className="fixed inset-0 md:static flex flex-col md:flex-row max-w-7xl mx-auto overflow-hidden bg-[#0a0c1a]"
             style={{
-                top: 'calc(64px + var(--safe-top))',
-                height: 'calc(100dvh - 64px - var(--safe-top))'
+                top: 'calc(52px + var(--safe-top))',
+                height: keyboardOffset > 0
+                    ? `calc(${window.visualViewport?.height || window.innerHeight}px - 52px - var(--safe-top))`
+                    : 'calc(100% - 52px - var(--safe-top))'
             }}
         >
             {/* Sidebar (List View) */}
@@ -322,7 +505,7 @@ const Chat: React.FC = () => {
                         <span className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_10px_currentColor]"></span>
                     </h1>
                 </div>
-                <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1 custom-scrollbar overscroll-contain">
                     <button
                         onClick={() => handleChannelSelect('general')}
                         className={`w-full p-4 rounded-[1.5rem] flex items-center gap-4 transition-all duration-300 group ${activeChannelId === 'general' ? 'bg-indigo-600 shadow-[0_10px_20px_-5px_rgba(79,70,229,0.3)]' : 'hover:bg-white/5'}`}>
@@ -388,6 +571,7 @@ const Chat: React.FC = () => {
                 <div className="relative z-10 px-6 py-5 border-b border-white/5 bg-black/20 backdrop-blur-xl flex items-center gap-6 shrink-0 shadow-lg">
                     <button
                         onClick={handleBackToList}
+                        onMouseDown={(e) => e.preventDefault()}
                         className="md:hidden p-3 -ml-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all active:scale-95"
                     >
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -417,8 +601,8 @@ const Chat: React.FC = () => {
                 {/* Messages Container */}
                 <div
                     ref={scrollRef}
-                    className="flex-1 overflow-y-auto p-3 md:p-6 space-y-6 custom-scrollbar relative z-10 overscroll-contain pb-8"
-                    style={{ WebkitOverflowScrolling: 'touch' }}
+                    className="flex-1 overflow-y-auto p-3 md:p-6 space-y-6 custom-scrollbar relative z-10 overscroll-contain pb-12"
+                    style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'auto' }}
                 >
                     {groupedMessages.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center animate-fade-in opacity-50 space-y-4">
@@ -427,131 +611,17 @@ const Chat: React.FC = () => {
                         </div>
                     ) : (
                         groupedMessages.map(group => (
-                            <div key={group.date} className="space-y-6">
-                                <div className="flex items-center gap-4 py-2 opacity-60">
-                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] bg-black/20 px-3 py-1 rounded-full border border-white/5 backdrop-blur-sm">{group.date}</span>
-                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-                                </div>
-                                {group.items.map((item, idx) => {
-                                    const senderMe = isMe({ senderId: item.senderId } as any);
-                                    return (
-                                        <div key={idx} className={`flex gap-2 ${senderMe ? 'flex-row-reverse' : 'flex-row'} animate-slide-up group/msg max-w-[85%] md:max-w-4xl ${senderMe ? 'ml-auto' : 'mr-auto'}`}>
-                                            <div
-                                                className="w-8 h-8 rounded-[0.8rem] flex items-center justify-center text-[9px] font-black text-white shrink-0 shadow-lg border-2 border-white/5 bg-cover bg-center"
-                                                style={{ backgroundColor: workers?.find(w => w.id === item.senderId)?.color || '#3b82f6' }}
-                                            >
-                                                {(item?.name || 'User').substring(0, 2).toUpperCase()}
-                                            </div>
-                                            <div className={`flex flex-col space-y-0.5 ${senderMe ? 'items-end' : 'items-start'} flex-1 min-w-0`}>
-                                                {!senderMe && <span className="text-[9px] font-black text-slate-400 uppercase px-1 tracking-wider opacity-0 group-hover/msg:opacity-100 transition-opacity">{item.name}</span>}
-                                                {item.messages.map((msg, msgIdx) => (
-                                                    <div
-                                                        key={msg.id}
-                                                        className={`relative transition-all group/bubble ${msg.isSystem ? 'w-full flex justify-center py-4' : ''}`}
-                                                    >
-                                                        {msg.isSystem ? (
-                                                            <div className="bg-indigo-500/10 border border-indigo-500/20 px-6 py-3 rounded-full flex items-center gap-3 max-w-[90%] backdrop-blur-sm shadow-xl animate-fade-in">
-                                                                <span className="text-lg">📢</span>
-                                                                <span className="text-xs font-bold text-indigo-300 uppercase tracking-wide text-center leading-relaxed">
-                                                                    {msg.text}
-                                                                </span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="relative">
-                                                                {/* Reaction Toolbar (appearing on hover/context) */}
-                                                                <div className={`absolute -top-10 z-[100] flex gap-2 p-2 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl opacity-0 scale-90 pointer-events-none group-hover/bubble:opacity-100 group-hover/bubble:scale-100 group-hover/bubble:pointer-events-auto transition-all ${senderMe ? 'right-0' : 'left-0'}`}>
-                                                                    {['👍', '❤️', '🔥', '👏', '😂', '😮'].map(emoji => (
-                                                                        <button
-                                                                            key={emoji}
-                                                                            onClick={() => handleToggleReaction(msg.id, emoji)}
-                                                                            className="w-8 h-8 flex items-center justify-center hover:scale-125 transition-transform text-lg"
-                                                                        >
-                                                                            {emoji}
-                                                                        </button>
-                                                                    ))}
-                                                                    <div className="w-px h-6 bg-white/10 mx-1"></div>
-                                                                    <button
-                                                                        onClick={() => setReplyToMessage(msg)}
-                                                                        className="px-3 text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-white transition-colors"
-                                                                    >
-                                                                        Odpovědět
-                                                                    </button>
-                                                                </div>
-
-                                                                <div
-                                                                    className={`px-3.5 py-2 rounded-2xl text-[15px] leading-snug shadow-lg backdrop-blur-sm transition-all hover:scale-[1.01] relative max-w-[78%] break-words ${senderMe
-                                                                        ? 'bg-indigo-600 text-white rounded-tr-sm hover:bg-indigo-500 shadow-indigo-900/20'
-                                                                        : 'bg-white/10 text-slate-200 rounded-tl-sm hover:bg-white/15 shadow-black/20'}`}
-                                                                >
-                                                                    {msg.replyTo && (
-                                                                        <div className="mb-3 p-3 bg-black/20 rounded-xl border-l-4 border-white/20 text-xs opacity-70 italic truncate">
-                                                                            {messages.find(m => m.id === msg.replyTo)?.text || 'Původní zpráva smazána'}
-                                                                        </div>
-                                                                    )}
-                                                                    {msg.text}
-                                                                    <span className={`text-[8px] font-black uppercase tracking-widest opacity-40 block text-right mt-1 ${senderMe ? 'text-indigo-200' : 'text-slate-400'}`}>
-                                                                        {msg.timestamp && !isNaN(new Date(msg.timestamp).getTime())
-                                                                            ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                                                            : '...'}
-                                                                    </span>
-                                                                </div>
-
-                                                                {/* Display Reactions */}
-                                                                {msg.reactions && Object.keys(msg.reactions).length > 0 && (
-                                                                    <div className={`flex flex-wrap gap-1 mt-1.5 ${senderMe ? 'justify-end' : 'justify-start'}`}>
-                                                                        {Object.entries(msg.reactions).map(([emoji, userIds]) => {
-                                                                            const reactedByMe = userIds.includes(currentUser?.workerId || -1);
-                                                                            return (
-                                                                                <button
-                                                                                    key={emoji}
-                                                                                    onClick={() => handleToggleReaction(msg.id, emoji)}
-                                                                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-black transition-all ${reactedByMe ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300' : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/10'}`}
-                                                                                >
-                                                                                    <span className="text-xs">{emoji}</span>
-                                                                                    <span>{userIds.length}</span>
-                                                                                </button>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                )}
-
-                                                                {/* Seen Status Avatars (Only for the last message in a sequence or globally last) */}
-                                                                {msgIdx === item.messages.length - 1 && (
-                                                                    <div className={`flex items-center gap-1 mt-1.5 ${senderMe ? 'justify-end' : 'justify-start'}`}>
-                                                                        {Object.entries(seenStatus)
-                                                                            .filter(([uid, timestamp]) => {
-                                                                                const userIdNum = Number(uid);
-                                                                                if (userIdNum === (currentUser?.workerId || -1)) return false;
-                                                                                const sTime = new Date(timestamp).getTime();
-                                                                                const mTime = new Date(msg.timestamp).getTime();
-                                                                                if (isNaN(sTime) || isNaN(mTime)) return false;
-                                                                                return sTime >= mTime;
-                                                                            })
-                                                                            .map(([uid]) => {
-                                                                                const w = workers?.find(worker => String(worker.id) === uid);
-                                                                                return (
-                                                                                    <div
-                                                                                        key={uid}
-                                                                                        className="w-4 h-4 rounded-full border border-white/20 text-[6px] font-black flex items-center justify-center text-white shadow-sm"
-                                                                                        style={{ backgroundColor: w?.color || '#334155' }}
-                                                                                        title={`Viděno: ${w?.name}`}
-                                                                                    >
-                                                                                        {(w?.name || '?').substring(0, 1).toUpperCase()}
-                                                                                    </div>
-                                                                                );
-                                                                            })}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                            <MessageGroup
+                                key={group.date}
+                                group={group}
+                                workers={workers}
+                                isMe={isMe}
+                                currentUser={currentUser}
+                                allMessages={messages}
+                                onToggleReaction={handleToggleReaction}
+                                onReply={(msg) => setReplyToMessage(msg)}
+                                seenStatus={seenStatus}
+                            />
                         ))
                     )}
                     <div />
@@ -572,10 +642,9 @@ const Chat: React.FC = () => {
                 {/* Input Area */}
                 <div
                     ref={chatFooterRef}
-                    className="p-3 md:p-6 bg-black/60 backdrop-blur-3xl border-t border-white/10 shrink-0 relative z-20 transition-transform duration-75"
+                    className="p-3 md:p-6 bg-black/60 backdrop-blur-3xl border-t border-white/10 shrink-0 relative z-20"
                     style={{
-                        transform: `translateY(-${keyboardOffset}px)`,
-                        paddingBottom: `calc(${keyboardOffset > 0 ? '8px' : 'var(--safe-bottom)'} + 8px)`
+                        paddingBottom: keyboardOffset > 0 ? 'max(8px, env(safe-area-inset-bottom))' : 'calc(var(--safe-bottom) + 8px)'
                     }}
                 >
                     {replyToMessage && (

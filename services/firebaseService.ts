@@ -23,7 +23,7 @@ import {
 import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
 import { getDatabase, ref, set, push, onValue, off, remove, goOnline, goOffline, onDisconnect, get, Database } from 'firebase/database';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, Auth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { db } from './db'; // Import Dexie instance
 import { safety } from './safetyService';
 
@@ -51,6 +51,9 @@ class FirebaseService {
     private messaging: Messaging | null = null;
     public currentFcmToken: string | null = null;
     public isInitialized = false;
+    public isAuthReady = false;
+    private authResolve: (user: FirebaseUser | null) => void = () => { };
+    public authPromise: Promise<FirebaseUser | null>;
     public isOnline = false;
     public pendingOps = 0;
     private listeners: Set<(online: boolean, pending: number) => void> = new Set();
@@ -67,12 +70,21 @@ class FirebaseService {
             this.rtdb = getDatabase(this.app);
             this.auth = getAuth(this.app);
 
-            if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                try { this.messaging = getMessaging(this.app); } catch (e) { console.warn('Messaging not supported'); }
-            }
+            this.authPromise = new Promise((resolve) => {
+                this.authResolve = resolve;
+            });
+
+            onAuthStateChanged(this.auth, (user) => {
+                console.log(user ? `👤 Auth state changed: ${user.uid}` : '👤 Auth state changed: Logged out');
+                this.isAuthReady = true;
+                this.authResolve(user);
+                if (user) {
+                    this.setupConnectivityListener();
+                    this.setupForegroundMessageListener();
+                }
+            });
+
             this.isInitialized = true;
-            this.setupConnectivityListener();
-            this.setupForegroundMessageListener();
             console.log('🔥 Firebase initialized');
         } catch (error) {
             console.error('Firebase auto-init failed:', error);
@@ -80,7 +92,16 @@ class FirebaseService {
         }
     }
 
-    public get isReady() { return this.isInitialized && this.db !== null; }
+    private async ensureAuth(): Promise<boolean> {
+        if (!this.isInitialized) return false;
+        await this.authPromise;
+        return this.auth.currentUser !== null;
+    }
+
+    public get isReady() {
+        // Only ready for data operations when initialized AND authenticated
+        return this.isInitialized && this.isAuthReady && this.auth.currentUser !== null;
+    }
     public get getAuth() { return this.auth; }
 
     public subscribe(path: string, callback: (data: any) => void) {
@@ -98,7 +119,7 @@ class FirebaseService {
     }
 
     public async toggleReaction(channelId: string, messageId: string, emoji: string, userId: number) {
-        if (!this.rtdb) return; // Changed from this.db to this.rtdb
+        if (!await this.ensureAuth() || !this.rtdb) return;
         const path = `chat/${channelId}/${messageId}/reactions/${emoji}`;
         const snapshot = await get(ref(this.rtdb, path)); // Changed from this.db to this.rtdb
         const users: number[] = snapshot.val() || [];
@@ -118,7 +139,7 @@ class FirebaseService {
     }
 
     public async markAsSeen(channelId: string, userId: number) {
-        if (!this.rtdb) return;
+        if (!await this.ensureAuth() || !this.rtdb) return;
         try {
             const path = `chat/${channelId}/seen/${userId}`;
             await set(ref(this.rtdb, path), new Date().toISOString());
@@ -128,7 +149,7 @@ class FirebaseService {
     }
 
     public async setTypingStatus(channelId: string, userId: number, userName: string, isTyping: boolean) {
-        if (!this.rtdb) return;
+        if (!await this.ensureAuth() || !this.rtdb) return;
         try {
             const path = `chat/${channelId}/typing/${userId}`;
             const typingRef = ref(this.rtdb, path);
@@ -158,7 +179,7 @@ class FirebaseService {
     }
 
     public async setData(path: string, data: any): Promise<SyncResult> {
-        if (!this.rtdb) return { success: false, error: 'RTDB not ready' };
+        if (!await this.ensureAuth() || !this.rtdb) return { success: false, error: 'Unauthenticated or RTDB not ready' };
         try {
             await set(ref(this.rtdb, path), data);
             return { success: true };
@@ -168,7 +189,7 @@ class FirebaseService {
     }
 
     public async requestNotificationPermission(workerId?: number) {
-        if (!this.messaging) return null;
+        if (!await this.ensureAuth() || !this.messaging) return null;
 
         // Safety check using SafetyService or direct check
         if (!safety.notification) {
@@ -241,6 +262,13 @@ class FirebaseService {
     private isSyncing = false;
 
     public async synchronize(forceFull: boolean = false): Promise<SyncResult> {
+        // Explicit Auth Guard: Wait for onAuthStateChanged and check user
+        await this.authPromise;
+        if (!this.auth.currentUser) {
+            console.warn('⛔ Sync blocked: User not authenticated');
+            return { success: false, error: 'Unauthenticated' };
+        }
+
         if (!this.isReady) return { success: false, error: 'Firebase not ready' };
 
         // Debounce: prevent overlapping syncs (User Rule 5: prevent spam)
@@ -457,6 +485,7 @@ class FirebaseService {
 
     // Original methods below (can be simplified later if needed)
     public async upsertRecords(collectionName: string, records: any[]): Promise<SyncResult> {
+        if (!await this.ensureAuth()) return { success: true }; // Silent bypass if not auth
         if (!this.isReady || records.length === 0) return { success: true };
         this.pendingOps++; this.notify();
         try {
@@ -478,6 +507,7 @@ class FirebaseService {
     }
 
     public async updateRecord(collectionName: string, id: string, data: any): Promise<SyncResult> {
+        if (!await this.ensureAuth()) return { success: false, error: 'Unauthenticated' };
         if (!this.isReady) return { success: false, error: 'Firebase not ready' };
         try {
             // Add updatedAt timestamp for incremental sync
@@ -491,7 +521,7 @@ class FirebaseService {
 
     public async deleteRecords(collectionName: string, ids: string[]): Promise<SyncResult> {
         // Deletion needs special handling for sync (e.g. `deletedAt` flag), not implemented yet.
-        if (!this.isReady || ids.length === 0) return { success: true };
+        if (!await this.ensureAuth() || !this.isReady || ids.length === 0) return { success: true };
         try {
             const batch = writeBatch(this.db);
             ids.forEach(id => batch.delete(doc(this.db, collectionName, String(id))));

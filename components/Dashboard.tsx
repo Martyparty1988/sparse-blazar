@@ -182,7 +182,7 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           </div>
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-[0.9] sm:leading-[0.8] break-words">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white italic tracking-tighter uppercase leading-[0.9] sm:leading-[0.8] break-words">
             Vítejte, {user?.username || 'Marty'}<span className="text-indigo-500 font-normal">.</span>
           </h1>
           <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{t('dashboard_subtitle') || 'Sledujte svůj pokrok v reálném čase'}</p>
@@ -190,7 +190,7 @@ const Dashboard: React.FC = () => {
 
         <button
           onClick={() => setIsLoggingWork(true)}
-          className="group relative px-10 py-6 bg-white rounded-[2rem] font-black text-black uppercase tracking-widest shadow-[0_20px_50px_-10px_rgba(255,255,255,0.2)] active:scale-95 transition-all overflow-hidden"
+          className="group relative w-full md:w-auto px-6 md:px-10 py-4 md:py-6 bg-white rounded-[2rem] font-black text-black uppercase tracking-widest text-sm md:text-base shadow-[0_20px_50px_-10px_rgba(255,255,255,0.2)] active:scale-95 transition-all overflow-hidden"
         >
           <div className="relative z-10 flex items-center gap-4">
             <div className="p-2 bg-black rounded-lg text-white">

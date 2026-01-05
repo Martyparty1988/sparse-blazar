@@ -7,7 +7,7 @@ import type { TimeRecord } from '../types';
  * @param description The description text to parse
  * @returns Array of unique table IDs found
  */
-const parseTableCompletionPatterns = (description: string): string[] => {
+export const parseTableCompletionPatterns = (description: string): string[] => {
   const tableCodes = new Set<string>();
 
   // Pattern 1: "hotový stůl X" or "hotová stůl X"

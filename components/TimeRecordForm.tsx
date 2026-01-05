@@ -420,7 +420,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
     return (
         <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-md p-0 md:p-4 animate-fade-in">
             <div
-                className={`w-full max-h-full md:max-w-lg bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden animate-slide-up transition-transform duration-200 modal-scroll`}
+                className={`w-full max-h-[95vh] md:max-h-[90vh] md:max-w-lg bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl border-t md:border border-white/10 flex flex-col overflow-hidden animate-slide-up transition-transform duration-200 modal-scroll`}
                 style={{ transform: isDragging && touchStart && touchCurrent ? `translateY(${Math.max(0, touchCurrent - touchStart)}px)` : undefined }}
             >
 
@@ -440,7 +440,7 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 custom-scrollbar">
 
                     {/* 1. Worker Selection (Top Priority) */}
                     <div className="space-y-2">
@@ -691,8 +691,8 @@ const TimeRecordForm: React.FC<WorkLogFormProps> = ({ onClose, editRecord, initi
                 </div>
 
                 <div
-                    className="p-6 bg-black/40 border-t border-white/5"
-                    style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom, 0px))' }}
+                    className="p-4 md:p-6 bg-black/40 border-t border-white/5"
+                    style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
                 >
                     <button
                         id="submit-btn"

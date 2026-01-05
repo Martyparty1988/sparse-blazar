@@ -191,6 +191,16 @@ body {
   padding-bottom: calc(var(--safe-bottom) + 1rem);
 }
 
+.pb-nav-mobile {
+  padding-bottom: calc(56px + var(--safe-bottom) + 1rem);
+}
+
+@media (min-width: 768px) {
+  .pb-nav-mobile {
+    padding-bottom: 1rem;
+  }
+}
+
 .px-safe {
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
@@ -204,4 +214,87 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Landscape Orientation Support */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+  /* Reduce vertical padding in landscape */
+  .landscape-compact {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  /* Smaller headers in landscape */
+  h1 {
+    font-size: 2rem !important;
+  }
+
+  h2 {
+    font-size: 1.5rem !important;
+  }
+
+  /* Compact modals in landscape */
+  .modal-scroll {
+    max-height: 90vh !important;
+  }
+
+  /* Reduce spacing in forms */
+  .space-y-6 > * + * {
+    margin-top: 1rem !important;
+  }
+
+  .space-y-4 > * + * {
+    margin-top: 0.75rem !important;
+  }
+}
+
+/* Tablet Landscape (768px - 1024px) */
+@media screen and (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+  /* Optimize sidebars for tablet landscape */
+  aside {
+    width: 18rem !important;
+  }
+
+  /* Better grid layouts for tablets */
+  .grid-cols-1.sm\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Responsive Typography Improvements */
+@media screen and (max-width: 640px) {
+  /* Base font size adjustments for mobile */
+  html {
+    font-size: 14px;
+  }
+
+  /* Improve readability on small screens */
+  .text-xs {
+    font-size: 0.7rem !important;
+  }
+
+  /* Compact spacing for mobile */
+  .space-y-8 > * + * {
+    margin-top: 1.5rem !important;
+  }
+}
+
+/* Tablet typography optimizations */
+@media screen and (min-width: 641px) and (max-width: 1024px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+/* Prevent bottom nav overlap on small screens */
+@media screen and (max-width: 767px) {
+  /* Ensure list items don't get cut off by bottom nav */
+  .mobile-list-item:last-child {
+    margin-bottom: calc(56px + var(--safe-bottom) + 1rem) !important;
+  }
+
+  /* Better modal sizing on small screens */
+  .fixed.inset-0 > div {
+    max-height: 92vh !important;
+  }
 }

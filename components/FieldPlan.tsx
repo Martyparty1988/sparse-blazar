@@ -482,10 +482,10 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
 
 
     return (
-        <div className="relative w-full h-[85vh] min-h-[700px] flex overflow-hidden bg-[#020617] font-sans rounded-[3rem] border border-white/5 shadow-[0_0_100px_rgba(0,0,0,0.5)]">
+        <div className="relative w-full h-[85vh] min-h-[500px] md:min-h-[700px] flex overflow-hidden bg-[#020617] font-sans rounded-[3rem] border border-white/5 shadow-[0_0_100px_rgba(0,0,0,0.5)]">
 
             {/* Left Sidebar - Statistics & Filters */}
-            <aside className={`transition-all duration-500 h-full border-r border-white/5 bg-black/20 backdrop-blur-3xl shrink-0 flex flex-col ${showLeftSidebar ? 'w-96' : 'w-0 overflow-hidden'}`}>
+            <aside className={`transition-all duration-500 h-full border-r border-white/5 bg-black/20 backdrop-blur-3xl shrink-0 flex flex-col ${showLeftSidebar ? 'w-80 lg:w-96' : 'w-0 overflow-hidden'}`}>
                 <div className="p-8 grow space-y-10 custom-scrollbar overflow-y-auto">
                     <header className="space-y-4">
                         <div className="flex items-center gap-4">
@@ -780,7 +780,7 @@ const FieldPlan: React.FC<{ projectId: number, onTableClick?: (table: FieldTable
             </main>
 
             {/* Right Sidebar - Selection Context */}
-            <aside className={`transition-all duration-500 h-full border-l border-white/5 bg-black/20 backdrop-blur-3xl shrink-0 flex flex-col ${showRightSidebar ? 'w-96' : 'w-0 overflow-hidden'}`}>
+            <aside className={`transition-all duration-500 h-full border-l border-white/5 bg-black/20 backdrop-blur-3xl shrink-0 flex flex-col ${showRightSidebar ? 'w-80 lg:w-96' : 'w-0 overflow-hidden'}`}>
                 <div className="p-10 grow space-y-10 overflow-y-auto custom-scrollbar">
                     <header className="space-y-4">
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] mb-1">Kontextový výběr</p>
